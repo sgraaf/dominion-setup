@@ -10,9 +10,9 @@ project = "dominion-setup"
 author = "Steven van de Graaf"
 copyright = f"2026, {author}"  # noqa: A001
 
-# The full version, including alpha/beta/rc tags.
+# the full version, including alpha/beta/rc tags.
 release = metadata.version("dominion-setup")
-# The short X.Y version.
+# the short X.Y version.
 version = release.rsplit(".", 1)[0]
 
 # -- General configuration ---------------------------------------------------

@@ -1,0 +1,1187 @@
+[
+  {
+    "name": "Alliance",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 10
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Alliance.jpg",
+    "instructions": "Gain a Province, a Duchy, an Estate, a Gold, a Silver, and a Copper."
+  },
+  {
+    "name": "Animal Fair",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 7,
+      "extra": "*"
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Animal Fair.jpg",
+    "instructions": "+$4\n+1 Buy per empty supply pile.\n-----\nInstead of paying this card's cost, you may trash an Action card from your hand."
+  },
+  {
+    "name": "Banish",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Banish.jpg",
+    "instructions": "Exile any number of cards with the same name from your hand."
+  },
+  {
+    "name": "Bargain",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Bargain.jpg",
+    "instructions": "Gain a non-Victory card costing up to $5. Each other player gains a Horse."
+  },
+  {
+    "name": "Barge",
+    "types": [
+      "Action",
+      "Duration"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Barge.jpg",
+    "instructions": "Either now or at the start of your next turn, +3 Cards and +1 Buy."
+  },
+  {
+    "name": "Black Cat",
+    "types": [
+      "Action",
+      "Attack",
+      "Reaction"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Black Cat.jpg",
+    "instructions": "+2 Cards\nIf it isn't your turn, each other player gains a Curse.\n-----\nWhen another player gains a Victory card, you may play this from your hand."
+  },
+  {
+    "name": "Bounty Hunter",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Bounty Hunter.jpg",
+    "instructions": "+1 Action\nExile a card from your hand. If you didn't have a copy of it in Exile, +$3."
+  },
+  {
+    "name": "Camel Train",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Camel Train.jpg",
+    "instructions": "Exile a non-Victory card from the Supply.\n-----\nWhen you gain this, Exile a Gold from the Supply."
+  },
+  {
+    "name": "Cardinal",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Cardinal.jpg",
+    "instructions": "+$2\nEach other player reveals the top 2 cards of their deck, Exiles one costing from $3 to $6, and discards the rest."
+  },
+  {
+    "name": "Cavalry",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Cavalry.jpg",
+    "instructions": "Gain 2 Horses.\n-----\nWhen you gain this, +2 Cards, +1 Buy, and if it's your Buy phase return to your Action phase."
+  },
+  {
+    "name": "Commerce",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Commerce.jpg",
+    "instructions": "Gain a Gold per differently named card you've gained this turn."
+  },
+  {
+    "name": "Coven",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Coven.jpg",
+    "instructions": "+1 Action\n+$2\nEach other player Exiles a Curse from the Supply. If they can't, they discard their Exiled Curses."
+  },
+  {
+    "name": "Delay",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 0
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Delay.jpg",
+    "instructions": "You may set aside an Action card from your hand. At the start of your next turn, play it."
+  },
+  {
+    "name": "Demand",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Demand.jpg",
+    "instructions": "Gain a Horse and a card costing up to $4, both onto your deck."
+  },
+  {
+    "name": "Desperation",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 0
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Desperation.jpg",
+    "instructions": "Once per turn: You may gain a Curse. If you do, +1 Buy and +$2."
+  },
+  {
+    "name": "Destrier",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 6,
+      "extra": "*"
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Destrier.jpg",
+    "instructions": "+2 Cards\n+1 Action\n-----\nDuring your turns, this costs $1 less per card you've gained this turn."
+  },
+  {
+    "name": "Displace",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Displace.jpg",
+    "instructions": "Exile a card from your hand. Gain a differently named card costing up to $2 more than it."
+  },
+  {
+    "name": "Enclave",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 8
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Enclave.jpg",
+    "instructions": "Gain a Gold. Exile a Duchy from the Supply."
+  },
+  {
+    "name": "Enhance",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Enhance.jpg",
+    "instructions": "You may trash a non-Victory card from your hand, to gain a card costing up to $2 more than it."
+  },
+  {
+    "name": "Falconer",
+    "types": [
+      "Action",
+      "Reaction"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Falconer.jpg",
+    "instructions": "Gain a card to your hand costing less than this.\n-----\nWhen any player gains a card with 2 or more types (Action, Attack, etc.), you may play this from your hand."
+  },
+  {
+    "name": "Fisherman",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5,
+      "extra": "*"
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Fisherman.jpg",
+    "instructions": "+1 Card\n+1 Action\n+$1\n-----\nDuring your turns, if your discard pile is empty, this costs $3 less."
+  },
+  {
+    "name": "Gamble",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Gamble.jpg",
+    "instructions": "+1 Buy\nDiscard the top card of your deck. If it's an Action or Treasure, you may play it."
+  },
+  {
+    "name": "Gatekeeper",
+    "types": [
+      "Action",
+      "Duration",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Gatekeeper.jpg",
+    "instructions": "At the start of your next turn, +$3. Until then, when another player gains an Action or Treasure card they don't have an Exiled copy of, they Exile it."
+  },
+  {
+    "name": "Goatherd",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Goatherd.jpg",
+    "instructions": "+1 Action\nYou may trash a card from your hand.\n+1 Card per card the player to your right trashed on their last turn."
+  },
+  {
+    "name": "Groom",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Groom.jpg",
+    "instructions": "Gain a card costing up to $4. If it's an...\nAction card, gain a Horse; Treasure card, gain a Silver; Victory card, +1 Card and +1 Action."
+  },
+  {
+    "name": "Horse",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Non-Supply",
+    "cost": {
+      "coins": 3,
+      "extra": "*"
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 30,
+    "image": "Horse.jpg",
+    "instructions": "+2 Cards\n+1 Action\nReturn this to its pile.\n(This is not in the Supply.)"
+  },
+  {
+    "name": "Hostelry",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Hostelry.jpg",
+    "instructions": "+1 Card\n+2 Actions\n-----\nWhen you gain this, you may discard any number of Treasures, revealed, to gain that many Horses."
+  },
+  {
+    "name": "Hunting Lodge",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Hunting Lodge.jpg",
+    "instructions": "+1 Card\n+2 Actions\nYou may discard your hand for +5 Cards."
+  },
+  {
+    "name": "Invest",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Invest.jpg",
+    "instructions": "Exile an Action card from the Supply. While it's in Exile, when another player gains or Invests in a copy of it, +2 Cards."
+  },
+  {
+    "name": "Kiln",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Kiln.jpg",
+    "instructions": "+$2\nThe next time you play a card this turn, you may first gain a copy of it."
+  },
+  {
+    "name": "Livery",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Livery.jpg",
+    "instructions": "+$3\nThis turn, when you gain a card costing $4 or more, gain a Horse."
+  },
+  {
+    "name": "March",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "March.jpg",
+    "instructions": "Look through your discard pile. You may play an Action card from it."
+  },
+  {
+    "name": "Mastermind",
+    "types": [
+      "Action",
+      "Duration"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Mastermind.jpg",
+    "instructions": "At the start of your next turn, you may play an Action card from your hand three times."
+  },
+  {
+    "name": "Paddock",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Paddock.jpg",
+    "instructions": "+$2\nGain 2 Horses.\n+1 Action per empty Supply pile."
+  },
+  {
+    "name": "Populate",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 10
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Populate.jpg",
+    "instructions": "Gain one card from each Action Supply pile."
+  },
+  {
+    "name": "Pursue",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Pursue.jpg",
+    "instructions": "+1 Buy\nName a card. Reveal the top 4 cards from your deck. Put the matches back and discard the rest."
+  },
+  {
+    "name": "Reap",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 7
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Reap.jpg",
+    "instructions": "Gain a Gold, setting it aside. At the start of your next turn, play it."
+  },
+  {
+    "name": "Ride",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Ride.jpg",
+    "instructions": "Gain a Horse."
+  },
+  {
+    "name": "Sanctuary",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Sanctuary.jpg",
+    "instructions": "+1 Card\n+1 Action\n+1 Buy\nYou may Exile a card from your hand."
+  },
+  {
+    "name": "Scrap",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Scrap.jpg",
+    "instructions": "Trash a card from your hand. Choose a different thing per $1 it costs: +1 Card; +1 Action; +1 Buy; +$1; gain a Silver; gain a Horse."
+  },
+  {
+    "name": "Seize the Day",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Seize the Day.jpg",
+    "instructions": "Once per game: Take an extra turn after this one."
+  },
+  {
+    "name": "Sheepdog",
+    "types": [
+      "Action",
+      "Reaction"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Sheepdog.jpg",
+    "instructions": "+2 Cards\n-----\nWhen you gain a card, you may play this from your hand."
+  },
+  {
+    "name": "Sleigh",
+    "types": [
+      "Action",
+      "Reaction"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Sleigh.jpg",
+    "instructions": "Gain 2 Horses.\n-----\nWhen you gain a card, you may discard this, to put that card into your hand or onto your deck."
+  },
+  {
+    "name": "Snowy Village",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Snowy Village.jpg",
+    "instructions": "+1 Card\n+4 Actions\n+1 Buy\nIgnore any further +Actions you get this turn."
+  },
+  {
+    "name": "Stampede",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Stampede.jpg",
+    "instructions": "If you have 5 or fewer cards in play, gain 5 Horses onto your deck."
+  },
+  {
+    "name": "Stockpile",
+    "types": [
+      "Treasure"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Stockpile.jpg",
+    "instructions": "$3\n+1 Buy\nExile this."
+  },
+  {
+    "name": "Supplies",
+    "types": [
+      "Treasure"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Supplies.jpg",
+    "instructions": "$1\nGain a Horse onto your deck."
+  },
+  {
+    "name": "Toil",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Toil.jpg",
+    "instructions": "+1 Buy\nYou may play an Action card from your hand."
+  },
+  {
+    "name": "Transport",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Transport.jpg",
+    "instructions": "Choose one: Exile an Action card from the Supply; or put an Action card you have in Exile onto your deck."
+  },
+  {
+    "name": "Village Green",
+    "types": [
+      "Action",
+      "Duration",
+      "Reaction"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Village Green.jpg",
+    "instructions": "Either now or at the start of your next turn, +1 Card and +2 Actions.\n-----\nWhen you discard this other than during Clean-up, you may play it."
+  },
+  {
+    "name": "Way of the Butterfly",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Butterfly.jpg",
+    "instructions": "You may return this to its pile to gain a card costing exactly $1 more than it."
+  },
+  {
+    "name": "Way of the Camel",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Camel.jpg",
+    "instructions": "Exile a Gold from the Supply."
+  },
+  {
+    "name": "Way of the Chameleon",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Chameleon.jpg",
+    "instructions": "Follow this card's instructions; each time that would give you +Cards this turn, you get +$ instead, and vice-versa."
+  },
+  {
+    "name": "Way of the Frog",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Frog.jpg",
+    "instructions": "+1 Action\nWhen you discard this from play this turn, put it onto your deck."
+  },
+  {
+    "name": "Way of the Goat",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Goat.jpg",
+    "instructions": "Trash a card from your hand."
+  },
+  {
+    "name": "Way of the Horse",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Horse.jpg",
+    "instructions": "+2 Cards\n+1 Action\nReturn this to its pile."
+  },
+  {
+    "name": "Way of the Mole",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Mole.jpg",
+    "instructions": "+1 Action\nDiscard your hand. +3 Cards."
+  },
+  {
+    "name": "Way of the Monkey",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Monkey.jpg",
+    "instructions": "+1 Buy\n+$1"
+  },
+  {
+    "name": "Way of the Mouse",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Mouse.jpg",
+    "instructions": "Play the set-aside card, leaving it there.\n-----\nSetup: Set aside an unused non-Duration Action costing $2 or $3."
+  },
+  {
+    "name": "Way of the Mule",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Mule.jpg",
+    "instructions": "+1 Action\n+$1"
+  },
+  {
+    "name": "Way of the Otter",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Otter.jpg",
+    "instructions": "+2 Cards"
+  },
+  {
+    "name": "Way of the Owl",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Owl.jpg",
+    "instructions": "Draw until you have 6 cards in hand."
+  },
+  {
+    "name": "Way of the Ox",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Ox.jpg",
+    "instructions": "+2 Actions"
+  },
+  {
+    "name": "Way of the Pig",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Pig.jpg",
+    "instructions": "+1 Card\n+1 Action"
+  },
+  {
+    "name": "Way of the Rat",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Rat.jpg",
+    "instructions": "You may discard a Treasure to gain a copy of this."
+  },
+  {
+    "name": "Way of the Seal",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Seal.jpg",
+    "instructions": "+$1\nThis turn, when you gain a card, you may put it onto your deck."
+  },
+  {
+    "name": "Way of the Sheep",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Sheep.jpg",
+    "instructions": "+$2"
+  },
+  {
+    "name": "Way of the Squirrel",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Squirrel.jpg",
+    "instructions": "+2 Cards at the end of this turn."
+  },
+  {
+    "name": "Way of the Turtle",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Turtle.jpg",
+    "instructions": "Set this aside. If you did, play it at the start of your next turn."
+  },
+  {
+    "name": "Way of the Worm",
+    "types": [
+      "Way"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Way of the Worm.jpg",
+    "instructions": "Exile an Estate from the Supply."
+  },
+  {
+    "name": "Wayfarer",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 6,
+      "extra": "*"
+    },
+    "set": "Menagerie",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Wayfarer.jpg",
+    "instructions": "+3 Cards\nYou may gain a Silver.\n-----\nThis has the same cost as the last other card gained this turn, if any."
+  }
+]

@@ -1,0 +1,1340 @@
+[
+  {
+    "name": "Acolyte",
+    "types": [
+      "Action",
+      "Augur"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Acolyte.jpg",
+    "instructions": "You may trash an Action or Victory card from your hand to gain a Gold.\nYou may trash this to gain an Augur."
+  },
+  {
+    "name": "Archer",
+    "types": [
+      "Action",
+      "Attack",
+      "Clash"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Archer.jpg",
+    "instructions": "+$2\nEach other player with 5 or more cards in hand reveals all but one, and discards one of those you choose."
+  },
+  {
+    "name": "Architects' Guild",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Architects' Guild.jpg",
+    "instructions": "When you gain a card, you may spend 2 Favors to gain a cheaper non-Victory card."
+  },
+  {
+    "name": "Augurs",
+    "types": [
+      "Action",
+      "Augur"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 0,
+    "image": "Augurs.jpg",
+    "instructions": "Setup: This pile starts the game with 4 copies each of Herb Gatherer, Acolyte, Sorceress, and Sibyl, in that order. Only the top card can be gained or bought."
+  },
+  {
+    "name": "Band of Nomads",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Band of Nomads.jpg",
+    "instructions": "When you gain a card costing $3 or more, you may spend a Favor, for +1 Card, or +1 Action, or +1 Buy."
+  },
+  {
+    "name": "Barbarian",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Barbarian.jpg",
+    "instructions": "+$2\nEach other player trashes the top card of their deck. If it costs $3 or more they gain a cheaper card sharing a type with it; otherwise they gain a Curse."
+  },
+  {
+    "name": "Battle Plan",
+    "types": [
+      "Action",
+      "Clash"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Battle Plan.jpg",
+    "instructions": "+1 Card\n+1 Action\nYou may reveal an Attack card from your hand for +1 Card.\nYou may rotate any Supply pile."
+  },
+  {
+    "name": "Bauble",
+    "types": [
+      "Treasure",
+      "Liaison"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Bauble.jpg",
+    "instructions": "Choose two different options: +1 Buy; +$1; +1 Favor; this turn, when you gain a card, you may put it onto your deck."
+  },
+  {
+    "name": "Blacksmith",
+    "types": [
+      "Action",
+      "Townsfolk"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Blacksmith.jpg",
+    "instructions": "Choose one: Draw until you have 6 cards in hand; or +2 Cards; or +1 Card and +1 Action."
+  },
+  {
+    "name": "Broker",
+    "types": [
+      "Action",
+      "Liaison"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Broker.jpg",
+    "instructions": "Trash a card from your hand and choose one:\n+1 Card per $1 it costs;\nor +1 Action per $1 it costs; \nor +$1 per $1 it costs; \nor +1 Favor per $1 it costs."
+  },
+  {
+    "name": "Capital City",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Capital City.jpg",
+    "instructions": "+1 Card\n+2 Actions\nYou may discard 2 cards for +$2.\nYou may pay $2 for +2 Cards."
+  },
+  {
+    "name": "Carpenter",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Carpenter.jpg",
+    "instructions": "If no Supply piles are empty, +1 Action and gain a card costing up to $4.\nOtherwise, trash a card from your hand and gain a card costing up to $2 more than it."
+  },
+  {
+    "name": "Cave Dwellers",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Cave Dwellers.jpg",
+    "instructions": "At the start of your turn, you may spend a Favor, to discard a card then draw a card. Repeat as desired."
+  },
+  {
+    "name": "Circle of Witches",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Circle of Witches.jpg",
+    "instructions": "After playing a Liaison, you may spend 3 Favors to have each other player gain a Curse."
+  },
+  {
+    "name": "City-state",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "City-state.jpg",
+    "instructions": "When you gain an Action card during your turn, you may spend 2 Favors to play it."
+  },
+  {
+    "name": "Clashes",
+    "types": [
+      "Action",
+      "Clash"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 0,
+    "image": "Clashes.jpg",
+    "instructions": "Setup: This pile starts the game with 4 copies each of Battle Plan, Archer, Warlord, and Territory, in that order. Only the top card can be gained or bought."
+  },
+  {
+    "name": "Coastal Haven",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Coastal Haven.jpg",
+    "instructions": "When discarding your hand in Clean-up, you may spend any number of Favors to keep that many cards in hand for next turn (you still draw 5)."
+  },
+  {
+    "name": "Conjurer",
+    "types": [
+      "Action",
+      "Duration",
+      "Wizard"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Conjurer.jpg",
+    "instructions": "Gain a card costing up to $4.\nAt the start of your next turn, put this into your hand."
+  },
+  {
+    "name": "Contract",
+    "types": [
+      "Treasure",
+      "Duration",
+      "Liaison"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Contract.jpg",
+    "instructions": "$2\n+1 Favor\nYou may set aside an Action from your hand to play it at the start of your next turn."
+  },
+  {
+    "name": "Courier",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Courier.jpg",
+    "instructions": "+$1\nDiscard the top card of your deck. Look through your discard pile; you may play an Action or Treasure from it."
+  },
+  {
+    "name": "Crafters' Guild",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Crafters' Guild.jpg",
+    "instructions": "At the start of your turn, you may spend 2 Favors to gain a card costing up to $4 onto your deck."
+  },
+  {
+    "name": "Desert Guides",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Desert Guides.jpg",
+    "instructions": "At the start of your turn, you may spend a Favor to discard your hand and draw 5 cards. Repeat as desired."
+  },
+  {
+    "name": "Distant Shore",
+    "types": [
+      "Action",
+      "Victory",
+      "Odyssey"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Distant Shore.jpg",
+    "instructions": "+2 Cards\n+1 Action\nGain an Estate.\n-----\n2 VP"
+  },
+  {
+    "name": "Elder",
+    "types": [
+      "Action",
+      "Townsfolk"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Elder.jpg",
+    "instructions": "+$2\nYou may play an Action card from your hand. When it gives you a choice of abilities (with \"choose\") this turn, you may choose an extra (different) option."
+  },
+  {
+    "name": "Emissary",
+    "types": [
+      "Action",
+      "Liaison"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Emissary.jpg",
+    "instructions": "+3 Cards\nIf this made you shuffle (at least one card), +1 Action and +2 Favors."
+  },
+  {
+    "name": "Family of Inventors",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Family of Inventors.jpg",
+    "instructions": "At the start of your Buy phase, you may put a Favor token you have on a non-Victory Supply pile. Cards cost $1 less per Favor token on their piles."
+  },
+  {
+    "name": "Fellowship of Scribes",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Fellowship of Scribes.jpg",
+    "instructions": "After playing an Action, if you have 4 or fewer cards in hand, you may spend a Favor for +1 Card."
+  },
+  {
+    "name": "Forest Dwellers",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Forest Dwellers.jpg",
+    "instructions": "At the start of your turn, you may spend a Favor to look at the top 3 cards of your deck, discard any number and put the rest back in any order."
+  },
+  {
+    "name": "Forts",
+    "types": [
+      "Action",
+      "Fort"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 0,
+    "image": "Forts.jpg",
+    "instructions": "Setup: This pile starts the game with 4 copies each of Tent, Garrison, Hill Fort, and Stronghold, in that order. Only the top card can be gained or bought."
+  },
+  {
+    "name": "Galleria",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Galleria.jpg",
+    "instructions": "+$3\nThis turn, when you gain a card costing $3 or $4, +1 Buy."
+  },
+  {
+    "name": "Gang of Pickpockets",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Gang of Pickpockets.jpg",
+    "instructions": "At the start of your turn, discard down to 4 cards in hand unless you spend a Favor."
+  },
+  {
+    "name": "Garrison",
+    "types": [
+      "Action",
+      "Duration",
+      "Fort"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Garrison.jpg",
+    "instructions": "+$2\nThis turn, when you gain a card, add a token here. At the start of your next turn, remove them for +1 Card each."
+  },
+  {
+    "name": "Guildmaster",
+    "types": [
+      "Action",
+      "Liaison"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Guildmaster.jpg",
+    "instructions": "+$3\nThis turn, when you gain a card, +1 Favor."
+  },
+  {
+    "name": "Herb Gatherer",
+    "types": [
+      "Action",
+      "Augur"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Herb Gatherer.jpg",
+    "instructions": "+1 Buy\nPut your deck into your discard pile. Look through it and you may play a Treasure from it.\nYou may rotate the Augurs."
+  },
+  {
+    "name": "Highwayman",
+    "types": [
+      "Action",
+      "Duration",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Highwayman.jpg",
+    "instructions": "At the start of your next turn, discard this from play and +3 Cards.\nUntil then, the first Treasure each other player plays each turn does nothing."
+  },
+  {
+    "name": "Hill Fort",
+    "types": [
+      "Action",
+      "Fort"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Hill Fort.jpg",
+    "instructions": "Gain a card costing up to $4. Choose one: Put it into your hand; or +1 Card and +1 Action."
+  },
+  {
+    "name": "Hunter",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Hunter.jpg",
+    "instructions": "+1 Action\nReveal the top 3 cards of your deck. From those cards, put an Action, a Treasure, and a Victory card into your hand. Discard the rest."
+  },
+  {
+    "name": "Importer",
+    "types": [
+      "Action",
+      "Duration",
+      "Liaison"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Importer.jpg",
+    "instructions": "At the start of your next turn, gain a card costing up to $5.\n-----\nSetup: Each player gets +4 Favors."
+  },
+  {
+    "name": "Innkeeper",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Innkeeper.jpg",
+    "instructions": "+1 Action\nChoose one: +1 Card; or +3 Cards, then discard 3 cards; or +5 Cards, then discard 6 cards."
+  },
+  {
+    "name": "Island Folk",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Island Folk.jpg",
+    "instructions": "At the end of your turn, you may spend 5 Favors to take an extra turn after this one (but not a 3rd turn in a row)."
+  },
+  {
+    "name": "League of Bankers",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "League of Bankers.jpg",
+    "instructions": "At the start of your Buy phase, +$1 per 4 Favors you have (round down)."
+  },
+  {
+    "name": "League of Shopkeepers",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "League of Shopkeepers.jpg",
+    "instructions": "After playing a Liaison, if you have 5 or more Favors, +$1, and if 10 or more, +1 Action and +1 Buy."
+  },
+  {
+    "name": "Lich",
+    "types": [
+      "Action",
+      "Wizard"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Lich.jpg",
+    "instructions": "+6 Cards\n+2 Actions\nSkip a turn.\n-----\nWhen you trash this, discard it and gain a cheaper card from the trash."
+  },
+  {
+    "name": "Market Towns",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Market Towns.jpg",
+    "instructions": "At the start of your Buy phase, you may spend a Favor to play an Action card from your hand. Repeat as desired."
+  },
+  {
+    "name": "Marquis",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Marquis.jpg",
+    "instructions": "+1 Buy\n+1 Card per card in your hand. Discard down to 10 cards in hand."
+  },
+  {
+    "name": "Merchant Camp",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Merchant Camp.jpg",
+    "instructions": "+2 Actions\n+$1\n-----\nWhen you discard this from play, you may put it onto your deck."
+  },
+  {
+    "name": "Miller",
+    "types": [
+      "Action",
+      "Townsfolk"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Miller.jpg",
+    "instructions": "+1 Action\nLook at the top 4 cards of your deck. Put one into your hand and discard the rest."
+  },
+  {
+    "name": "Modify",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Modify.jpg",
+    "instructions": "Trash a card from your hand. Choose one: +1 Card and +1 Action; or gain a card costing up to $2 more than the trashed card."
+  },
+  {
+    "name": "Mountain Folk",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Mountain Folk.jpg",
+    "instructions": "At the start of your turn, you may spend 5 Favors for +3 Cards."
+  },
+  {
+    "name": "Odysseys",
+    "types": [
+      "Action",
+      "Odyssey"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 0,
+    "image": "Odysseys.jpg",
+    "instructions": "Setup: This pile starts the game with 4 copies each of Old Map, Voyage, Sunken Treasure, and Distant Shore, in that order. Only the top card can be gained or bought."
+  },
+  {
+    "name": "Old Map",
+    "types": [
+      "Action",
+      "Odyssey"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Old Map.jpg",
+    "instructions": "+1 Card\n+1 Action\nDiscard a card. +1 Card.\nYou may rotate the Odysseys."
+  },
+  {
+    "name": "Order of Astrologers",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Order of Astrologers.jpg",
+    "instructions": "When shuffling, you may pick one card per Favor you spend to go on top."
+  },
+  {
+    "name": "Order of Masons",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Order of Masons.jpg",
+    "instructions": "When shuffling, you may pick up to 2 cards per Favor you spend to put into your discard pile."
+  },
+  {
+    "name": "Peaceful Cult",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Peaceful Cult.jpg",
+    "instructions": "At the start of your Buy phase, you may spend any number of Favors to trash that many cards from your hand."
+  },
+  {
+    "name": "Plateau Shepherds",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Plateau Shepherds.jpg",
+    "instructions": "When scoring, pair up your Favors with cards you have costing $2, for 2 VP per pair."
+  },
+  {
+    "name": "Royal Galley",
+    "types": [
+      "Action",
+      "Duration"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Royal Galley.jpg",
+    "instructions": "+1 Card\nYou may play a non-Duration Action card from your hand. Set it aside; if you did, then at the start of your next turn, play it."
+  },
+  {
+    "name": "Sentinel",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Sentinel.jpg",
+    "instructions": "Look at the top 5 cards of your deck. You may trash up to 2 of them. Put the rest back in any order."
+  },
+  {
+    "name": "Sibyl",
+    "types": [
+      "Action",
+      "Augur"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Sibyl.jpg",
+    "instructions": "+4 Cards\n+1 Action\nPut a card from your hand on top of your deck, and another on the bottom."
+  },
+  {
+    "name": "Skirmisher",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Skirmisher.jpg",
+    "instructions": "+1 Card\n+1 Action\n+$1\nThis turn, when you gain an Attack card, each other player discards down to 3 cards in hand."
+  },
+  {
+    "name": "Sorcerer",
+    "types": [
+      "Action",
+      "Attack",
+      "Wizard"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Sorcerer.jpg",
+    "instructions": "+1 Card\n+1 Action\nEach other player names a card, then reveals the top card of their deck. If wrong, they gain a Curse."
+  },
+  {
+    "name": "Sorceress",
+    "types": [
+      "Action",
+      "Attack",
+      "Augur"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Sorceress.jpg",
+    "instructions": "+1 Action\nName a card. Reveal the top card of your deck and put it into your hand. If it's the named card, each other player gains a Curse."
+  },
+  {
+    "name": "Specialist",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Specialist.jpg",
+    "instructions": "You may play an Action or Treasure from your hand. Choose one: Play it again; or gain a copy of it."
+  },
+  {
+    "name": "Stronghold",
+    "types": [
+      "Action",
+      "Victory",
+      "Duration",
+      "Fort"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Stronghold.jpg",
+    "instructions": "Choose one: +$3; or at the start of your next turn, +3 Cards.\n-----\n2 VP"
+  },
+  {
+    "name": "Student",
+    "types": [
+      "Action",
+      "Wizard",
+      "Liaison"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Student.jpg",
+    "instructions": "+1 Action\nYou may rotate the Wizards.\nTrash a card from your hand. If it's a Treasure, +1 Favor and put this onto your deck."
+  },
+  {
+    "name": "Sunken Treasure",
+    "types": [
+      "Treasure",
+      "Odyssey"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Sunken Treasure.jpg",
+    "instructions": "Gain an Action card you don't have a copy of in play."
+  },
+  {
+    "name": "Swap",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Swap.jpg",
+    "instructions": "+1 Card\n+1 Action\nYou may return an Action from your hand to its pile, to gain to your hand a different Action costing up to $5."
+  },
+  {
+    "name": "Sycophant",
+    "types": [
+      "Action",
+      "Liaison"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Sycophant.jpg",
+    "instructions": "+1 Action\nDiscard 3 cards. If you discarded at least one, +$3.\n-----\nWhen you gain or trash this, +2 Favors."
+  },
+  {
+    "name": "Tent",
+    "types": [
+      "Action",
+      "Fort"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Tent.jpg",
+    "instructions": "+$2\nYou may rotate the Forts.\n-----\nWhen you discard this from play, you may put it onto your deck."
+  },
+  {
+    "name": "Territory",
+    "types": [
+      "Victory",
+      "Clash"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Territory.jpg",
+    "instructions": "Worth 1 VP per differently named Victory card you have.\n-----\nWhen you gain this, gain a Gold per empty Supply pile."
+  },
+  {
+    "name": "Town",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Town.jpg",
+    "instructions": "Choose one: +1 Card and +2 Actions; or +1 Buy and +$2."
+  },
+  {
+    "name": "Town Crier",
+    "types": [
+      "Action",
+      "Townsfolk"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Town Crier.jpg",
+    "instructions": "Choose one: +$2; or gain a Silver; or +1 Card and +1 Action.\nYou may rotate the Townsfolk."
+  },
+  {
+    "name": "Townsfolk",
+    "types": [
+      "Action",
+      "Townsfolk"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 0,
+    "image": "Townsfolk.jpg",
+    "instructions": "Setup: This pile starts the game with 4 copies each of Town Crier, Blacksmith, Miller, and Elder, in that order. Only the top card can be gained or bought."
+  },
+  {
+    "name": "Trappers' Lodge",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Trappers' Lodge.jpg",
+    "instructions": "When you gain a card, you may spend a Favor to put it onto your deck."
+  },
+  {
+    "name": "Underling",
+    "types": [
+      "Action",
+      "Liaison"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Underling.jpg",
+    "instructions": "+1 Card\n+1 Action\n+1 Favor"
+  },
+  {
+    "name": "Voyage",
+    "types": [
+      "Action",
+      "Duration",
+      "Odyssey"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Voyage.jpg",
+    "instructions": "+1 Action\nTake an extra turn after this one (but not a 3rd turn in a row), during which you can only play 3 cards from your hand."
+  },
+  {
+    "name": "Warlord",
+    "types": [
+      "Action",
+      "Duration",
+      "Attack",
+      "Clash"
+    ],
+    "purpose": "Mixed Pile Card",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 4,
+    "image": "Warlord.jpg",
+    "instructions": "+1 Action\nAt the start of your next turn, +2 Cards. Until then, other players can't play an Action from their hand that they have 2 or more copies of in play."
+  },
+  {
+    "name": "Wizards",
+    "types": [
+      "Action",
+      "Wizard",
+      "Liaison"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 0,
+    "image": "Wizards.jpg",
+    "instructions": "Setup: This pile starts the game with 4 copies each of Student, Conjurer, Sorcerer, and Lich, in that order. Only the top card can be gained or bought."
+  },
+  {
+    "name": "Woodworkers' Guild",
+    "types": [
+      "Ally"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Allies",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Woodworkers' Guild.jpg",
+    "instructions": "At the start of your Buy phase, you may spend a Favor to trash an Action card from your hand. If you did, gain an Action card."
+  }
+]

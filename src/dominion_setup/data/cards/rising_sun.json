@@ -1,0 +1,840 @@
+[
+  {
+    "name": "Alley",
+    "types": [
+      "Action",
+      "Shadow"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Alley.jpg",
+    "instructions": "+1 Card\n+1 Action\nDiscard a card.\n-----\nYou can play this from your deck as if in your hand."
+  },
+  {
+    "name": "Amass",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Amass.jpg",
+    "instructions": "If you have no Action cards in play, gain an Action card costing up to $5."
+  },
+  {
+    "name": "Approaching Army",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Approaching Army.jpg",
+    "instructions": "After you play an Attack card, +$1.\n-----\nSetup: Add an Attack kingdom card pile to the Supply."
+  },
+  {
+    "name": "Aristocrat",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Aristocrat.jpg",
+    "instructions": "If the number of Aristocrats you have in play is:\n1 or 5: +3 Actions;\n2 or 6: +3 Cards;\n3 or 7: +$3;\n4 or 8: +3 Buys."
+  },
+  {
+    "name": "Artist",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "debt": 8
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Artist.jpg",
+    "instructions": "+1 Action\n+1 Card per card you have exactly one copy of in play."
+  },
+  {
+    "name": "Asceticism",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Asceticism.jpg",
+    "instructions": "Pay any amount of $ to trash that many cards from your hand."
+  },
+  {
+    "name": "Biding Time",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Biding Time.jpg",
+    "instructions": "At the start of your Clean-up, set aside your hand face down. At the start of your next turn, put those cards into your hand."
+  },
+  {
+    "name": "Bureaucracy",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Bureaucracy.jpg",
+    "instructions": "When you gain a card that doesn't cost $0, gain a Copper."
+  },
+  {
+    "name": "Change",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Change.jpg",
+    "instructions": "If you have any D, +$3. Otherwise, trash a card from your hand, and gain a card costing more $ than it. +D equal to the difference in $."
+  },
+  {
+    "name": "Continue",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "debt": 8
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Continue.jpg",
+    "instructions": "Once per turn: Gain a non-Attack Action card costing up to $4. Return to your Action phase and play it. +1 Action and +1 Buy."
+  },
+  {
+    "name": "Craftsman",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Craftsman.jpg",
+    "instructions": "+2D\nGain a card costing up to $5."
+  },
+  {
+    "name": "Credit",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Credit.jpg",
+    "instructions": "Gain an Action or Treasure costing up to $8. +D equal to its cost."
+  },
+  {
+    "name": "Daimyo",
+    "types": [
+      "Action",
+      "Command"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "debt": 6
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Daimyo.jpg",
+    "instructions": "+1 Card\n+1 Action\nThe next time you play a non-Command Action card this turn, replay it afterwards."
+  },
+  {
+    "name": "Divine Wind",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Divine Wind.jpg",
+    "instructions": "When you remove the last Sun, remove all Kingdom card piles from the Supply, and set up 10 new random piles."
+  },
+  {
+    "name": "Enlightenment",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Enlightenment.jpg",
+    "instructions": "Treasures are also Actions. When you play a Treasure in an Action phase, instead of following its instructions, +1 Card and +1 Action."
+  },
+  {
+    "name": "Fishmonger",
+    "types": [
+      "Action",
+      "Shadow"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Fishmonger.jpg",
+    "instructions": "+1 Buy\n+$1\n-----\nYou can play this from your deck as if in your hand."
+  },
+  {
+    "name": "Flourishing Trade",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Flourishing Trade.jpg",
+    "instructions": "Cards cost $1 less. You may use Action plays as Buys."
+  },
+  {
+    "name": "Foresight",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Foresight.jpg",
+    "instructions": "Reveal cards from your deck until revealing an Action. Set it aside and discard the rest. Put it into your hand at end of turn."
+  },
+  {
+    "name": "Gather",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 7
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Gather.jpg",
+    "instructions": "Gain a card costing exactly $3, a card costing exactly $4, and a card costing exactly $5."
+  },
+  {
+    "name": "Gold Mine",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Gold Mine.jpg",
+    "instructions": "+1 Card\n+1 Action\n+1 Buy\nYou may gain a Gold and get +4D."
+  },
+  {
+    "name": "Good Harvest",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Good Harvest.jpg",
+    "instructions": "The first time you play each differently named Treasure each turn, first, +1 Buy and +$1."
+  },
+  {
+    "name": "Great Leader",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Great Leader.jpg",
+    "instructions": "After each Action card you play, +1 Action."
+  },
+  {
+    "name": "Growth",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Growth.jpg",
+    "instructions": "When you gain a Treasure, gain a cheaper card."
+  },
+  {
+    "name": "Harsh Winter",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Harsh Winter.jpg",
+    "instructions": "When you gain a card on your turn, if there's D on its pile, take it; otherwise put 2D on its pile."
+  },
+  {
+    "name": "Imperial Envoy",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Imperial Envoy.jpg",
+    "instructions": "+5 Cards\n+1 Buy\n+2D"
+  },
+  {
+    "name": "Kind Emperor",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Kind Emperor.jpg",
+    "instructions": "At the start of your turn, and when you remove the last Sun: Gain an Action to your hand."
+  },
+  {
+    "name": "Kintsugi",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Kintsugi.jpg",
+    "instructions": "Trash a card from your hand. If you've gained a Gold this game, gain a card costing up to $2 more than the trashed card."
+  },
+  {
+    "name": "Kitsune",
+    "types": [
+      "Action",
+      "Attack",
+      "Omen"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Kitsune.jpg",
+    "instructions": "+1Sun\nChoose two different options: +2 Actions; +$2; each other player gains a Curse; gain a Silver."
+  },
+  {
+    "name": "Litter",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Litter.jpg",
+    "instructions": "+2 Cards\n+2 Actions\n+1D"
+  },
+  {
+    "name": "Mountain Shrine",
+    "types": [
+      "Action",
+      "Omen"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "debt": 5
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Mountain Shrine.jpg",
+    "instructions": "+1Sun\n+$2\nYou may trash a card from your hand. Then if there are any Action cards in the trash, +2 Cards."
+  },
+  {
+    "name": "Ninja",
+    "types": [
+      "Action",
+      "Attack",
+      "Shadow"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Ninja.jpg",
+    "instructions": "+1 Card\nEach other player discards down to 3 cards in hand.\n-----\nYou can play this from your deck as if in your hand."
+  },
+  {
+    "name": "Panic",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Panic.jpg",
+    "instructions": "When you play a Treasure, +2 Buys, and when you discard one from play, return it to its pile."
+  },
+  {
+    "name": "Poet",
+    "types": [
+      "Action",
+      "Omen"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Poet.jpg",
+    "instructions": "+1Sun\n+1 Card\n+1 Action\nReveal the top card of your deck. If it costs $3 or less, put it into your hand."
+  },
+  {
+    "name": "Practice",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Practice.jpg",
+    "instructions": "You may play an Action card from your hand twice."
+  },
+  {
+    "name": "Progress",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Progress.jpg",
+    "instructions": "When you gain a card, put it onto your deck."
+  },
+  {
+    "name": "Rapid Expansion",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Rapid Expansion.jpg",
+    "instructions": "When you gain an Action or Treasure, set it aside, and play it at the start of your next turn."
+  },
+  {
+    "name": "Receive Tribute",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Receive Tribute.jpg",
+    "instructions": "If you've gained at least 3 cards this turn, gain up to 3 differently named Action cards you don't have copies of in play."
+  },
+  {
+    "name": "Rice",
+    "types": [
+      "Treasure"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 7
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Rice.jpg",
+    "instructions": "+1 Buy\n+$1 per different type among cards you have in play."
+  },
+  {
+    "name": "Rice Broker",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Rice Broker.jpg",
+    "instructions": "+1 Action\nTrash a card from your hand. If it's a Treasure, +2 Cards. If it's an Action, +5 Cards."
+  },
+  {
+    "name": "River Shrine",
+    "types": [
+      "Action",
+      "Omen"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "River Shrine.jpg",
+    "instructions": "+1Sun\nTrash up to 2 cards from your hand. At the start of Clean-up, if you didn't gain any cards in your Buy phase this turn, gain a card costing up to $4."
+  },
+  {
+    "name": "Riverboat",
+    "types": [
+      "Action",
+      "Duration"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Riverboat.jpg",
+    "instructions": "At the start of your next turn, play the set aside card, leaving it there.\n-----\nSetup: Set aside an unused non-Duration Action card costing $5."
+  },
+  {
+    "name": "Ronin",
+    "types": [
+      "Action",
+      "Shadow"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Ronin.jpg",
+    "instructions": "Draw until you have 7 cards in hand.\n-----\nYou can play this from your deck as if in your hand."
+  },
+  {
+    "name": "Root Cellar",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Root Cellar.jpg",
+    "instructions": "+3 Cards\n+1 Action\n+3D"
+  },
+  {
+    "name": "Rustic Village",
+    "types": [
+      "Action",
+      "Omen"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Rustic Village.jpg",
+    "instructions": "+1Sun\n+1 Card\n+2 Actions\nYou may discard 2 cards for +1 Card."
+  },
+  {
+    "name": "Samurai",
+    "types": [
+      "Action",
+      "Duration",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Samurai.jpg",
+    "instructions": "Each other player discards down to 3 cards in hand (once).\nAt the start of each of your turns this game, +$1.\n(This stays in play.)"
+  },
+  {
+    "name": "Sea Trade",
+    "types": [
+      "Event"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Sea Trade.jpg",
+    "instructions": "+1 Card per Action card you have in play. Trash up to that many cards from your hand."
+  },
+  {
+    "name": "Sickness",
+    "types": [
+      "Prophecy"
+    ],
+    "purpose": "Landscape",
+    "cost": {},
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Sickness.jpg",
+    "instructions": "At the start of your turn, choose one: Gain a Curse onto your deck; or discard 3 cards."
+  },
+  {
+    "name": "Snake Witch",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Snake Witch.jpg",
+    "instructions": "+1 Card\n+1 Action\nIf your hand has no duplicate cards, you may reveal it and return this to its pile, to have each other player gain a Curse."
+  },
+  {
+    "name": "Tanuki",
+    "types": [
+      "Action",
+      "Shadow"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Tanuki.jpg",
+    "instructions": "Trash a card from your hand. Gain a card costing up to $2 more than it.\n-----\nYou can play this from your deck as if in your hand."
+  },
+  {
+    "name": "Tea House",
+    "types": [
+      "Action",
+      "Omen"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Rising Sun",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Tea House.jpg",
+    "instructions": "+1Sun\n+1 Card\n+1 Action\n+$2"
+  }
+]

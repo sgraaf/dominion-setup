@@ -1,0 +1,233 @@
+[
+  {
+    "name": "Alchemist",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3,
+      "potion": true
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Alchemist.jpg",
+    "instructions": "+2 Cards\n+1 Action\nAt the start of Clean-up this turn, if you have a Potion in play, you may put this onto your deck."
+  },
+  {
+    "name": "Apothecary",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2,
+      "potion": true
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Apothecary.jpg",
+    "instructions": "+1 Card\n+1 Action\nReveal the top 4 cards of your deck. Put the Coppers and Potions into your hand. Put the rest back in any order."
+  },
+  {
+    "name": "Apprentice",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Apprentice.jpg",
+    "instructions": "+1 Action\nTrash a card from your hand.\n+1 Card per $1 it costs.\n+2 Cards if it has P in its cost."
+  },
+  {
+    "name": "Familiar",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3,
+      "potion": true
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Familiar.jpg",
+    "instructions": "+1 Card\n+1 Action\nEach other player gains a Curse."
+  },
+  {
+    "name": "Golem",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4,
+      "potion": true
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Golem.jpg",
+    "instructions": "Reveal cards from your deck until you reveal 2 Action cards other than Golems. Discard the other cards, then play the Action cards in either order."
+  },
+  {
+    "name": "Herbalist",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Herbalist.jpg",
+    "instructions": "+1 Buy\n+$1\nOnce this turn, when you discard a Treasure from play, you may put it onto your deck."
+  },
+  {
+    "name": "Philosopher's Stone",
+    "types": [
+      "Treasure"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3,
+      "potion": true
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Philosopher's Stone.jpg",
+    "instructions": "Count your deck and discard pile. +$1 per 5 cards total between them (round down)."
+  },
+  {
+    "name": "Possession",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 6,
+      "potion": true
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Possession.jpg",
+    "instructions": "The player to your left takes an extra turn after this one (but not a 2nd extra turn in a row), in which you can see all cards they can and make all decisions for them. Any cards or D they would gain on that turn, you gain instead; any cards of theirs that are trashed are set aside and put in their discard pile at end of turn."
+  },
+  {
+    "name": "Potion",
+    "types": [
+      "Treasure"
+    ],
+    "purpose": "Basic",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 16,
+    "image": "Potion.jpg",
+    "instructions": "P"
+  },
+  {
+    "name": "Scrying Pool",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2,
+      "potion": true
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Scrying Pool.jpg",
+    "instructions": "+1 Action\nEach player (including you) reveals the top card of their deck and either discards it or puts it back, your choice. Then reveal cards from your deck until revealing one that isn't an Action. Put all of those revealed cards into your hand."
+  },
+  {
+    "name": "Transmute",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "potion": true
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Transmute.jpg",
+    "instructions": "Trash a card from your hand. If it is an...\nAction card, gain a Duchy\nTreasure card, gain a Transmute\nVictory card, gain a Gold"
+  },
+  {
+    "name": "University",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2,
+      "potion": true
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "University.jpg",
+    "instructions": "+2 Actions\nYou may gain an Action card costing up to $5."
+  },
+  {
+    "name": "Vineyard",
+    "types": [
+      "Victory"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "potion": true
+    },
+    "set": "Alchemy",
+    "editions": [
+      1
+    ],
+    "quantity": 12,
+    "image": "Vineyard.jpg",
+    "instructions": "Worth 1 VP per 3 Action cards you have (rounded down)."
+  }
+]

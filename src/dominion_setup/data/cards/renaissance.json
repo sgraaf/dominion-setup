@@ -1,0 +1,848 @@
+[
+  {
+    "name": "Academy",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Academy.jpg",
+    "instructions": "When you gain an Action card, +1 Villager."
+  },
+  {
+    "name": "Acting Troupe",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Acting Troupe.jpg",
+    "instructions": "+4 Villagers\nTrash this."
+  },
+  {
+    "name": "Barracks",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Barracks.jpg",
+    "instructions": "At the start of your turn, +1 Action."
+  },
+  {
+    "name": "Border Guard",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Border Guard.jpg",
+    "instructions": "+1 Action\nReveal the top 2 cards of your deck. Put one into your hand and discard the other. If both were Actions, take the Lantern or Horn."
+  },
+  {
+    "name": "Canal",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 7
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Canal.jpg",
+    "instructions": "During your turns, cards cost $1 less."
+  },
+  {
+    "name": "Capitalism",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Capitalism.jpg",
+    "instructions": "During your turns, Actions with +$ amounts in their text are also Treasures."
+  },
+  {
+    "name": "Cargo Ship",
+    "types": [
+      "Action",
+      "Duration"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Cargo Ship.jpg",
+    "instructions": "+$2\nOnce this turn, when you gain a card, you may set it aside face up (on this). At the start of your next turn, put it into your hand."
+  },
+  {
+    "name": "Cathedral",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Cathedral.jpg",
+    "instructions": "At the start of your turn, trash a card from your hand."
+  },
+  {
+    "name": "Citadel",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 8
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Citadel.jpg",
+    "instructions": "The first time you play an Action card during each of your turns, replay it afterwards."
+  },
+  {
+    "name": "City Gate",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "City Gate.jpg",
+    "instructions": "At the start of your turn, +1 Card, then put a card from your hand onto your deck."
+  },
+  {
+    "name": "Crop Rotation",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Crop Rotation.jpg",
+    "instructions": "At the start of your turn, you may discard a Victory card for +2 Cards."
+  },
+  {
+    "name": "Ducat",
+    "types": [
+      "Treasure"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Ducat.jpg",
+    "instructions": "+1 Coffers\n+1 Buy\n-----\nWhen you gain this, you may trash a Copper from your hand."
+  },
+  {
+    "name": "Experiment",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Experiment.jpg",
+    "instructions": "+2 Cards\n+1 Action\nReturn this to its pile.\n-----\nWhen you gain this, gain another Experiment (that doesn't come with another)."
+  },
+  {
+    "name": "Exploration",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Exploration.jpg",
+    "instructions": "At the end of your Buy phase, if you didn't gain any cards during it, +1 Coffers and +1 Villager."
+  },
+  {
+    "name": "Fair",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Fair.jpg",
+    "instructions": "At the start of your turn, +1 Buy."
+  },
+  {
+    "name": "Flag",
+    "types": [
+      "Artifact"
+    ],
+    "purpose": "Status",
+    "cost": {},
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Flag.jpg",
+    "instructions": "When drawing your hand, +1 Card."
+  },
+  {
+    "name": "Flag Bearer",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Flag Bearer.jpg",
+    "instructions": "+$2\n-----\nWhen you gain or trash this, take the Flag."
+  },
+  {
+    "name": "Fleet",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Fleet.jpg",
+    "instructions": "After the game ends, there's an extra round of turns just for players with this."
+  },
+  {
+    "name": "Guildhall",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Guildhall.jpg",
+    "instructions": "When you gain a Treasure, +1 Coffers."
+  },
+  {
+    "name": "Hideout",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Hideout.jpg",
+    "instructions": "+1 Card\n+2 Actions\nTrash a card from your hand. If it's a Victory card, gain a Curse."
+  },
+  {
+    "name": "Horn",
+    "types": [
+      "Artifact"
+    ],
+    "purpose": "Status",
+    "cost": {},
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Horn.jpg",
+    "instructions": "Once per turn, when you discard a Border Guard from play, you may put it onto your deck."
+  },
+  {
+    "name": "Improve",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Improve.jpg",
+    "instructions": "+$2\nAt the start of Clean-up, you may trash an Action card you would discard from play this turn, to gain a card costing exactly $1 more than it."
+  },
+  {
+    "name": "Innovation",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Innovation.jpg",
+    "instructions": "Once during each of your turns, when you gain an Action card, you may play it."
+  },
+  {
+    "name": "Inventor",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Inventor.jpg",
+    "instructions": "Gain a card costing up to $4, then cards cost $1 less this turn."
+  },
+  {
+    "name": "Key",
+    "types": [
+      "Artifact"
+    ],
+    "purpose": "Status",
+    "cost": {},
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Key.jpg",
+    "instructions": "At the start of your turn, +$1."
+  },
+  {
+    "name": "Lackeys",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Lackeys.jpg",
+    "instructions": "+2 Cards\n-----\nWhen you gain this, +2 Villagers."
+  },
+  {
+    "name": "Lantern",
+    "types": [
+      "Artifact"
+    ],
+    "purpose": "Status",
+    "cost": {},
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Lantern.jpg",
+    "instructions": "Border Guards you play reveal 3 cards and discard 2. (It takes all 3 being Actions to take the Horn.)"
+  },
+  {
+    "name": "Mountain Village",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Mountain Village.jpg",
+    "instructions": "+2 Actions\nLook through your discard pile and put a card from it into your hand; if you can't, +1 Card."
+  },
+  {
+    "name": "Old Witch",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Old Witch.jpg",
+    "instructions": "+3 Cards\nEach other player gains a Curse and may trash a Curse from their hand."
+  },
+  {
+    "name": "Pageant",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Pageant.jpg",
+    "instructions": "At the end of your Buy phase, you may pay $1 for +1 Coffers."
+  },
+  {
+    "name": "Patron",
+    "types": [
+      "Action",
+      "Reaction"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Patron.jpg",
+    "instructions": "+1 Villager\n+$2\n-----\nWhen something causes you to reveal this (using the word \"reveal\") in an Action phase, +1 Coffers."
+  },
+  {
+    "name": "Piazza",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Piazza.jpg",
+    "instructions": "At the start of your turn, reveal the top card of your deck. If it's an Action, play it."
+  },
+  {
+    "name": "Priest",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Priest.jpg",
+    "instructions": "+$2\nTrash a card from your hand. For the rest of this turn, when you trash a card, +$2."
+  },
+  {
+    "name": "Recruiter",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Recruiter.jpg",
+    "instructions": "+2 Cards\nTrash a card from your hand. +1 Villager per $1 it costs."
+  },
+  {
+    "name": "Research",
+    "types": [
+      "Action",
+      "Duration"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Research.jpg",
+    "instructions": "+1 Action\nTrash a card from your hand. Per $1 it costs, set aside a card from your deck face down (on this). At the start of your next turn, put those cards into your hand."
+  },
+  {
+    "name": "Road Network",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Road Network.jpg",
+    "instructions": "When another player gains a Victory card, +1 Card."
+  },
+  {
+    "name": "Scepter",
+    "types": [
+      "Treasure",
+      "Command"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Scepter.jpg",
+    "instructions": "Choose one: +$2; or replay a non-Command Action card you played this turn that's still in play."
+  },
+  {
+    "name": "Scholar",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Scholar.jpg",
+    "instructions": "Discard your hand. +7 Cards."
+  },
+  {
+    "name": "Sculptor",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Sculptor.jpg",
+    "instructions": "Gain a card to your hand costing up to $4. If it's a Treasure, +1 Villager."
+  },
+  {
+    "name": "Seer",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Seer.jpg",
+    "instructions": "+1 Card\n+1 Action\nReveal the top 3 cards of your deck. Put the ones costing from $2 to $4 into your hand. Put the rest back in any order."
+  },
+  {
+    "name": "Sewers",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Sewers.jpg",
+    "instructions": "When you trash a card other than with this, you may trash a card from your hand."
+  },
+  {
+    "name": "Silk Merchant",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Silk Merchant.jpg",
+    "instructions": "+2 Cards\n+1 Buy\n-----\nWhen you gain or trash this, +1 Coffers and +1 Villager."
+  },
+  {
+    "name": "Silos",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Silos.jpg",
+    "instructions": "At the start of your turn, discard any number of Coppers, revealed, and draw that many cards."
+  },
+  {
+    "name": "Sinister Plot",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Sinister Plot.jpg",
+    "instructions": "At the start of your turn, add a token here, or remove your tokens here for +1 Card each."
+  },
+  {
+    "name": "Spices",
+    "types": [
+      "Treasure"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Spices.jpg",
+    "instructions": "$2\n+1 Buy\n-----\nWhen you gain this, +2 Coffers."
+  },
+  {
+    "name": "Star Chart",
+    "types": [
+      "Project"
+    ],
+    "purpose": "Landscape",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Star Chart.jpg",
+    "instructions": "When shuffling, you may pick one of the cards to go on top."
+  },
+  {
+    "name": "Swashbuckler",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Swashbuckler.jpg",
+    "instructions": "+3 Cards\nIf your discard pile has any cards in it: +1 Coffers, then if you have at least 4 Coffers tokens, take the Treasure Chest."
+  },
+  {
+    "name": "Treasure Chest",
+    "types": [
+      "Artifact"
+    ],
+    "purpose": "Status",
+    "cost": {},
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 1,
+    "image": "Treasure Chest.jpg",
+    "instructions": "At the start of your Buy phase, gain a Gold."
+  },
+  {
+    "name": "Treasurer",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Treasurer.jpg",
+    "instructions": "+$3\nChoose one: Trash a Treasure from your hand; or gain a Treasure from the trash to your hand; or take the Key."
+  },
+  {
+    "name": "Villain",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Renaissance",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Villain.jpg",
+    "instructions": "+2 Coffers\nEach other player with 5 or more cards in hand discards one costing $2 or more (or reveals they can't)."
+  }
+]

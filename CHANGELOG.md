@@ -12,4 +12,4 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Added
 
-- Initial release of dominion-setup
+- Initial release.

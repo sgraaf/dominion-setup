@@ -1,0 +1,698 @@
+[
+  {
+    "name": "Adventurer",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Base",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Adventurer.jpg",
+    "instructions": "Reveal cards from your deck until you reveal 2 Treasure cards. Put those Treasure cards into your hand and discard the other revealed cards."
+  },
+  {
+    "name": "Artisan",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Base",
+    "editions": [
+      2
+    ],
+    "quantity": 10,
+    "image": "Artisan.jpg",
+    "instructions": "Gain a card to your hand costing up to $5.\nPut a card from your hand onto your deck."
+  },
+  {
+    "name": "Bandit",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Base",
+    "editions": [
+      2
+    ],
+    "quantity": 10,
+    "image": "Bandit.jpg",
+    "instructions": "Gain a Gold. Each other player reveals the top 2 cards of their deck, trashes a revealed Treasure other than Copper, and discards the rest."
+  },
+  {
+    "name": "Bureaucrat",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Bureaucrat.jpg",
+    "instructions": "Gain a Silver onto your deck. Each other player reveals a Victory card from their hand and puts it onto their deck (or reveals a hand with no Victory cards)."
+  },
+  {
+    "name": "Cellar",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Cellar.jpg",
+    "instructions": "+1 Action\nDiscard any number of cards. +1 Card per card discarded."
+  },
+  {
+    "name": "Chancellor",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Base",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Chancellor.jpg",
+    "instructions": "+$2\nYou may immediately put your deck into your discard pile."
+  },
+  {
+    "name": "Chapel",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Chapel.jpg",
+    "instructions": "Trash up to 4 cards from your hand."
+  },
+  {
+    "name": "Copper",
+    "types": [
+      "Treasure"
+    ],
+    "purpose": "Basic",
+    "cost": {
+      "coins": 0
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 60,
+    "image": "Copper.jpg",
+    "instructions": "$1"
+  },
+  {
+    "name": "Council Room",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Council Room.jpg",
+    "instructions": "+4 Cards\n+1 Buy\nEach other player draws a card."
+  },
+  {
+    "name": "Curse",
+    "types": [
+      "Curse"
+    ],
+    "purpose": "Basic",
+    "cost": {
+      "coins": 0
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 30,
+    "image": "Curse.jpg",
+    "instructions": "-1 VP"
+  },
+  {
+    "name": "Duchy",
+    "types": [
+      "Victory"
+    ],
+    "purpose": "Basic",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 12,
+    "image": "Duchy.jpg",
+    "instructions": "3 VP"
+  },
+  {
+    "name": "Estate",
+    "types": [
+      "Victory"
+    ],
+    "purpose": "Basic",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 24,
+    "image": "Estate.jpg",
+    "instructions": "1 VP"
+  },
+  {
+    "name": "Feast",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Feast.jpg",
+    "instructions": "Trash this card. Gain a card costing up to $5."
+  },
+  {
+    "name": "Festival",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Festival.jpg",
+    "instructions": "+2 Actions\n+1 Buy\n+$2"
+  },
+  {
+    "name": "Gardens",
+    "types": [
+      "Victory"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 12,
+    "image": "Gardens.jpg",
+    "instructions": "Worth 1 VP per 10 cards you have (round down)."
+  },
+  {
+    "name": "Gold",
+    "types": [
+      "Treasure"
+    ],
+    "purpose": "Basic",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 30,
+    "image": "Gold.jpg",
+    "instructions": "$3"
+  },
+  {
+    "name": "Harbinger",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Base",
+    "editions": [
+      2
+    ],
+    "quantity": 10,
+    "image": "Harbinger.jpg",
+    "instructions": "+1 Card\n+1 Action\nLook through your discard pile. You may put a card from it onto your deck."
+  },
+  {
+    "name": "Laboratory",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Laboratory.jpg",
+    "instructions": "+2 Cards\n+1 Action"
+  },
+  {
+    "name": "Library",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Library.jpg",
+    "instructions": "Draw until you have 7 cards in hand, skipping any Action cards you choose to; set those aside, discarding them afterwards."
+  },
+  {
+    "name": "Market",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Market.jpg",
+    "instructions": "+1 Card\n+1 Action\n+1 Buy\n+$1"
+  },
+  {
+    "name": "Merchant",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Base",
+    "editions": [
+      2
+    ],
+    "quantity": 10,
+    "image": "Merchant.jpg",
+    "instructions": "+1 Card\n+1 Action\nThe first time you play a Silver this turn, +$1."
+  },
+  {
+    "name": "Militia",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Militia.jpg",
+    "instructions": "+$2\nEach other player discards down to 3 cards in hand."
+  },
+  {
+    "name": "Mine",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Mine.jpg",
+    "instructions": "You may trash a Treasure from your hand. Gain a Treasure to your hand costing up to $3 more than it."
+  },
+  {
+    "name": "Moat",
+    "types": [
+      "Action",
+      "Reaction"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 2
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Moat.jpg",
+    "instructions": "+2 Cards\n-----\nWhen another player plays an Attack card, you may first reveal this from your hand, to be unaffected by it."
+  },
+  {
+    "name": "Moneylender",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Moneylender.jpg",
+    "instructions": "You may trash a Copper from your hand for +$3."
+  },
+  {
+    "name": "Poacher",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      2
+    ],
+    "quantity": 10,
+    "image": "Poacher.jpg",
+    "instructions": "+1 Card\n+1 Action\n+$1\nDiscard a card per empty Supply pile."
+  },
+  {
+    "name": "Province",
+    "types": [
+      "Victory"
+    ],
+    "purpose": "Basic",
+    "cost": {
+      "coins": 8
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 12,
+    "image": "Province.jpg",
+    "instructions": "6 VP"
+  },
+  {
+    "name": "Remodel",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Remodel.jpg",
+    "instructions": "Trash a card from your hand. Gain a card costing up to $2 more than it."
+  },
+  {
+    "name": "Sentry",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Base",
+    "editions": [
+      2
+    ],
+    "quantity": 10,
+    "image": "Sentry.jpg",
+    "instructions": "+1 Card\n+1 Action\nLook at the top 2 cards of your deck. Trash and/or discard any number of them. Put the rest back on top in any order."
+  },
+  {
+    "name": "Silver",
+    "types": [
+      "Treasure"
+    ],
+    "purpose": "Basic",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 40,
+    "image": "Silver.jpg",
+    "instructions": "$2"
+  },
+  {
+    "name": "Smithy",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Smithy.jpg",
+    "instructions": "+3 Cards"
+  },
+  {
+    "name": "Spy",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Spy.jpg",
+    "instructions": "+1 Card\n+1 Action\nEach player (including you) reveals the top card of their deck and either discards it or puts it back, your choice."
+  },
+  {
+    "name": "Thief",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Thief.jpg",
+    "instructions": "Each other player reveals the top 2 cards of their deck. If they revealed any Treasure cards, they trash one of them that you choose. You may gain any or all of these trashed cards. They discard the other revealed cards."
+  },
+  {
+    "name": "Throne Room",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 4
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Throne Room.jpg",
+    "instructions": "You may play an Action card from your hand twice."
+  },
+  {
+    "name": "Vassal",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Base",
+    "editions": [
+      2
+    ],
+    "quantity": 10,
+    "image": "Vassal.jpg",
+    "instructions": "+$2\nDiscard the top card of your deck. If it's an Action card, you may play it."
+  },
+  {
+    "name": "Village",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Village.jpg",
+    "instructions": "+1 Card\n+2 Actions"
+  },
+  {
+    "name": "Witch",
+    "types": [
+      "Action",
+      "Attack"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 5
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Witch.jpg",
+    "instructions": "+2 Cards\nEach other player gains a Curse."
+  },
+  {
+    "name": "Woodcutter",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Base",
+    "editions": [
+      1
+    ],
+    "quantity": 10,
+    "image": "Woodcutter.jpg",
+    "instructions": "+1 Buy\n+$2"
+  },
+  {
+    "name": "Workshop",
+    "types": [
+      "Action"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 3
+    },
+    "set": "Base",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 10,
+    "image": "Workshop.jpg",
+    "instructions": "Gain a card costing up to $4."
+  }
+]
