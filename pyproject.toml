@@ -1,0 +1,108 @@
+[build-system]
+requires = ["uv_build>=0.10.9,<0.11.0"]
+build-backend = "uv_build"
+
+[project]
+name = "dominion-setup"
+version = "2026.1.0"
+description = "dominion-setup is a Python library and CLI tool to set up a game of Dominion, the classic deck-building game."
+authors = [{name = "Steven van de Graaf", email = "steven@vandegraaf.xyz"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
+]
+requires-python = ">=3.11, <4"
+dependencies = [
+    "click",
+    "click-default-group",
+]
+
+[dependency-groups]
+docs = [
+    "cogapp",
+    "furo",
+    "myst-parser",
+    "sphinx",
+    "sphinx-autobuild",
+    "sphinx-copybutton",
+    "sphinxext-opengraph",
+]
+tests = [
+    "pytest",
+    "pytest-cov",
+]
+typing = [
+    "mypy",
+    "pyrefly",
+    "ty",
+]
+dev = [
+    { include-group = "docs" },
+    { include-group = "tests" },
+    { include-group = "typing" },
+    "prek",
+]
+
+[project.urls]
+Documentation = "https://dominion-setup.readthedocs.io/en/stable/"
+Changelog = "https://dominion-setup.readthedocs.io/en/stable/changelog.html"
+"Source Code" = "https://github.com/sgraaf/dominion-setup"
+"Issue Tracker" = "https://github.com/sgraaf/dominion-setup/issues"
+
+[project.scripts]
+dominion-setup = "dominion_setup.__main__:cli"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812",  # missing-trailing-comma (flake8-commas), handled by the formatter
+    "D102",  # undocumented-public-method (pydocstyle)
+    "D105",  # undocumented-magic-method (pydocstyle)
+    "D107",  # undocumented-public-init (pydocstyle)
+    "E501",  # line-too-long (pycodestyle), handled by the formatter
+    "PLC2401",  # non-ascii-name (Pylint)
+    "S101",   # assert (flake8-bandit)
+    "SLF001",  # private-member-access (flake8-self)
+]
+pydocstyle.convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = [
+    "F401",  # unused-import (Pyflakes)
+]
+"docs/conf.py" = [
+    "INP001",  # implicit-namespace-package (flake8-no-pep420)
+]
+"src/dominion_setup/cli.py" = [
+    "C901",  # complex-structure (mccabe)
+    "FBT001",  # boolean-type-hint-positional-argument (flake8-boolean-trap)
+    "A001",  # builtin-variable-shadowing (flake8-builtins)
+    "A002",  # builtin-argument-shadowing (flake8-builtins)
+    "PLR0913",  # too-many-arguments (Pylint)
+]
+"tests/**/test_*.py" = [
+    "D",  # pydocstyle
+    "PLR2004",   # magic-value-comparison (Pylint)
+    "S101",   # assert (flake8-bandit)
+    "SIM300",   # yoda-conditions (flake8-simplify)
+]
+
+[tool.mypy]
+python_version = "3.11"
+
+[tool.pyrefly]
+search-path = [
+  "src",
+  "tests",
+]
