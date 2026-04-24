@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from dominion_setup.cli import cli
 
 def help_output(args):
-    result = CliRunner().invoke(cli, args)
+    result = CliRunner().invoke(cli, args, env={"NO_COLOR": "1"})
     output = result.output.replace("Usage: cli ", "Usage: dominion-setup ")
     # Strip trailing whitespace from Rich output to avoid conflict with trailing-whitespace hook
     output = "\n".join(line.rstrip() for line in output.splitlines())
