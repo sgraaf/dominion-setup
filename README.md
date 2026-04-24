@@ -6,9 +6,8 @@
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/dominion-setup)](https://pypi.org/project/dominion-setup/)
 [![CI](https://github.com/sgraaf/dominion-setup/actions/workflows/ci.yml/badge.svg)](https://github.com/sgraaf/dominion-setup/actions/workflows/ci.yml)
 [![Test](https://github.com/sgraaf/dominion-setup/actions/workflows/test.yml/badge.svg)](https://github.com/sgraaf/dominion-setup/actions/workflows/test.yml)
-[![Documentation Status](https://readthedocs.org/projects/dominion-setup/badge/?version=latest)](https://dominion-setup.readthedocs.io/en/latest/?badge=latest)
-
-<!-- [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/<PROJECT-NUMBER>/badge)](https://www.bestpractices.dev/projects/<PROJECT-NUMBER>) -->
+[![Documentation Status](https://readthedocs.org/projects/dominion-setup/badge/?version=latest)](https://dominion-setup.readthedocs.io/latest/?badge=latest)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12639/badge)](https://www.bestpractices.dev/projects/12639)
 
 *dominion-setup* is a Python library and CLI tool to set up a game of Dominion, the classic deck-building game.
 
