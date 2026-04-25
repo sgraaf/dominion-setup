@@ -98,6 +98,10 @@ pydocstyle.convention = "google"
 "src/dominion_setup/generator.py" = [
     "S311",  # suspicious-non-cryptographic-random-usage (flake8-bandit)
 ]
+"tests/smoke_test.py" = [
+    "D",  # pydocstyle
+    "PLR2004",   # magic-value-comparison (Pylint)
+]
 "tests/**/test_*.py" = [
     "D",  # pydocstyle
     "PLR2004",   # magic-value-comparison (Pylint)
