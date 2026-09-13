@@ -47,6 +47,15 @@ HEIRLOOM_PATTERN = re.compile(r"Heirloom: (.*)$")
 SETUP_PATTERN = re.compile(r"(Setup: .*$)")
 
 
+class SetupGenerationError(ValueError):
+    """The selected sets cannot produce a valid game setup.
+
+    Raised for problems with the inputs (e.g. too few Kingdom cards, or no
+    eligible card for a Bane pile), as opposed to bugs or bad card data.
+    Subclasses ``ValueError`` for backwards compatibility.
+    """
+
+
 def _pick_special_card(
     candidate_cards: set[Card],
     predicate: Callable[[Card], bool],
@@ -55,13 +64,13 @@ def _pick_special_card(
 ) -> Card:
     """Pick one card matching *predicate* from *candidate_cards*.
 
-    Raises ``ValueError`` with *error_msg* if no candidates exist.
+    Raises ``SetupGenerationError`` with *error_msg* if no candidates exist.
     Removes the chosen card from *candidate_cards* and registers its name in
     *selected_cards_names* before returning it.
     """
     candidates = [c for c in candidate_cards if predicate(c)]
     if not candidates:
-        raise ValueError(error_msg)
+        raise SetupGenerationError(error_msg)
     card = random.choice(candidates)
     selected_cards_names.add(card.name)
     candidate_cards.discard(card)
@@ -93,6 +102,10 @@ def generate_game(  # noqa: C901, PLR0912, PLR0913, PLR0915
 
     Returns:
         A Game object with selected Kingdom piles and basic supply.
+
+    Raises:
+        SetupGenerationError: If the selected sets cannot produce a valid
+            setup.
     """
     # ── Kingdom piles & Landscapes ──────────────────────────────────────────
     # build pool of candidate cards by possibly filtering on set and edition
@@ -122,7 +135,7 @@ def generate_game(  # noqa: C901, PLR0912, PLR0913, PLR0915
     # error
     if len(candidate_cards) < KINGDOM_PILE_COUNT:
         msg = f"Not enough kingdom cards: need {KINGDOM_PILE_COUNT}, found {len(candidate_cards)}"
-        raise ValueError(msg)
+        raise SetupGenerationError(msg)
 
     # initialize card containers
     basic_cards: list[Card] = []
@@ -275,7 +288,7 @@ def generate_game(  # noqa: C901, PLR0912, PLR0913, PLR0915
         ]
         if len(trait_eligible_cards) < len(trait_landscapes):
             msg = f"Not enough Action/Treasure kingdom piles ({len(trait_eligible_cards)}) for {len(trait_landscapes)} Trait landscape(s)"
-            raise ValueError(msg)
+            raise SetupGenerationError(msg)
         trait_targets = random.sample(trait_eligible_cards, len(trait_landscapes))
         for target, trait in zip(trait_targets, trait_landscapes, strict=True):
             kingdom_marks[target].append(PileMark(PileMarkKind.TRAIT, trait=trait))
@@ -462,7 +475,7 @@ def generate_game(  # noqa: C901, PLR0912, PLR0913, PLR0915
         ]
         if not obelisk_candidate_cards:
             msg = "No eligible card (Action Supply pile) available for Obelisk"
-            raise ValueError(msg)
+            raise SetupGenerationError(msg)
         obelisk_target = random.choice(obelisk_candidate_cards)
         kingdom_marks[obelisk_target].append(PileMark(PileMarkKind.OBELISK))
 

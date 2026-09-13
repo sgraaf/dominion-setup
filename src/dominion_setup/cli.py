@@ -9,7 +9,7 @@ from click_default_group import DefaultGroup
 from rich.console import Console
 from rich.table import Table
 
-from .generator import generate_game
+from .generator import SetupGenerationError, generate_game
 from .loader import load_card_database
 from .models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
@@ -207,7 +207,7 @@ def generate(
             use_shelters=use_shelters,
             max_landscapes=max_landscapes,
         )
-    except ValueError as exc:
+    except SetupGenerationError as exc:
         raise click.UsageError(str(exc)) from exc
     _print_game(game)
 

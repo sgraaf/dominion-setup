@@ -1,6 +1,6 @@
 """dominion-setup is a Python library and CLI tool to set up a game of Dominion, the classic deck-building game."""
 
-from dominion_setup.generator import generate_game
+from dominion_setup.generator import SetupGenerationError, generate_game
 from dominion_setup.loader import load_card_database
 from dominion_setup.models import (
     Card,
@@ -30,6 +30,7 @@ __all__ = [
     "Pile",
     "PileMark",
     "PileMarkKind",
+    "SetupGenerationError",
     "generate_game",
     "load_card_database",
 ]

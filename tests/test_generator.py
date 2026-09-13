@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from dominion_setup.generator import generate_game
+from dominion_setup.generator import SetupGenerationError, generate_game
 from dominion_setup.models import (
     DEFAULT_BASIC_CARD_NAMES,
     CardDatabase,
@@ -3010,3 +3010,7 @@ def test_no_approaching_army_without_omen_cards(db: CardDatabase) -> None:
         any(m.kind == PileMarkKind.APPROACHING_ARMY for m in p.marks)
         for p in game.kingdom_piles
     )
+
+
+def test_setup_generation_error_is_value_error() -> None:
+    assert issubclass(SetupGenerationError, ValueError)

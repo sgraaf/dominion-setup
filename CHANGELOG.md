@@ -12,6 +12,7 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Added
 
+- `SetupGenerationError` (a `ValueError` subclass), raised when the selected sets cannot produce a valid setup. The CLI only reports these as usage errors; other errors are no longer disguised as usage errors.
 - `Card`, `CardCost`, `CardSetEdition`, `CardType` and `Material` are exported from the top-level package.
 
 ### Changed
