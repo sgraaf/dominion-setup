@@ -1,9 +1,12 @@
 import re
+import shlex
 import subprocess
+import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib import import_module, metadata
 from os import PathLike
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -56,13 +59,17 @@ def test_main_module() -> None:
 
 def test_run_as_module() -> None:
     """Is the script runnable as a Python module?"""
-    result = run_command_in_shell("python -m dominion_setup --help")
+    result = run_command_in_shell(
+        f"{shlex.quote(sys.executable)} -m dominion_setup --help"
+    )
     assert result.exit_code == 0
 
 
 def test_run_as_executable() -> None:
     """Is the script installed (as a `console_script`) and runnable as an executable?"""
-    result = run_command_in_shell("dominion-setup --help")
+    # console scripts are installed next to the interpreter, which need not be on PATH
+    executable = Path(sys.executable).parent / "dominion-setup"
+    result = run_command_in_shell(f"{shlex.quote(str(executable))} --help")
     assert result.exit_code == 0
 
 
