@@ -12,6 +12,10 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Added
 
+### Changed
+
+- Releases are only published after linting, type checking and tests pass.
+
 ## [2026.1.0](https://github.com/sgraaf/dominion-setup/tree/2026.1.0) - 2026-04-24
 
 - Initial release.

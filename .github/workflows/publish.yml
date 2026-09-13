@@ -7,7 +7,19 @@ on:
       - "[0-9][0-9][0-9][0-9].[0-9]+.[0-9]+*"
 
 jobs:
+  # never publish a release that fails linting, type checking or tests
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  test:
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+
   publish:
+    needs: [ci, test]
     runs-on: ubuntu-latest
     environment:
       name: pypi
