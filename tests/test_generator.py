@@ -1,4 +1,7 @@
+import os
 import random
+import subprocess
+import sys
 from collections.abc import Callable
 from typing import Any
 
@@ -3014,3 +3017,23 @@ def test_no_approaching_army_without_omen_cards(db: CardDatabase) -> None:
 
 def test_setup_generation_error_is_value_error() -> None:
     assert issubclass(SetupGenerationError, ValueError)
+
+
+def test_generate_game_reproducible_across_processes() -> None:
+    """A given seed yields the same setup regardless of string hash randomization."""
+    script = (
+        "import random; from dominion_setup import generate_game, load_card_database; "
+        "random.seed(42); game = generate_game(load_card_database()); "
+        "print([pile.card.name for pile in game.kingdom_piles + game.non_supply_piles])"
+    )
+    outputs = {
+        subprocess.run(  # noqa: S603
+            [sys.executable, "-c", script],
+            env={**os.environ, "PYTHONHASHSEED": hash_seed},
+            capture_output=True,
+            check=True,
+            text=True,
+        ).stdout
+        for hash_seed in ("1", "2", "3")
+    }
+    assert len(outputs) == 1

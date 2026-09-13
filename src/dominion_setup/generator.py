@@ -170,6 +170,8 @@ def generate_game(  # noqa: PLR0913
 ) -> Game:
     """Generate a complete, rules-accurate Dominion game setup.
 
+    For a given ``random`` seed, the result is the same in every process.
+
     Args:
         db: The loaded card database.
         sets_editions: Which sets and editions to draw kingdom cards from.
@@ -309,9 +311,10 @@ def _draw_kingdom(
 ) -> tuple[list[Card], list[Card], list[Card]]:
     """Draw 10 Kingdom cards and at most *max_landscapes* Landscapes.
 
-    Returns the Kingdom cards, the Landscapes, and the unused Kingdom cards.
+    Returns the Kingdom cards, the Landscapes, and the unused Kingdom cards in
+    random order.
     """
-    candidates = {
+    candidates = [
         card
         for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
         if (card.is_kingdom or SELECTABLE_LANDSCAPE_TYPES & set(card.types))
@@ -319,26 +322,30 @@ def _draw_kingdom(
             sets_editions is None
             or any((card.set, edition) in sets_editions for edition in card.editions)
         )
-    }
+    ]
 
     kingdom_candidate_count = sum(card.is_kingdom for card in candidates)
     if kingdom_candidate_count < KINGDOM_PILE_COUNT:
         msg = f"Not enough kingdom cards: need {KINGDOM_PILE_COUNT}, found {kingdom_candidate_count}"
         raise SetupGenerationError(msg)
 
-    # draw random cards until there are 10 Kingdom cards, keeping the first
-    # *max_landscapes* Landscapes drawn along the way
+    # shuffle the randomizer deck and draw until there are 10 Kingdom cards,
+    # keeping the first *max_landscapes* Landscapes drawn along the way. Sorting
+    # first makes the outcome depend only on the ``random`` state, never on the
+    # order of the database (or of any set it was built from, which varies
+    # between processes because string hashing is randomized).
+    deck = sorted(candidates, key=card_sort_key(KingdomSortOrder.NAME))
+    random.shuffle(deck)
     kingdom_cards: list[Card] = []
     landscapes: list[Card] = []
     while len(kingdom_cards) < KINGDOM_PILE_COUNT:
-        card = random.choice(tuple(candidates))
-        candidates.remove(card)
+        card = deck.pop()
         if card.is_kingdom:
             kingdom_cards.append(card)
         elif len(landscapes) < max_landscapes:
             landscapes.append(card)
 
-    return kingdom_cards, landscapes, [card for card in candidates if card.is_kingdom]
+    return kingdom_cards, landscapes, [card for card in deck if card.is_kingdom]
 
 
 def _add_extra_piles(
@@ -375,11 +382,12 @@ def _add_extra_piles(
         if rule.trigger not in triggers:
             continue
 
-        eligible_cards = list(filter(rule.is_eligible, unused_kingdom_cards))
-        if not eligible_cards:
+        # the unused cards are in random order, so the first eligible one is a
+        # uniformly random choice
+        card = next(filter(rule.is_eligible, unused_kingdom_cards), None)
+        if card is None:
             msg = f"No eligible {rule.mark} card ({rule.requirement}) available for {rule.trigger}"
             raise SetupGenerationError(msg)
-        card = random.choice(eligible_cards)
         unused_kingdom_cards.remove(card)
         (kingdom_cards if rule.in_supply else set_aside_cards).append(card)
         marks[card].append(PileMark(rule.mark))
