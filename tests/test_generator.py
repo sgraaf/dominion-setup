@@ -1050,6 +1050,14 @@ def test_material_villagers_detected(ten_card_db: CardDatabaseFactory) -> None:
     assert Material.COFFERS_MAT not in game.materials
 
 
+def test_material_single_villager_detected(ten_card_db: CardDatabaseFactory) -> None:
+    # singular "Villager", as on Academy
+    db = ten_card_db(instructions="When you gain an Action card, +1 Villager.")
+    game = generate_game(db)
+    assert Material.COFFERS_VILLAGERS_MAT in game.materials
+    assert Material.COIN_TOKENS in game.materials
+
+
 def test_material_exile_detected(ten_card_db: CardDatabaseFactory) -> None:
     db = ten_card_db(instructions="Exile a card from your hand.")
     game = generate_game(db)

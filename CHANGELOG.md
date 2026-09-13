@@ -19,6 +19,10 @@ The **third number** is for emergencies when we need to start branches for older
 - `load_card_database` accepts any `Traversable` and reads the bundled data without requiring it to be on the file system.
 - Releases are only published after linting, type checking and tests pass.
 
+### Fixed
+
+- The Coffers / Villagers mat is now included for cards giving a single Villager (e.g. Academy, Patron, Silk Merchant).
+
 ## [2026.1.0](https://github.com/sgraaf/dominion-setup/tree/2026.1.0) - 2026-04-24
 
 - Initial release.
