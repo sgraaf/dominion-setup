@@ -12,6 +12,8 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Added
 
+- `Card`, `CardCost`, `CardSetEdition`, `CardType` and `Material` are exported from the top-level package.
+
 ### Changed
 
 - `load_card_database` accepts any `Traversable` and reads the bundled data without requiring it to be on the file system.

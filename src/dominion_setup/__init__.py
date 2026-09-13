@@ -3,20 +3,30 @@
 from dominion_setup.generator import generate_game
 from dominion_setup.loader import load_card_database
 from dominion_setup.models import (
+    Card,
+    CardCost,
     CardDatabase,
     CardSet,
+    CardSetEdition,
+    CardType,
     Game,
     KingdomSortOrder,
+    Material,
     Pile,
     PileMark,
     PileMarkKind,
 )
 
 __all__ = [
+    "Card",
+    "CardCost",
     "CardDatabase",
     "CardSet",
+    "CardSetEdition",
+    "CardType",
     "Game",
     "KingdomSortOrder",
+    "Material",
     "Pile",
     "PileMark",
     "PileMarkKind",
