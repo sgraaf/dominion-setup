@@ -266,7 +266,8 @@ def test_basic_piles_has_7_piles(db: CardDatabase) -> None:
 def test_kingdom_piles_sorted_by_cost_then_name(db: CardDatabase) -> None:
     game = generate_game(db)
     keys = [
-        (card.cost.coins, card.cost.potion, card.name) for card in game.kingdom_cards
+        (card.cost.coins, card.cost.potion, card.cost.debt, card.name)
+        for card in game.kingdom_cards
     ]
     assert keys == sorted(keys)
 
@@ -338,7 +339,8 @@ def test_kingdom_piles_sorted_by_name(db: CardDatabase) -> None:
 def test_kingdom_piles_sorted_by_cost(db: CardDatabase) -> None:
     game = generate_game(db, sort_order=KingdomSortOrder.COST)
     keys = [
-        (card.cost.coins, card.cost.potion, card.name) for card in game.kingdom_cards
+        (card.cost.coins, card.cost.potion, card.cost.debt, card.name)
+        for card in game.kingdom_cards
     ]
     assert keys == sorted(keys)
 
@@ -2340,11 +2342,10 @@ LIAISON_KINGDOM_CARDS = {
     "Contract",
     "Emissary",
     "Guildmaster",
-    "Highwayman",
     "Importer",
-    "Skirmisher",
     "Sycophant",
     "Underling",
+    "Wizards",
 }
 
 
@@ -2883,7 +2884,7 @@ def test_way_of_the_mouse_triggers_non_supply_card(
 ) -> None:
     """Way of the Mouse causes a non-Duration Action costing $2-$3 to be set aside."""
     # Build a db with 13 Action kingdom cards (10 get selected, 3 remain as
-    # candidates) + Way of the Mouse landscape. Some cards cost $2/$3 so the
+    # candidates) + Way of the Mouse landscape. All cards cost $2/$3 so the
     # Way of the Mouse candidate pool is always non-empty.
     basic_cards = [db.get_card_by_name(name) for name in DEFAULT_BASIC_CARD_NAMES]
     way_of_the_mouse = make_card(
@@ -2897,7 +2898,7 @@ def test_way_of_the_mouse_triggers_non_supply_card(
         instructions="",
     )
     kingdom_cards = [
-        make_card(name=f"Card{i}", cost_coins=(i % 4) + 2, image=f"Card{i}.jpg")
+        make_card(name=f"Card{i}", cost_coins=(i % 2) + 2, image=f"Card{i}.jpg")
         for i in range(13)
     ]
     custom_db = CardDatabase([*basic_cards, way_of_the_mouse, *kingdom_cards])
