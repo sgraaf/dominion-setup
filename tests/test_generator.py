@@ -1,10 +1,13 @@
+import os
 import random
+import subprocess
+import sys
 from collections.abc import Callable
 from typing import Any
 
 import pytest
 
-from dominion_setup.generator import generate_game
+from dominion_setup.generator import SetupGenerationError, generate_game
 from dominion_setup.models import (
     DEFAULT_BASIC_CARD_NAMES,
     CardDatabase,
@@ -266,7 +269,8 @@ def test_basic_piles_has_7_piles(db: CardDatabase) -> None:
 def test_kingdom_piles_sorted_by_cost_then_name(db: CardDatabase) -> None:
     game = generate_game(db)
     keys = [
-        (card.cost.coins, card.cost.potion, card.name) for card in game.kingdom_cards
+        (card.cost.coins, card.cost.potion, card.cost.debt, card.name)
+        for card in game.kingdom_cards
     ]
     assert keys == sorted(keys)
 
@@ -338,7 +342,8 @@ def test_kingdom_piles_sorted_by_name(db: CardDatabase) -> None:
 def test_kingdom_piles_sorted_by_cost(db: CardDatabase) -> None:
     game = generate_game(db, sort_order=KingdomSortOrder.COST)
     keys = [
-        (card.cost.coins, card.cost.potion, card.name) for card in game.kingdom_cards
+        (card.cost.coins, card.cost.potion, card.cost.debt, card.name)
+        for card in game.kingdom_cards
     ]
     assert keys == sorted(keys)
 
@@ -1046,6 +1051,24 @@ def test_material_villagers_detected(ten_card_db: CardDatabaseFactory) -> None:
     assert Material.COFFERS_VILLAGERS_MAT in game.materials
     assert Material.COIN_TOKENS in game.materials
     assert Material.COFFERS_MAT not in game.materials
+
+
+def test_material_single_villager_detected(ten_card_db: CardDatabaseFactory) -> None:
+    # singular "Villager", as on Academy
+    db = ten_card_db(instructions="When you gain an Action card, +1 Villager.")
+    game = generate_game(db)
+    assert Material.COFFERS_VILLAGERS_MAT in game.materials
+    assert Material.COIN_TOKENS in game.materials
+
+
+def test_material_single_coin_token_detected(
+    ten_card_db: CardDatabaseFactory,
+) -> None:
+    # e.g. Pirate Ship: "... you add a Coin token to your Pirate Ship mat."
+    db = ten_card_db(instructions="+$1 per Coin token on your Pirate Ship mat.")
+    game = generate_game(db)
+    assert Material.PIRATE_SHIP_MAT in game.materials
+    assert Material.COIN_TOKENS in game.materials
 
 
 def test_material_exile_detected(ten_card_db: CardDatabaseFactory) -> None:
@@ -2340,11 +2363,10 @@ LIAISON_KINGDOM_CARDS = {
     "Contract",
     "Emissary",
     "Guildmaster",
-    "Highwayman",
     "Importer",
-    "Skirmisher",
     "Sycophant",
     "Underling",
+    "Wizards",
 }
 
 
@@ -2883,7 +2905,7 @@ def test_way_of_the_mouse_triggers_non_supply_card(
 ) -> None:
     """Way of the Mouse causes a non-Duration Action costing $2-$3 to be set aside."""
     # Build a db with 13 Action kingdom cards (10 get selected, 3 remain as
-    # candidates) + Way of the Mouse landscape. Some cards cost $2/$3 so the
+    # candidates) + Way of the Mouse landscape. All cards cost $2/$3 so the
     # Way of the Mouse candidate pool is always non-empty.
     basic_cards = [db.get_card_by_name(name) for name in DEFAULT_BASIC_CARD_NAMES]
     way_of_the_mouse = make_card(
@@ -2897,7 +2919,7 @@ def test_way_of_the_mouse_triggers_non_supply_card(
         instructions="",
     )
     kingdom_cards = [
-        make_card(name=f"Card{i}", cost_coins=(i % 4) + 2, image=f"Card{i}.jpg")
+        make_card(name=f"Card{i}", cost_coins=(i % 2) + 2, image=f"Card{i}.jpg")
         for i in range(13)
     ]
     custom_db = CardDatabase([*basic_cards, way_of_the_mouse, *kingdom_cards])
@@ -2991,3 +3013,101 @@ def test_no_approaching_army_without_omen_cards(db: CardDatabase) -> None:
         any(m.kind == PileMarkKind.APPROACHING_ARMY for m in p.marks)
         for p in game.kingdom_piles
     )
+
+
+def test_setup_generation_error_is_value_error() -> None:
+    assert issubclass(SetupGenerationError, ValueError)
+
+
+def test_generate_game_reproducible_across_processes() -> None:
+    """A given seed yields the same setup regardless of string hash randomization."""
+    script = (
+        "import random; from dominion_setup import generate_game, load_card_database; "
+        "random.seed(42); game = generate_game(load_card_database()); "
+        "print([pile.card.name for pile in game.kingdom_piles + game.non_supply_piles])"
+    )
+    outputs = {
+        subprocess.run(  # noqa: S603
+            [sys.executable, "-c", script],
+            env={**os.environ, "PYTHONHASHSEED": hash_seed},
+            capture_output=True,
+            check=True,
+            text=True,
+        ).stdout
+        for hash_seed in ("1", "2", "3")
+    }
+    assert len(outputs) == 1
+
+
+C_AND_G_2E_AND_RISING_SUN = {
+    (CardSet.CORNUCOPIA_GUILDS, CardSetEdition.SECOND_EDITION),
+    (CardSet.RISING_SUN, CardSetEdition.FIRST_EDITION),
+}
+
+
+def _pile_by_name(piles: list[Pile], name: str) -> Pile | None:
+    return next((pile for pile in piles if pile.card.name == name), None)
+
+
+def _has_mark(piles: list[Pile], kind: PileMarkKind) -> bool:
+    return any(mark.kind == kind for pile in piles for mark in pile.marks)
+
+
+@pytest.mark.parametrize(
+    ("description", "predicate"),
+    [
+        (
+            "Ferryman sets aside Young Witch",
+            lambda g: (
+                (pile := _pile_by_name(g.non_supply_piles, "Young Witch")) is not None
+                and _has_mark([pile], PileMarkKind.FERRYMAN)
+            ),
+        ),
+        (
+            "Approaching Army adds Young Witch",
+            lambda g: (
+                (pile := _pile_by_name(g.kingdom_piles, "Young Witch")) is not None
+                and _has_mark([pile], PileMarkKind.APPROACHING_ARMY)
+            ),
+        ),
+    ],
+)
+def test_extra_pile_young_witch_gets_bane(
+    db: CardDatabase, description: str, predicate: Callable[[Game], bool]
+) -> None:
+    seed = _find_seed(db, C_AND_G_2E_AND_RISING_SUN, predicate, max_seeds=5000)
+    assert seed is not None, f"no seed found where {description}"
+    random.seed(seed)
+    game = generate_game(db, sets_editions=C_AND_G_2E_AND_RISING_SUN)
+    assert _has_mark(game.kingdom_piles, PileMarkKind.BANE)
+
+
+def test_riverboat_setting_aside_ferryman_gets_ferryman_pile(db: CardDatabase) -> None:
+    def predicate(game: Game) -> bool:
+        pile = _pile_by_name(game.non_supply_piles, "Ferryman")
+        return pile is not None and _has_mark([pile], PileMarkKind.RIVERBOAT)
+
+    seed = _find_seed(db, C_AND_G_2E_AND_RISING_SUN, predicate, max_seeds=5000)
+    assert seed is not None, "no seed found where Riverboat sets aside Ferryman"
+    random.seed(seed)
+    game = generate_game(db, sets_editions=C_AND_G_2E_AND_RISING_SUN)
+    assert _has_mark(game.non_supply_piles, PileMarkKind.FERRYMAN)
+
+
+def test_set_aside_card_type_triggers_components(db: CardDatabase) -> None:
+    """A set-aside Doom card (Tormentor) needs the Hexes, not just its Imp."""
+    sets_editions = {
+        (CardSet.NOCTURNE, CardSetEdition.FIRST_EDITION),
+        (CardSet.RISING_SUN, CardSetEdition.FIRST_EDITION),
+    }
+
+    def predicate(game: Game) -> bool:
+        pile = _pile_by_name(game.non_supply_piles, "Tormentor")
+        return pile is not None and _has_mark([pile], PileMarkKind.RIVERBOAT)
+
+    seed = _find_seed(db, sets_editions, predicate, max_seeds=5000)
+    assert seed is not None, "no seed found where Riverboat sets aside Tormentor"
+    random.seed(seed)
+    game = generate_game(db, sets_editions=sets_editions)
+    non_supply_names = {card.name for card in game.non_supply_cards}
+    assert {"Imp", "Hexes", "Deluded", "Miserable"} <= non_supply_names

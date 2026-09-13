@@ -18,7 +18,6 @@ it automatically via ``playwright install chromium``.
 
 from __future__ import annotations
 
-import gzip
 import html
 import json
 import re
@@ -304,31 +303,21 @@ def categorize_cards(cards: list[Card]) -> dict[str, list[Card]]:
     set_to_cards: dict[str, list[Card]] = defaultdict(list)
 
     for card in cards:
-        set_ = card["set"]
+        set_to_cards[card["set"]].append(card)
 
-        if set_ not in SET_TO_FILENAME:
-            console.print(
-                f"[yellow]WARNING:[/yellow] unknown set {set_!r}"
-                f" for card {card['name']!r}"
-            )
-            continue
-
-        set_to_cards[set_].append(card)
+    # fail rather than silently drop the cards of a set without a data file
+    if unknown_sets := set_to_cards.keys() - SET_TO_FILENAME.keys():
+        msg = f"Unknown set(s) {sorted(unknown_sets)!r}: add them to SET_TO_FILENAME and CardSet"
+        raise ValueError(msg)
 
     return set_to_cards
 
 
-def write_cards_json(
-    cards: list[Card], name: str, *, encoding: str = "utf-8", compress: bool = False
-) -> None:
-    """Write a JSON array to *path* and print a summary line."""
-    if compress:
-        with gzip.open(CARDS_DIR / f"{name}.gz", "wt", encoding=encoding) as fh:
-            json.dump(cards, fh)
-    else:
-        with CARDS_DIR.joinpath(name).open("w", encoding=encoding) as fh:
-            json.dump(cards, fh, indent=2, ensure_ascii=False)
-            fh.write("\n")
+def write_cards_json(cards: list[Card], name: str, *, encoding: str = "utf-8") -> None:
+    """Write a JSON array to *name* in ``CARDS_DIR`` and print a summary line."""
+    with CARDS_DIR.joinpath(name).open("w", encoding=encoding) as fh:
+        json.dump(cards, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
     console.print(f"  [bold]{name}[/bold]: {len(cards)} cards")
 
 
@@ -345,14 +334,7 @@ def write_cards_json(
     default=False,
     help="Parse and categorise cards without writing any files.",
 )
-@click.option(
-    "-c",
-    "--compress",
-    is_flag=True,
-    default=False,
-    help="Compress the JSON card data files.",
-)
-def main(*, headed: bool, dry_run: bool, compress: bool) -> None:
+def main(*, headed: bool, dry_run: bool) -> None:
     """Scrape the Dominion Strategy Wiki and write per-set JSON card data files."""
     console.print("Ensuring Chromium browser is installed (for Playwright) ...")
     ensure_browser()
@@ -377,7 +359,6 @@ def main(*, headed: bool, dry_run: bool, compress: bool) -> None:
         write_cards_json(
             sorted(set_cards, key=lambda card: card["name"]),
             f"{SET_TO_FILENAME[set_]}.json",
-            compress=compress,
         )
 
     console.print(

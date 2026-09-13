@@ -122,8 +122,8 @@ def test_generate_game_returns_game(default_game: Game) -> None:
 
 
 def test_generate_game_has_ten_kingdom_piles(default_game: Game) -> None:
-    """A generated game always contains exactly 10 kingdom piles."""
-    assert len(default_game.kingdom_piles) == 10
+    """A generated game contains 10 kingdom piles, plus possibly a Bane and an Approaching Army pile."""
+    assert 10 <= len(default_game.kingdom_piles) <= 12
 
 
 def test_generate_game_kingdom_piles_are_pile_objects(default_game: Game) -> None:
@@ -163,7 +163,7 @@ def test_generate_game_all_sort_orders(
 ) -> None:
     """generate_game succeeds for every KingdomSortOrder without raising."""
     game = generate_game(db, sort_order=sort_order)
-    assert len(game.kingdom_piles) == 10
+    assert 10 <= len(game.kingdom_piles) <= 12
 
 
 def test_generate_game_force_colony_on(db: CardDatabase) -> None:

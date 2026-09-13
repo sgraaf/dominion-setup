@@ -1,15 +1,19 @@
 import re
+import shlex
 import subprocess
+import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib import import_module, metadata
 from os import PathLike
-from typing import Any
+from pathlib import Path
+from typing import Any, NoReturn
 
 import pytest
 from click.testing import CliRunner
 
 from dominion_setup.cli import cli
+from dominion_setup.generator import SetupGenerationError
 
 # copied from `typeshed`
 StrOrBytesPath = str | bytes | PathLike
@@ -56,14 +60,44 @@ def test_main_module() -> None:
 
 def test_run_as_module() -> None:
     """Is the script runnable as a Python module?"""
-    result = run_command_in_shell("python -m dominion_setup --help")
+    result = run_command_in_shell(
+        f"{shlex.quote(sys.executable)} -m dominion_setup --help"
+    )
     assert result.exit_code == 0
 
 
 def test_run_as_executable() -> None:
     """Is the script installed (as a `console_script`) and runnable as an executable?"""
-    result = run_command_in_shell("dominion-setup --help")
+    # console scripts are installed next to the interpreter, which need not be on PATH
+    executable = Path(sys.executable).parent / "dominion-setup"
+    result = run_command_in_shell(f"{shlex.quote(str(executable))} --help")
     assert result.exit_code == 0
+
+
+def test_generate_setup_error_is_usage_error(
+    runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _raise(*_args: Any, **_kwargs: Any) -> NoReturn:  # noqa: ANN401
+        msg = "No eligible Bane card"
+        raise SetupGenerationError(msg)
+
+    monkeypatch.setattr("dominion_setup.cli.generate_game", _raise)
+    result = runner.invoke(cli, ["generate"])
+    assert result.exit_code == 2
+    assert "No eligible Bane card" in result.output
+
+
+def test_generate_unexpected_error_is_not_usage_error(
+    runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _raise(*_args: Any, **_kwargs: Any) -> NoReturn:  # noqa: ANN401
+        msg = "Card 'Madman' not found"
+        raise ValueError(msg)
+
+    monkeypatch.setattr("dominion_setup.cli.generate_game", _raise)
+    result = runner.invoke(cli, ["generate"])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, ValueError)
 
 
 def test_version_runner(runner: CliRunner) -> None:
