@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.10.9,<0.11.0"]
+requires = ["uv_build>=0.12.13,<0.13"]
 build-backend = "uv_build"
 
 [project]
@@ -47,7 +47,9 @@ tests = [
 typing = [
     "mypy",
     "pyrefly",
+    "pyright[nodejs]",
     "ty",
+    "zuban",
 ]
 dev = [
     { include-group = "docs" },
@@ -71,6 +73,7 @@ dominion-setup = "dominion_setup.__main__:cli"
 select = ["ALL"]
 ignore = [
     "COM812",  # missing-trailing-comma (flake8-commas), handled by the formatter
+    "CPY001",  # missing-copyright-notice (flake8-copyright)
     "D102",  # undocumented-public-method (pydocstyle)
     "D105",  # undocumented-magic-method (pydocstyle)
     "D107",  # undocumented-public-init (pydocstyle)
@@ -109,14 +112,24 @@ pydocstyle.convention = "google"
     "SIM300",   # yoda-conditions (flake8-simplify)
 ]
 
+[tool.ty.src]
+include = ["src", "tests"]
+
 [tool.mypy]
 python_version = "3.11"
+files = ["tests"]
 
 [tool.pyrefly]
-search-path = [
-  "src",
-  "tests",
-]
+project-includes = ["tests"]
+search-path = ["tests"]
+
+[tool.pyright]
+include = ["tests"]
+pythonVersion = "3.11"
+
+[tool.zuban]
+python_version = "3.11"
+files = ["tests"]
 
 [tool.pytest.ini_options]
 addopts = "--cov=dominion_setup --cov-report=term-missing --cov-fail-under=95"

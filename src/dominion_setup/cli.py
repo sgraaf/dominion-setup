@@ -24,7 +24,7 @@ from .models import (
 from .utils import card_sort_key, parse_raw_set_edition
 
 
-class RichDefaultGroup(DefaultGroup, click.RichGroup):  # pyrefly: ignore[inconsistent-inheritance]
+class RichDefaultGroup(DefaultGroup, click.RichGroup):  # ty: ignore[invalid-method-override]
     """DefaultGroup with Rich-formatted help output."""
 
 
