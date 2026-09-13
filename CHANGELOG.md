@@ -14,6 +14,7 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Changed
 
+- `load_card_database` accepts any `Traversable` and reads the bundled data without requiring it to be on the file system.
 - Releases are only published after linting, type checking and tests pass.
 
 ## [2026.1.0](https://github.com/sgraaf/dominion-setup/tree/2026.1.0) - 2026-04-24
