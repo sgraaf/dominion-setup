@@ -2,39 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, TypeAlias, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING
 
 from .models import CARD_SET_ORDER, Card, CardSet, CardSetEdition, KingdomSortOrder
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-
-@runtime_checkable
-class SupportsBool(Protocol):
-    """An ABC with one abstract method ``__bool__``."""
-
-    def __bool__(self) -> bool: ...
-
-
-_T_contra = TypeVar("_T_contra", contravariant=True)
-
-
-@runtime_checkable
-class SupportsDunderLT(Protocol[_T_contra]):
-    """An ABC with one abstract method ``__lt__``."""
-
-    def __lt__(self, other: _T_contra, /) -> SupportsBool: ...
-
-
-@runtime_checkable
-class SupportsDunderGT(Protocol[_T_contra]):
-    """An ABC with one abstract method ``__gt__``."""
-
-    def __gt__(self, other: _T_contra, /) -> SupportsBool: ...
-
-
-SupportsRichComparison: TypeAlias = SupportsDunderLT[Any] | SupportsDunderGT[Any]
+    from _typeshed import SupportsRichComparison
 
 
 def card_sort_key(
