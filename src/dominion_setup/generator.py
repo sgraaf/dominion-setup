@@ -37,6 +37,7 @@ GAIN_LOOT_PATTERN = re.compile(r"[gG]ain a Loot")
 GAIN_HORSES_PATTERN = re.compile(r"[gG]ains? (?:a|that many|\d+) Horses?")
 COFFERS_PATTERN = re.compile(r"\+\d+ Coffers")
 VILLAGERS_PATTERN = re.compile(r"\+\d+ Villagers?")
+COIN_TOKEN_PATTERN = re.compile(r"Coin tokens?")
 EXILE_PATTERN = re.compile(r"Exile")
 VP_PLUS_PATTERN = re.compile(r"\+\d+ VP")
 VP_SETUP_PATTERN = re.compile(r"Setup: Put \d+ VP")
@@ -477,6 +478,8 @@ def generate_game(  # noqa: C901, PLR0912, PLR0913, PLR0915
             materials.add(Material.COIN_TOKENS)
         if VILLAGERS_PATTERN.search(card.instructions):
             materials.add(Material.COFFERS_VILLAGERS_MAT)
+            materials.add(Material.COIN_TOKENS)
+        if COIN_TOKEN_PATTERN.search(card.instructions):
             materials.add(Material.COIN_TOKENS)
         if EXILE_PATTERN.search(card.instructions):
             materials.add(Material.EXILE_MAT)

@@ -22,6 +22,7 @@ The **third number** is for emergencies when we need to start branches for older
 ### Fixed
 
 - The Coffers / Villagers mat is now included for cards giving a single Villager (e.g. Academy, Patron, Silk Merchant).
+- Coin tokens are now included for Pirate Ship and Trade Route.
 
 ## [2026.1.0](https://github.com/sgraaf/dominion-setup/tree/2026.1.0) - 2026-04-24
 

@@ -1058,6 +1058,16 @@ def test_material_single_villager_detected(ten_card_db: CardDatabaseFactory) -> 
     assert Material.COIN_TOKENS in game.materials
 
 
+def test_material_single_coin_token_detected(
+    ten_card_db: CardDatabaseFactory,
+) -> None:
+    # e.g. Pirate Ship: "... you add a Coin token to your Pirate Ship mat."
+    db = ten_card_db(instructions="+$1 per Coin token on your Pirate Ship mat.")
+    game = generate_game(db)
+    assert Material.PIRATE_SHIP_MAT in game.materials
+    assert Material.COIN_TOKENS in game.materials
+
+
 def test_material_exile_detected(ten_card_db: CardDatabaseFactory) -> None:
     db = ten_card_db(instructions="Exile a card from your hand.")
     game = generate_game(db)
