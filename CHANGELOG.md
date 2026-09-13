@@ -18,6 +18,7 @@ The **third number** is for emergencies when we need to start branches for older
 ### Changed
 
 - For a given `random` seed, `generate_game` now produces the same setup in every process (previously it depended on string hash randomization).
+- Cards set aside for Ferryman, Way of the Mouse and Riverboat now trigger all setup (components, Heirlooms, materials, setup instructions), not only name-based setup.
 - `load_card_database` accepts any `Traversable` and reads the bundled data without requiring it to be on the file system.
 - Releases are only published after linting, type checking and tests pass.
 

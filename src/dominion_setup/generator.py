@@ -202,9 +202,10 @@ def generate_game(  # noqa: PLR0913
         db, kingdom_cards, landscapes, unused_kingdom_cards, marks
     )
 
-    # cards set aside for Ferryman, Way of the Mouse and Riverboat only trigger
-    # name-based setup
-    names_in_use = {card.name for card in (*kingdom_cards, *set_aside_cards)}
+    # cards set aside for Ferryman, Way of the Mouse and Riverboat can still be
+    # gained or played, so they trigger setup just like Supply Kingdom cards
+    cards_in_use = [*kingdom_cards, *set_aside_cards]
+    names_in_use = {card.name for card in cards_in_use}
 
     # if Druid is being used, deal three Boon cards face up for use with it.
     druid_boons: list[Card] = []
@@ -217,7 +218,7 @@ def generate_game(  # noqa: PLR0913
     # in any game using Liaisons, exactly one Ally is chosen, and it determines
     # what effect Favor tokens have in that game.
     ally: Card | None = None
-    if any(CardType.LIAISON in card.types for card in kingdom_cards):
+    if any(CardType.LIAISON in card.types for card in cards_in_use):
         ally = random.choice(_cards_of_type(db.landscape_cards.values(), CardType.ALLY))
 
     # each Trait landscape applies to a different randomly chosen Action or
@@ -238,12 +239,16 @@ def generate_game(  # noqa: PLR0913
 
     non_supply_cards = [
         *set_aside_cards,
-        *_companion_cards(db, kingdom_cards, names_in_use, landscapes),
+        *_companion_cards(db, cards_in_use, landscapes),
     ]
 
     # ── Basic piles ─────────────────────────────────────────────────────────
     basic_cards = _basic_cards(
-        db, kingdom_cards, use_colony=use_colony, use_shelters=use_shelters
+        db,
+        kingdom_cards,
+        cards_in_use,
+        use_colony=use_colony,
+        use_shelters=use_shelters,
     )
 
     # add Heirlooms if any Kingdom cards being used have a yellow banner
@@ -251,7 +256,7 @@ def generate_game(  # noqa: PLR0913
     heirlooms = sorted(
         (
             db.get_card_by_name(heirloom_match.group(1))
-            for card in kingdom_cards
+            for card in cards_in_use
             if (heirloom_match := HEIRLOOM_PATTERN.search(card.instructions))
         ),
         key=card_sort_key(sort_order),
@@ -274,7 +279,7 @@ def generate_game(  # noqa: PLR0913
     setup_instructions = [
         f"{card.name}: {setup_match.group(1).removeprefix('Setup: ')}"
         for card in sorted(
-            [*kingdom_cards, *landscapes, *basic_cards], key=card_sort_key(sort_order)
+            [*cards_in_use, *landscapes, *basic_cards], key=card_sort_key(sort_order)
         )
         if (setup_match := SETUP_PATTERN.search(card.instructions))
     ]
@@ -294,7 +299,7 @@ def generate_game(  # noqa: PLR0913
         prophecy=prophecy,
         landscapes=sorted(landscapes, key=card_sort_key(sort_order)),
         materials=sorted(
-            _materials([*kingdom_cards, *landscapes]), key=MATERIAL_ORDER.__getitem__
+            _materials([*cards_in_use, *landscapes]), key=MATERIAL_ORDER.__getitem__
         ),
         non_supply_piles=[
             Pile(card=card, marks=tuple(marks[card])) for card in non_supply_cards
@@ -365,18 +370,18 @@ def _add_extra_piles(
     prophecy: Card | None = None
 
     for rule in EXTRA_PILE_RULES:
+        cards_in_use = [*kingdom_cards, *set_aside_cards]
+
         # in every game with one or more Omen cards, deal out one Prophecy for
         # it. Only use one Prophecy no matter how many Omens you have.
         if prophecy is None and any(
-            CardType.OMEN in card.types for card in kingdom_cards
+            CardType.OMEN in card.types for card in cards_in_use
         ):
             prophecy = random.choice(
                 _cards_of_type(db.landscape_cards.values(), CardType.PROPHECY)
             )
 
-        triggers = {
-            card.name for card in (*kingdom_cards, *set_aside_cards, *landscapes)
-        }
+        triggers = {card.name for card in (*cards_in_use, *landscapes)}
         if prophecy is not None:
             triggers.add(prophecy.name)
         if rule.trigger not in triggers:
@@ -396,13 +401,11 @@ def _add_extra_piles(
 
 
 def _companion_cards(
-    db: CardDatabase,
-    kingdom_cards: list[Card],
-    names_in_use: set[str],
-    landscapes: list[Card],
+    db: CardDatabase, cards_in_use: list[Card], landscapes: list[Card]
 ) -> list[Card]:
     """Return the non-Supply cards (Prizes, Spirits, Loot, …) required by the cards in use."""
-    types_in_use = {card_type for card in kingdom_cards for card_type in card.types}
+    names_in_use = {card.name for card in cards_in_use}
+    types_in_use = {card_type for card in cards_in_use for card_type in card.types}
     companions: list[Card] = []
 
     # in games using Joust (Tournament), set the Rewards (Prizes) out near the
@@ -430,7 +433,7 @@ def _companion_cards(
 
     # if any Kingdom or Landscape cards give Loot (or Horses), shuffle the Loot
     # cards (put the Horse pile) and set them out near the Supply.
-    cards_with_instructions = [*kingdom_cards, *landscapes]
+    cards_with_instructions = [*cards_in_use, *landscapes]
     if any(
         GAIN_LOOT_PATTERN.search(card.instructions) for card in cards_with_instructions
     ):
@@ -449,6 +452,7 @@ def _companion_cards(
 def _basic_cards(
     db: CardDatabase,
     kingdom_cards: list[Card],
+    cards_in_use: list[Card],
     *,
     use_colony: bool | None,
     use_shelters: bool | None,
@@ -464,11 +468,11 @@ def _basic_cards(
         basic_cards.append(db.get_card_by_name("Platinum"))
 
     # add Potion if any kingdom card has a potion cost
-    if any(card.has_potion_cost for card in kingdom_cards):
+    if any(card.has_potion_cost for card in cards_in_use):
         basic_cards.append(db.get_card_by_name("Potion"))
 
     # add Ruins pile if any kingdom card is of Looter type
-    if any(CardType.LOOTER in card.types for card in kingdom_cards):
+    if any(CardType.LOOTER in card.types for card in cards_in_use):
         basic_cards.append(db.get_card_by_name("Ruins"))
 
     # add Shelters if ``use_shelters`` or determined by Dark Ages presence

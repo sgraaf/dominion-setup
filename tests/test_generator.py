@@ -3037,3 +3037,30 @@ def test_generate_game_reproducible_across_processes() -> None:
         for hash_seed in ("1", "2", "3")
     }
     assert len(outputs) == 1
+
+
+def _pile_by_name(piles: list[Pile], name: str) -> Pile | None:
+    return next((pile for pile in piles if pile.card.name == name), None)
+
+
+def _has_mark(piles: list[Pile], kind: PileMarkKind) -> bool:
+    return any(mark.kind == kind for pile in piles for mark in pile.marks)
+
+
+def test_set_aside_card_type_triggers_components(db: CardDatabase) -> None:
+    """A set-aside Doom card (Tormentor) needs the Hexes, not just its Imp."""
+    sets_editions = {
+        (CardSet.NOCTURNE, CardSetEdition.FIRST_EDITION),
+        (CardSet.RISING_SUN, CardSetEdition.FIRST_EDITION),
+    }
+
+    def predicate(game: Game) -> bool:
+        pile = _pile_by_name(game.non_supply_piles, "Tormentor")
+        return pile is not None and _has_mark([pile], PileMarkKind.RIVERBOAT)
+
+    seed = _find_seed(db, sets_editions, predicate, max_seeds=5000)
+    assert seed is not None, "no seed found where Riverboat sets aside Tormentor"
+    random.seed(seed)
+    game = generate_game(db, sets_editions=sets_editions)
+    non_supply_names = {card.name for card in game.non_supply_cards}
+    assert {"Imp", "Hexes", "Deluded", "Miserable"} <= non_supply_names
