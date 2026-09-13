@@ -368,8 +368,12 @@ def _add_extra_piles(
     """
     set_aside_cards: list[Card] = []
     prophecy: Card | None = None
+    resolved_triggers: set[str] = set()
 
-    for rule in EXTRA_PILE_RULES:
+    # an extra pile can trigger further setup (e.g. Ferryman choosing Young
+    # Witch, which needs a Bane; or a Bane that is an Omen, which needs a
+    # Prophecy), so repeat until nothing new is triggered
+    while True:
         cards_in_use = [*kingdom_cards, *set_aside_cards]
 
         # in every game with one or more Omen cards, deal out one Prophecy for
@@ -384,20 +388,25 @@ def _add_extra_piles(
         triggers = {card.name for card in (*cards_in_use, *landscapes)}
         if prophecy is not None:
             triggers.add(prophecy.name)
-        if rule.trigger not in triggers:
-            continue
+        pending_rules = [
+            rule
+            for rule in EXTRA_PILE_RULES
+            if rule.trigger in triggers and rule.trigger not in resolved_triggers
+        ]
+        if not pending_rules:
+            return set_aside_cards, prophecy
 
-        # the unused cards are in random order, so the first eligible one is a
-        # uniformly random choice
-        card = next(filter(rule.is_eligible, unused_kingdom_cards), None)
-        if card is None:
-            msg = f"No eligible {rule.mark} card ({rule.requirement}) available for {rule.trigger}"
-            raise SetupGenerationError(msg)
-        unused_kingdom_cards.remove(card)
-        (kingdom_cards if rule.in_supply else set_aside_cards).append(card)
-        marks[card].append(PileMark(rule.mark))
-
-    return set_aside_cards, prophecy
+        for rule in pending_rules:
+            resolved_triggers.add(rule.trigger)
+            # the unused cards are in random order, so the first eligible one
+            # is a uniformly random choice
+            card = next(filter(rule.is_eligible, unused_kingdom_cards), None)
+            if card is None:
+                msg = f"No eligible {rule.mark} card ({rule.requirement}) available for {rule.trigger}"
+                raise SetupGenerationError(msg)
+            unused_kingdom_cards.remove(card)
+            (kingdom_cards if rule.in_supply else set_aside_cards).append(card)
+            marks[card].append(PileMark(rule.mark))
 
 
 def _companion_cards(

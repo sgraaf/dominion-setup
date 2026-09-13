@@ -24,6 +24,7 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Fixed
 
+- A Young Witch chosen as an extra pile (by Ferryman or Approaching Army) now gets a Bane pile, and a Ferryman set aside by Riverboat now gets its extra pile.
 - The Coffers / Villagers mat is now included for cards giving a single Villager (e.g. Academy, Patron, Silk Merchant).
 - Coin tokens are now included for Pirate Ship and Trade Route.
 

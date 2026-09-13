@@ -3039,12 +3039,59 @@ def test_generate_game_reproducible_across_processes() -> None:
     assert len(outputs) == 1
 
 
+C_AND_G_2E_AND_RISING_SUN = {
+    (CardSet.CORNUCOPIA_GUILDS, CardSetEdition.SECOND_EDITION),
+    (CardSet.RISING_SUN, CardSetEdition.FIRST_EDITION),
+}
+
+
 def _pile_by_name(piles: list[Pile], name: str) -> Pile | None:
     return next((pile for pile in piles if pile.card.name == name), None)
 
 
 def _has_mark(piles: list[Pile], kind: PileMarkKind) -> bool:
     return any(mark.kind == kind for pile in piles for mark in pile.marks)
+
+
+@pytest.mark.parametrize(
+    ("description", "predicate"),
+    [
+        (
+            "Ferryman sets aside Young Witch",
+            lambda g: (
+                (pile := _pile_by_name(g.non_supply_piles, "Young Witch")) is not None
+                and _has_mark([pile], PileMarkKind.FERRYMAN)
+            ),
+        ),
+        (
+            "Approaching Army adds Young Witch",
+            lambda g: (
+                (pile := _pile_by_name(g.kingdom_piles, "Young Witch")) is not None
+                and _has_mark([pile], PileMarkKind.APPROACHING_ARMY)
+            ),
+        ),
+    ],
+)
+def test_extra_pile_young_witch_gets_bane(
+    db: CardDatabase, description: str, predicate: Callable[[Game], bool]
+) -> None:
+    seed = _find_seed(db, C_AND_G_2E_AND_RISING_SUN, predicate, max_seeds=5000)
+    assert seed is not None, f"no seed found where {description}"
+    random.seed(seed)
+    game = generate_game(db, sets_editions=C_AND_G_2E_AND_RISING_SUN)
+    assert _has_mark(game.kingdom_piles, PileMarkKind.BANE)
+
+
+def test_riverboat_setting_aside_ferryman_gets_ferryman_pile(db: CardDatabase) -> None:
+    def predicate(game: Game) -> bool:
+        pile = _pile_by_name(game.non_supply_piles, "Ferryman")
+        return pile is not None and _has_mark([pile], PileMarkKind.RIVERBOAT)
+
+    seed = _find_seed(db, C_AND_G_2E_AND_RISING_SUN, predicate, max_seeds=5000)
+    assert seed is not None, "no seed found where Riverboat sets aside Ferryman"
+    random.seed(seed)
+    game = generate_game(db, sets_editions=C_AND_G_2E_AND_RISING_SUN)
+    assert _has_mark(game.non_supply_piles, PileMarkKind.FERRYMAN)
 
 
 def test_set_aside_card_type_triggers_components(db: CardDatabase) -> None:
