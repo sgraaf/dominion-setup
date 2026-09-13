@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "dominion-setup"
-version = "2026.1.0"
+version = "2026.2.0"
 description = "dominion-setup is a Python library and CLI tool to set up a game of Dominion, the classic deck-building game."
 authors = [{name = "Steven van de Graaf", email = "steven@vandegraaf.xyz"}]
 readme = "README.md"
