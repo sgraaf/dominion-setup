@@ -10,6 +10,10 @@ The **third number** is for emergencies when we need to start branches for older
 
 ## [Unreleased](https://github.com/sgraaf/dominion-setup/compare/2026.2.0...HEAD)
 
+### Added
+
+- Support for Python 3.15.
+
 ## [2026.2.0](https://github.com/sgraaf/dominion-setup/compare/2026.1.0...2026.2.0) - 2026-09-13
 
 ### Added
