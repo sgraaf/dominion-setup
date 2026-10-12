@@ -19,6 +19,7 @@ import pytest
 from dominion_setup import generator
 from dominion_setup.cli import SET_EDITION_CHOICES
 from dominion_setup.generator import (
+    REQUIREMENT_RULES,
     SetupGenerationError,
     _basic_cards,
     _choose_ally,
@@ -40,6 +41,7 @@ from dominion_setup.models import (
     CardSetEdition,
     CardType,
     Game,
+    KingdomRequirement,
     KingdomSortOrder,
     Material,
     Pile,
@@ -315,6 +317,113 @@ def test_draw_kingdom_needs_ten_kingdom_cards(db: CardDatabase, smithy: Card) ->
             CardDatabase([*kingdom_cards, *events]),
             sets_editions=None,
             max_landscapes=2,
+        )
+
+
+@pytest.mark.parametrize(
+    ("requirement", "card", "is_provider"),
+    [
+        (KingdomRequirement.ACTIONS, "Village", True),
+        (KingdomRequirement.ACTIONS, "Smithy", False),
+        (KingdomRequirement.CARDS, "Smithy", True),
+        (KingdomRequirement.CARDS, "Chapel", False),
+        (KingdomRequirement.BUYS, "Market", True),
+        (KingdomRequirement.BUYS, "Village", False),
+        (KingdomRequirement.ATTACK, "Militia", True),
+        (KingdomRequirement.ATTACK, "Moat", False),
+        (KingdomRequirement.REACTION, "Moat", True),
+        (KingdomRequirement.REACTION, "Militia", False),
+        # trashing other cards
+        (KingdomRequirement.TRASHING, "Chapel", True),
+        (KingdomRequirement.TRASHING, "Remodel", True),
+        (KingdomRequirement.TRASHING, "Raze", True),  # "Trash this or a card …"
+        (KingdomRequirement.TRASHING, "Loan", True),  # "Discard it or trash it"
+        # trashing only itself, or only other players' cards
+        (KingdomRequirement.TRASHING, "Feast", False),
+        (KingdomRequirement.TRASHING, "Mining Village", False),
+        (KingdomRequirement.TRASHING, "Saboteur", False),
+        (KingdomRequirement.TRASHING, "Rogue", False),  # "cards in the trash"
+    ],
+)
+def test_requirement_rules(
+    db: CardDatabase,
+    requirement: KingdomRequirement,
+    card: str,
+    is_provider: bool,  # noqa: FBT001
+) -> None:
+    assert REQUIREMENT_RULES[requirement](db.get_card_by_name(card)) is is_provider
+
+
+@pytest.mark.parametrize("seed", range(10))
+@pytest.mark.parametrize(
+    "requirements",
+    [*([requirement] for requirement in KingdomRequirement), list(KingdomRequirement)],
+    ids=[*KingdomRequirement, "all"],
+)
+def test_draw_kingdom_meets_the_requirements(
+    db: CardDatabase, requirements: list[KingdomRequirement], seed: int
+) -> None:
+    """Base 2E has a single Reaction (Moat), so requiring one often forces it in."""
+    base_2e = (CardSet.BASE, CardSetEdition.SECOND_EDITION)
+    random.seed(seed)
+    kingdom, _landscapes, unused = _draw_kingdom(
+        db, sets_editions={base_2e}, max_landscapes=2, requirements=requirements
+    )
+    for requirement in requirements:
+        assert any(REQUIREMENT_RULES[requirement](card) for card in kingdom)
+    # cards skipped to make room are unused, not lost
+    assert sorted(card_names([*kingdom, *unused])) == sorted(
+        card_names(db.get_cards_by_set_edition(*base_2e))
+    )
+
+
+@pytest.mark.parametrize("seed", range(20))
+def test_one_card_can_meet_several_requirements(smithy: Card, seed: int) -> None:
+    """Market is the only card with +Action(s), +Card(s) or +Buy(s), so it meets all three."""
+    market = replace(smithy, name="Market", instructions="+1 Card\n+1 Action\n+1 Buy")
+    fillers = [replace(smithy, name=f"Card {i}", instructions="+$2") for i in range(19)]
+    requirements = [
+        KingdomRequirement.ACTIONS,
+        KingdomRequirement.CARDS,
+        KingdomRequirement.BUYS,
+    ]
+    random.seed(seed)
+    kingdom, _landscapes, unused = _draw_kingdom(
+        CardDatabase([market, *fillers]),
+        sets_editions=None,
+        max_landscapes=0,
+        requirements=requirements,
+    )
+    assert len(kingdom) == 10
+    assert "Market" in card_names(kingdom)
+    assert len(unused) == 10
+
+
+def test_requirement_already_met_does_not_change_the_draw(db: CardDatabase) -> None:
+    random.seed(0)
+    draw = _draw_kingdom(db, sets_editions=None, max_landscapes=2)
+    kingdom, _landscapes, _unused = draw
+    met_requirements = [
+        requirement
+        for requirement, is_provider in REQUIREMENT_RULES.items()
+        if any(is_provider(card) for card in kingdom)
+    ]
+    assert met_requirements
+    random.seed(0)
+    draw_with_requirements = _draw_kingdom(
+        db, sets_editions=None, max_landscapes=2, requirements=met_requirements
+    )
+    assert draw_with_requirements == draw
+
+
+def test_draw_kingdom_without_a_provider_raises(smithy: Card) -> None:
+    db = CardDatabase([replace(smithy, name=f"Card {i}") for i in range(10)])
+    with pytest.raises(SetupGenerationError, match="selected sets provides Attack"):
+        _draw_kingdom(
+            db,
+            sets_editions=None,
+            max_landscapes=2,
+            requirements=[KingdomRequirement.ATTACK],
         )
 
 

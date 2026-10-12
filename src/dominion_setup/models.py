@@ -5,8 +5,9 @@ The module is organised in four sections:
 - **Sets & editions**: ``CardSet`` and ``CardSetEdition``.
 - **Cards**: ``Card`` and the enums and value objects that describe it.
 - **Card database**: ``CardDatabase``, all cards indexed for lookup.
-- **Game**: ``Game``, the generated setup, and the ``Pile``, ``PileMark``,
-  ``Material`` and ``KingdomSortOrder`` types it is made of.
+- **Game**: ``Game``, the generated setup, the ``Pile``, ``PileMark`` and
+  ``Material`` types it is made of, and the ``KingdomSortOrder`` and
+  ``KingdomRequirement`` options for generating it.
 """
 
 from __future__ import annotations
@@ -423,6 +424,17 @@ class KingdomSortOrder(StrEnum):
         if self == KingdomSortOrder.SET:
             return (CARD_SET_ORDER[card.set], card.cost, card.name)
         return (card.cost, card.name)
+
+
+class KingdomRequirement(StrEnum):
+    """Effects that the Kingdom of a generated game can be required to include."""
+
+    ACTIONS = "+Action(s)"
+    CARDS = "+Card(s)"
+    BUYS = "+Buy(s)"
+    ATTACK = "Attack"
+    REACTION = "Reaction"
+    TRASHING = "Trashing"
 
 
 @dataclass(slots=True)

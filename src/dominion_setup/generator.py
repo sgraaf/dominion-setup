@@ -22,6 +22,7 @@ from .models import (
     CardSetEdition,
     CardType,
     Game,
+    KingdomRequirement,
     KingdomSortOrder,
     Material,
     Pile,
@@ -50,6 +51,7 @@ def generate_game(  # noqa: PLR0913
     use_colony: bool | None = None,
     use_shelters: bool | None = None,
     max_landscapes: int = 2,
+    requirements: Iterable[KingdomRequirement] = (),
 ) -> Game:
     """Generate a complete, rules-accurate Dominion game setup.
 
@@ -66,6 +68,8 @@ def generate_game(  # noqa: PLR0913
         use_shelters: Force Shelters on or off. ``None`` uses the standard
             random determination based on Dark Ages cards.
         max_landscapes: Maximum number of landscapes to include. Defaults to 2.
+        requirements: Effects (e.g. ``KingdomRequirement.BUYS``) that at least
+            one of the 10 Kingdom cards must provide. Defaults to none.
 
     Returns:
         A Game object with selected Kingdom piles and basic supply.
@@ -77,9 +81,13 @@ def generate_game(  # noqa: PLR0913
     # NOTE: the steps below consume ``random`` in a fixed order, so reordering
     # them changes which game a given seed produces.
 
-    # 1. Kingdom: 10 Kingdom piles and up to *max_landscapes* Landscapes
+    # 1. Kingdom: 10 Kingdom piles that meet the *requirements*, and up to
+    # *max_landscapes* Landscapes
     kingdom_cards, landscapes, unused_kingdom_cards = _draw_kingdom(
-        db, sets_editions=sets_editions, max_landscapes=max_landscapes
+        db,
+        sets_editions=sets_editions,
+        max_landscapes=max_landscapes,
+        requirements=requirements,
     )
 
     # 2. Extra Kingdom piles (Bane, Ferryman, …) and the Prophecy
@@ -167,14 +175,41 @@ SELECTABLE_LANDSCAPE_TYPES: frozenset[CardType] = frozenset(
     }
 )
 
+PLUS_ACTIONS_PATTERN = re.compile(r"\+\d+ Actions?\b")
+PLUS_CARDS_PATTERN = re.compile(r"\+\d+ Cards?\b")
+PLUS_BUY_PATTERN = re.compile(r"\+\d+ Buys?\b")
+# telling you to trash a card other than this one: "trash this or a card from
+# your hand" (Raze) counts, "trash this" (Feast), "the trash" (Rogue) and "they
+# trash" (Saboteur) do not
+TRASHING_PATTERN = re.compile(r"(?<!the )(?<![Tt]hey )\b[Tt]rash (?!this\b(?! or\b))")
+
+
+def _instructions_match(pattern: re.Pattern[str]) -> Callable[[Card], bool]:
+    """Return a rule that is met by the cards whose instructions match *pattern*."""
+    return lambda card: bool(pattern.search(card.instructions))
+
+
+# Whether a Kingdom card provides each requirement.
+REQUIREMENT_RULES: dict[KingdomRequirement, Callable[[Card], bool]] = {
+    KingdomRequirement.ACTIONS: _instructions_match(PLUS_ACTIONS_PATTERN),
+    KingdomRequirement.CARDS: _instructions_match(PLUS_CARDS_PATTERN),
+    KingdomRequirement.BUYS: _instructions_match(PLUS_BUY_PATTERN),
+    KingdomRequirement.ATTACK: lambda card: CardType.ATTACK in card.types,
+    KingdomRequirement.REACTION: lambda card: CardType.REACTION in card.types,
+    KingdomRequirement.TRASHING: _instructions_match(TRASHING_PATTERN),
+}
+
 
 def _draw_kingdom(
     db: CardDatabase,
     *,
     sets_editions: set[tuple[CardSet, CardSetEdition]] | None,
     max_landscapes: int,
+    requirements: Iterable[KingdomRequirement] = (),
 ) -> tuple[list[Card], list[Card], list[Card]]:
     """Draw 10 Kingdom cards and at most *max_landscapes* Landscapes.
+
+    Each of the *requirements* is met by at least one of the Kingdom cards.
 
     Returns the Kingdom cards, the Landscapes, and the unused Kingdom cards in
     random order.
@@ -194,6 +229,13 @@ def _draw_kingdom(
         msg = f"Not enough kingdom cards: need {KINGDOM_PILE_COUNT}, found {kingdom_candidate_count}"
         raise SetupGenerationError(msg)
 
+    requirements = list(requirements)
+    for requirement in requirements:
+        is_provider = REQUIREMENT_RULES[requirement]
+        if not any(card.is_kingdom and is_provider(card) for card in candidates):
+            msg = f"No Kingdom card in the selected sets provides {requirement}"
+            raise SetupGenerationError(msg)
+
     # shuffle the randomizer deck and draw until there are 10 Kingdom cards,
     # keeping the first *max_landscapes* Landscapes drawn along the way. Sorting
     # first makes the outcome depend only on the ``random`` state, never on the
@@ -203,14 +245,38 @@ def _draw_kingdom(
     random.shuffle(deck)
     kingdom_cards: list[Card] = []
     landscapes: list[Card] = []
+    skipped_cards: list[Card] = []
+    unmet_requirements = set(requirements)
+
+    def spare_slots() -> int:
+        """Return the free Kingdom slots beyond one for each unmet requirement."""
+        return KINGDOM_PILE_COUNT - len(kingdom_cards) - len(unmet_requirements)
+
+    # keep a free slot for each requirement still unmet, so only a card that
+    # meets one can take it. Such cards are never skipped, and skipped cards go
+    # back on the deck once there are spare slots again, so the draw completes.
     while len(kingdom_cards) < KINGDOM_PILE_COUNT:
         card = deck.pop()
         if card.is_kingdom:
-            kingdom_cards.append(card)
+            met_requirements = {
+                requirement
+                for requirement in unmet_requirements
+                if REQUIREMENT_RULES[requirement](card)
+            }
+            if met_requirements or spare_slots() > 0:
+                kingdom_cards.append(card)
+                unmet_requirements -= met_requirements
+                # a card that meets several requirements frees kept slots
+                if spare_slots() > 0:
+                    deck += reversed(skipped_cards)
+                    skipped_cards.clear()
+            else:
+                skipped_cards.append(card)
         elif len(landscapes) < max_landscapes:
             landscapes.append(card)
 
-    return kingdom_cards, landscapes, [card for card in deck if card.is_kingdom]
+    unused_kingdom_cards = [card for card in deck if card.is_kingdom]
+    return kingdom_cards, landscapes, [*unused_kingdom_cards, *skipped_cards]
 
 
 # ── 2. Extra Kingdom piles & Prophecy ────────────────────────────────────────

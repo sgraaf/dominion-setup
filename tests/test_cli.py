@@ -24,6 +24,7 @@ from dominion_setup.models import (
     CardSetEdition,
     CardType,
     Game,
+    KingdomRequirement,
     KingdomSortOrder,
     Material,
     Pile,
@@ -191,6 +192,48 @@ def test_generate_without_landscapes(runner: CliRunner) -> None:
     )
     assert result.exit_code == 0
     assert "Landscapes" not in parse_tables(result.output)
+
+
+@pytest.mark.parametrize(
+    ("flag", "requirement"),
+    [
+        ("--require-actions", KingdomRequirement.ACTIONS),
+        ("--require-cards", KingdomRequirement.CARDS),
+        ("--require-buys", KingdomRequirement.BUYS),
+        ("--require-attack", KingdomRequirement.ATTACK),
+        ("--require-reaction", KingdomRequirement.REACTION),
+        ("--require-trashing", KingdomRequirement.TRASHING),
+    ],
+)
+def test_generate_require_flag(
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    flag: str,
+    requirement: KingdomRequirement,
+) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def _generate_game(*_args: Any, **kwargs: Any) -> Game:  # noqa: ANN401
+        calls.append(kwargs)
+        return Game(basic_piles=[], kingdom_piles=[])
+
+    monkeypatch.setattr("dominion_setup.cli.generate_game", _generate_game)
+    assert runner.invoke(cli, ["generate", flag]).exit_code == 0
+    assert calls[0]["requirements"] == [requirement]
+
+
+def test_generate_requires_the_only_reaction(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["generate", "--set", "base_2e", "--require-reaction"])
+    assert result.exit_code == 0
+    assert "Moat" in [row[1] for row in parse_tables(result.output)["Kingdom"]]
+
+
+def test_generate_requirement_without_a_provider_is_a_usage_error(
+    runner: CliRunner,
+) -> None:
+    result = runner.invoke(cli, ["generate", "--set", "alchemy", "--require-reaction"])
+    assert result.exit_code == 2
+    assert "No Kingdom card in the selected sets provides Reaction" in result.output
 
 
 def test_generate_prints_every_part_of_the_game(

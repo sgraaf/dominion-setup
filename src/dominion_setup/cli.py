@@ -18,6 +18,7 @@ from .models import (
     CardSetEdition,
     CardType,
     Game,
+    KingdomRequirement,
     KingdomSortOrder,
     Pile,
 )
@@ -172,15 +173,66 @@ def _print_game(game: Game) -> None:
     default=2,
     help="Maximum number of landscapes to include.",
 )
+@click.option(
+    "require_actions",
+    "--require-actions",
+    is_flag=True,
+    help="Require a Kingdom card with +Action(s).",
+)
+@click.option(
+    "require_cards",
+    "--require-cards",
+    is_flag=True,
+    help="Require a Kingdom card with +Card(s).",
+)
+@click.option(
+    "require_buys",
+    "--require-buys",
+    is_flag=True,
+    help="Require a Kingdom card with +Buy(s).",
+)
+@click.option(
+    "require_attack",
+    "--require-attack",
+    is_flag=True,
+    help="Require an Attack Kingdom card.",
+)
+@click.option(
+    "require_reaction",
+    "--require-reaction",
+    is_flag=True,
+    help="Require a Reaction Kingdom card.",
+)
+@click.option(
+    "require_trashing",
+    "--require-trashing",
+    is_flag=True,
+    help="Require a Kingdom card that trashes other cards.",
+)
 def generate(
     raw_sets_editions: tuple[str, ...],
     sort_order: str,
     use_colony: bool | None,
     use_shelters: bool | None,
     max_landscapes: int,
+    require_actions: bool,
+    require_cards: bool,
+    require_buys: bool,
+    require_attack: bool,
+    require_reaction: bool,
+    require_trashing: bool,
 ) -> None:
     """Generate a random Dominion game setup."""
     db = load_card_database()
+
+    requirement_flags = {
+        KingdomRequirement.ACTIONS: require_actions,
+        KingdomRequirement.CARDS: require_cards,
+        KingdomRequirement.BUYS: require_buys,
+        KingdomRequirement.ATTACK: require_attack,
+        KingdomRequirement.REACTION: require_reaction,
+        KingdomRequirement.TRASHING: require_trashing,
+    }
 
     try:
         game = generate_game(
@@ -190,6 +242,11 @@ def generate(
             use_colony=use_colony,
             use_shelters=use_shelters,
             max_landscapes=max_landscapes,
+            requirements=[
+                requirement
+                for requirement, is_required in requirement_flags.items()
+                if is_required
+            ],
         )
     except SetupGenerationError as exc:
         raise click.UsageError(str(exc)) from exc

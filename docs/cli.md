@@ -85,6 +85,19 @@ $ dominion-setup generate --help
 │ --max-landscapes             INTEGER RANGE [x>=0]    Maximum number of       │
 │                                                      landscapes to include.  │
 │                                                      [default: 2]            │
+│ --require-actions                                    Require a Kingdom card  │
+│                                                      with +Action(s).        │
+│ --require-cards                                      Require a Kingdom card  │
+│                                                      with +Card(s).          │
+│ --require-buys                                       Require a Kingdom card  │
+│                                                      with +Buy(s).           │
+│ --require-attack                                     Require an Attack       │
+│                                                      Kingdom card.           │
+│ --require-reaction                                   Require a Reaction      │
+│                                                      Kingdom card.           │
+│ --require-trashing                                   Require a Kingdom card  │
+│                                                      that trashes other      │
+│                                                      cards.                  │
 │ --help                   -h                          Show this message and   │
 │                                                      exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
