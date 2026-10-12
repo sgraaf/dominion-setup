@@ -108,7 +108,7 @@ class CardPurpose(StrEnum):
 
 @dataclass(order=True, frozen=True, slots=True)
 class CardCost:
-    """Card cost, supporting coins and Potion."""
+    """Card cost, supporting coins, Potion and Debt."""
 
     coins: int = 0
     potion: bool = False
@@ -116,9 +116,9 @@ class CardCost:
     extra: Literal["+", "*"] | None = field(default=None, compare=False)
 
     def __str__(self) -> str:
-        """Format cost for display (e.g. '$3', '$2P', '$0P')."""
+        """Format cost for display (e.g. '$3', '$2P', 'P', '8D')."""
         s = ""
-        if self.coins or not any((self.coins, self.potion, self.debt)):
+        if self.coins or not (self.potion or self.debt):
             s += f"${self.coins}"
         if self.potion:
             s += "P"
@@ -225,7 +225,9 @@ class Card:
 
     @property
     def display_set(self) -> str:
-        return f"{self.set}{f', {self.editions[0]}E' if len(self.editions) == 1 and self.set in CARD_SETS_WITH_SECOND_EDITIONS else ''}"
+        if self.set in CARD_SETS_WITH_SECOND_EDITIONS and len(self.editions) == 1:
+            return f"{self.set}, {self.editions[0]}E"
+        return str(self.set)
 
     @property
     def has_potion_cost(self) -> bool:
@@ -316,7 +318,7 @@ class PileMark:
     trait: Card | None = None
 
     def __post_init__(self) -> None:
-        if (self.kind == PileMarkKind.TRAIT) is not (self.trait is not None):
+        if (self.kind == PileMarkKind.TRAIT) != (self.trait is not None):
             msg = "PileMark with kind TRAIT requires a trait card; other kinds must not have one"
             raise ValueError(msg)
 
@@ -387,28 +389,30 @@ class CardDatabase:
     status_cards: dict[str, Card] = field(init=False)
 
     def __post_init__(self) -> None:
-        self.card_name_to_card = {}
-        self.basic_cards = {}
-        self.kingdom_cards = {}
-        self.landscape_cards = {}
-        self.mixed_pile_cards = {}
-        self.non_supply_cards = {}
-        self.status_cards = {}
-        for card in self.cards:
-            self.card_name_to_card[card.name] = card
-            match card.purpose:
-                case CardPurpose.BASIC:
-                    self.basic_cards[card.name] = card
-                case CardPurpose.KINGDOM_PILE:
-                    self.kingdom_cards[card.name] = card
-                case CardPurpose.LANDSCAPE:
-                    self.landscape_cards[card.name] = card
-                case CardPurpose.MIXED_PILE_CARD:
-                    self.mixed_pile_cards[card.name] = card
-                case CardPurpose.NON_SUPPLY:
-                    self.non_supply_cards[card.name] = card
-                case CardPurpose.STATUS:
-                    self.status_cards[card.name] = card
+        self.card_name_to_card = self._create_index(self.cards)
+        self.basic_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.BASIC)
+        )
+        self.kingdom_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.KINGDOM_PILE)
+        )
+        self.landscape_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.LANDSCAPE)
+        )
+        self.mixed_pile_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.MIXED_PILE_CARD)
+        )
+        self.non_supply_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.NON_SUPPLY)
+        )
+        self.status_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.STATUS)
+        )
+
+    @staticmethod
+    def _create_index(cards: list[Card]) -> dict[str, Card]:
+        """Index cards by name."""
+        return {card.name: card for card in cards}
 
     def __iter__(self) -> Iterator[Card]:
         return iter(self.cards)
@@ -439,6 +443,10 @@ class CardDatabase:
     def get_cards_by_cost(self, card_cost: CardCost) -> list[Card]:
         """Return all kingdom cards of the given cost."""
         return [card for card in self.kingdom_cards.values() if card.cost == card_cost]
+
+    def get_cards_by_purpose(self, card_purpose: CardPurpose) -> list[Card]:
+        """Return all cards of the given purpose."""
+        return [card for card in self.cards if card.purpose == card_purpose]
 
 
 class KingdomSortOrder(StrEnum):

@@ -8,9 +8,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
-
 from .models import (
     DEFAULT_BASIC_CARD_NAMES,
     MATERIAL_ORDER,
@@ -30,6 +27,9 @@ from .models import (
 )
 from .utils import card_sort_key
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
 KINGDOM_PILE_COUNT = 10
 DRUID_BOON_COUNT = 3
 
@@ -45,7 +45,7 @@ VP_SETUP_PATTERN = re.compile(r"Setup: Put \d+ VP")
 MINUS_ONE_COIN_PATTERN = re.compile(r"-\$1 token")
 DEBT_PATTERN = re.compile(r"\d+D")
 HEIRLOOM_PATTERN = re.compile(r"Heirloom: (.*)$")
-SETUP_PATTERN = re.compile(r"(Setup: .*$)")
+SETUP_PATTERN = re.compile(r"Setup: (.*)$")
 
 
 class SetupGenerationError(ValueError):
@@ -277,7 +277,7 @@ def generate_game(  # noqa: PLR0913
 
     # ── Setup instructions ──────────────────────────────────────────────────
     setup_instructions = [
-        f"{card.name}: {setup_match.group(1).removeprefix('Setup: ')}"
+        f"{card.name}: {setup_match.group(1)}"
         for card in sorted(
             [*cards_in_use, *landscapes, *basic_cards], key=card_sort_key(sort_order)
         )
@@ -429,16 +429,14 @@ def _companion_cards(
                 key=card_sort_key(KingdomSortOrder.NAME),
             )
 
-    companion_names = [
-        name
-        for trigger, names in COMPANION_CARDS
-        if (
-            trigger in types_in_use
-            if isinstance(trigger, CardType)
-            else trigger in names_in_use
-        )
-        for name in names
-    ]
+    companion_names: list[str] = []
+    for trigger, names in COMPANION_CARDS:
+        if isinstance(trigger, CardType):
+            is_triggered = trigger in types_in_use
+        else:
+            is_triggered = trigger in names_in_use
+        if is_triggered:
+            companion_names += names
 
     # if any Kingdom or Landscape cards give Loot (or Horses), shuffle the Loot
     # cards (put the Horse pile) and set them out near the Supply.

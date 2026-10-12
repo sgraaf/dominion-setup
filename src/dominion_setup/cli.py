@@ -80,21 +80,9 @@ def _print_pile_table(piles: list[Pile], *, title: str, numbered: bool) -> None:
     console.print(table)
 
 
-def _print_card_only_table(*cards: Card, title: str) -> None:
-    """Print a small table of cards (e.g. Ally, Druid Boons)."""
-    table = Table(title=title)
-    table.add_column("Name", style="bold")
-    table.add_column("Cost", justify="right")
-    table.add_column("Types")
-    table.add_column("Set")
-    for card in cards:
-        table.add_row(
-            card.name,
-            str(card.cost),
-            ", ".join(card.types),
-            card.display_set,
-        )
-    console.print(table)
+def _print_card_table(cards: list[Card], *, title: str, numbered: bool) -> None:
+    """Print a table of cards (e.g. Landscapes, Ally, Druid Boons), which carry no marks."""
+    _print_pile_table([Pile(card) for card in cards], title=title, numbered=numbered)
 
 
 def _print_game(game: Game) -> None:
@@ -110,21 +98,21 @@ def _print_game(game: Game) -> None:
     # landscape cards (Events, Landmarks, Projects, Ways, Traits, …)
     if game.landscapes:
         console.print()
-        _print_card_only_table(*game.landscapes, title="Landscapes")
+        _print_card_table(game.landscapes, title="Landscapes", numbered=False)
 
     # ally
     if game.ally is not None:
         console.print()
-        _print_card_only_table(game.ally, title="Ally")
+        _print_card_table([game.ally], title="Ally", numbered=False)
 
     # Prophecy
     if game.prophecy is not None:
         console.print()
-        _print_card_only_table(game.prophecy, title="Prophecy")
+        _print_card_table([game.prophecy], title="Prophecy", numbered=False)
 
     if game.druid_boons:
         console.print()
-        _print_card_only_table(*game.druid_boons, title="Druid Boons")
+        _print_card_table(game.druid_boons, title="Druid Boons", numbered=False)
 
     # non-supply piles (Prizes / Rewards / Ferryman / Travellers / …)
     if game.non_supply_piles:
@@ -212,27 +200,6 @@ def generate(
     _print_game(game)
 
 
-def _print_card_table(cards: list[Card]) -> None:
-    """Print a list of cards as a rich-formatted table."""
-    table = Table(title=f"Kingdom Cards ({len(cards)})")
-    table.add_column("#", justify="right", style="dim")
-    table.add_column("Name", style="bold")
-    table.add_column("Cost", justify="right")
-    table.add_column("Types")
-    table.add_column("Set")
-
-    for i, card in enumerate(cards, start=1):
-        table.add_row(
-            str(i),
-            card.name,
-            str(card.cost),
-            ", ".join(card.types),
-            card.display_set,
-        )
-
-    console.print(table)
-
-
 @cli.command("list-cards")
 @click.option(
     "raw_sets_editions",
@@ -290,7 +257,7 @@ def list_cards(
         cards = [card for card in cards if card.cost.coins == cost]
 
     cards.sort(key=card_sort_key(KingdomSortOrder(sort)))
-    _print_card_table(cards)
+    _print_card_table(cards, title=f"Kingdom Cards ({len(cards)})", numbered=True)
 
 
 @cli.command("list-sets")

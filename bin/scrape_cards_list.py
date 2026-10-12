@@ -6,8 +6,8 @@
 """Scrape the Dominion Strategy Wiki card list and generate JSON data files.
 
 Navigates past the anti-bot challenge using a real Chromium browser via
-Playwright, extracts the cards table from the "List of cards" page, and writes
-per-set JSON files into src/dominion_setup/data/cards/.
+Playwright, fetches the cards from the wiki's Cargo export, and writes per-set
+JSON files into src/dominion_setup/data/cards/.
 
 Usage:
     uv run bin/scrape_cards_list.py [--headed] [--dry-run]
@@ -26,7 +26,7 @@ import sys
 import unicodedata
 from collections import defaultdict
 from pathlib import Path
-from typing import Literal, NotRequired, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 from urllib.parse import urlencode
 
 import rich_click as click
@@ -112,6 +112,69 @@ INSTRUCTIONS_PATTERNS_REPLS: list[tuple[str, str]] = [
     (r" {2,}", r" "),
 ]
 
+# hand-written cards, each standing for a whole pile (or deck) of different
+# components
+PILE_CARDS: list[Card] = [
+    {
+        "name": "Ruins",
+        "types": ["Action", "Ruins"],
+        "purpose": "Basic",
+        "cost": {"coins": 0},
+        "set": "Dark Ages",
+        "editions": [1],
+        "quantity": 0,
+        "image": "Survivors.jpg",
+        "instructions": "Setup: Shuffle the Ruins cards, then count out 10 per player after the first: 10 for two players, 20 for three players, 30 for four players, 40 for five players, or 50 for six players.",
+    },
+    {
+        "name": "Shelters",
+        "types": ["Shelter"],
+        "purpose": "Basic",
+        "cost": {"coins": 1},
+        "set": "Dark Ages",
+        "editions": [1],
+        "quantity": 0,
+        "image": "Hovel.jpg",
+        "instructions": "Setup: If only Kingdom cards from Dark Ages are being used this game, the Shelter cards replace starting Estates - each player's starting deck is seven Coppers, a Hovel, a Necropolis, and an Overgrown Estate. If a mix of Kingdom cards from Dark Ages and other sets is being used, then the use of Shelters should be determined randomly, based on the proportion of Dark Ages cards in use.",
+    },
+    {
+        "name": "Boons",
+        "types": ["Boon"],
+        "purpose": "Status",
+        "cost": {},
+        "set": "Nocturne",
+        "editions": [1],
+        "quantity": 0,
+        "image": "Boon-back.jpg",
+        "instructions": "Setup: If any Kingdom cards being used have the Fate type, shuffle the Boons and put them near the Supply, and put the Will-o'-Wisp pile near the Supply also.",
+    },
+    {
+        "name": "Hexes",
+        "types": ["Hex"],
+        "purpose": "Status",
+        "cost": {},
+        "set": "Nocturne",
+        "editions": [1],
+        "quantity": 0,
+        "image": "Hex-back.jpg",
+        "instructions": "Setup: If any Kingdom cards being used have the Doom type, shuffle the Hexes and put them near the Supply, and put Deluded/Envious and Miserable/Twice Miserable near the Supply also.",
+    },
+    {
+        "name": "Loot",
+        "types": ["Treasure", "Loot"],
+        "purpose": "Non-Supply",
+        "cost": {
+            "coins": 7,
+            "extra": "*",
+        },
+        "set": "Plunder",
+        "editions": [1],
+        "quantity": 0,
+        "image": "Amphora.jpg",
+        "instructions": "Setup: If any Kingdom cards give Loot, shuffle the Loot cards and set them out near the Supply.",
+    },
+]
+
 # single shared console for all status output.
 console = Console()
 
@@ -124,14 +187,12 @@ def ensure_browser() -> None:
     )
 
 
-def scrape_card_table(*, headless: bool = True) -> list[Card]:
-    """Load the wiki page in Chromium, and extract and parse the cards table.
+def fetch_raw_cards(*, headless: bool = True) -> list[dict[str, Any]]:
+    """Load the wiki in Chromium, and fetch the raw cards data from its Cargo export.
 
     The wiki uses an anti-bot challenge that requires a real browser engine to
-    solve. After the challenge resolves, the actual page may still stream in
-    -- so we poll the table row row_count until it stabilises.
+    solve, so the export is fetched by the same browser once it has passed.
     """
-    # first, fetch the page's HTML content
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=headless)
         page = browser.new_page()
@@ -150,150 +211,91 @@ def scrape_card_table(*, headless: bool = True) -> list[Card]:
         console.print(f"Navigating to {WIKI_JSON_URL} ...")
         with page.expect_response(WIKI_JSON_URL) as response_info:
             page.goto(WIKI_JSON_URL, timeout=10_000, wait_until="domcontentloaded")
-        raw_cards = response_info.value.json()
+        return response_info.value.json()
 
-    # parse raw cards data
-    cards: list[Card] = [
-        {
-            "name": "Ruins",
-            "types": ["Action", "Ruins"],
-            "purpose": "Basic",
-            "cost": {"coins": 0},
-            "set": "Dark Ages",
-            "editions": [1],
-            "quantity": 0,
-            "image": "Survivors.jpg",
-            "instructions": "Setup: Shuffle the Ruins cards, then count out 10 per player after the first: 10 for two players, 20 for three players, 30 for four players, 40 for five players, or 50 for six players.",
-        },
-        {
-            "name": "Shelters",
-            "types": ["Shelter"],
-            "purpose": "Basic",
-            "cost": {"coins": 1},
-            "set": "Dark Ages",
-            "editions": [1],
-            "quantity": 0,
-            "image": "Hovel.jpg",
-            "instructions": "Setup: If only Kingdom cards from Dark Ages are being used this game, the Shelter cards replace starting Estates - each player's starting deck is seven Coppers, a Hovel, a Necropolis, and an Overgrown Estate. If a mix of Kingdom cards from Dark Ages and other sets is being used, then the use of Shelters should be determined randomly, based on the proportion of Dark Ages cards in use.",
-        },
-        {
-            "name": "Boons",
-            "types": ["Boon"],
-            "purpose": "Status",
-            "cost": {},
-            "set": "Nocturne",
-            "editions": [1],
-            "quantity": 0,
-            "image": "Boon-back.jpg",
-            "instructions": "Setup: If any Kingdom cards being used have the Fate type, shuffle the Boons and put them near the Supply, and put the Will-o'-Wisp pile near the Supply also.",
-        },
-        {
-            "name": "Hexes",
-            "types": ["Hex"],
-            "purpose": "Status",
-            "cost": {},
-            "set": "Nocturne",
-            "editions": [1],
-            "quantity": 0,
-            "image": "Hex-back.jpg",
-            "instructions": "Setup: If any Kingdom cards being used have the Doom type, shuffle the Hexes and put them near the Supply, and put Deluded/Envious and Miserable/Twice Miserable near the Supply also.",
-        },
-        {
-            "name": "Loot",
-            "types": ["Treasure", "Loot"],
-            "purpose": "Non-Supply",
-            "cost": {
-                "coins": 7,
-                "extra": "*",
-            },
-            "set": "Plunder",
-            "editions": [1],
-            "quantity": 0,
-            "image": "Amphora.jpg",
-            "instructions": "Setup: If any Kingdom cards give Loot, shuffle the Loot cards and set them out near the Supply.",
-        },
-    ]
-    for raw_card in raw_cards:
-        cost: Cost = {}
-        if coins := raw_card["Cost Coin"]:
-            cost["coins"] = coins
-        if potion := raw_card["Cost Potion"]:
-            cost["potion"] = bool(potion)
-        if debt := raw_card["Cost Debt"]:
-            cost["debt"] = debt
-        if extra := raw_card["Cost Extra"]:
-            cost["extra"] = extra
 
-        if not cost and coins is not None:  # card with zero cost
-            cost["coins"] = coins
+def parse_raw_card(raw_card: dict[str, Any]) -> Card:
+    """Parse a single raw card from the wiki's Cargo export."""
+    cost: Cost = {}
+    if coins := raw_card["Cost Coin"]:
+        cost["coins"] = coins
+    if potion := raw_card["Cost Potion"]:
+        cost["potion"] = bool(potion)
+    if debt := raw_card["Cost Debt"]:
+        cost["debt"] = debt
+    if extra := raw_card["Cost Extra"]:
+        cost["extra"] = extra
 
-        name = (
-            html.unescape(raw_card["Name"]) if raw_card["Name"] != "Farm" else "Harem"
-        )
+    if not cost and coins is not None:  # card with zero cost
+        cost["coins"] = coins
 
-        types = [type_.strip() for type_ in raw_card["Types"]]
+    name = html.unescape(raw_card["Name"]) if raw_card["Name"] != "Farm" else "Harem"
 
-        purpose = raw_card["Purpose"]
-        if {"Ruins", "Shelter", "Boon", "Hex", "Loot"} & set(types):
-            purpose = "Mixed Pile Card"
+    types = [type_.strip() for type_ in raw_card["Types"]]
 
-        set_ = (
-            raw_card["Expansion"].replace("&amp;", "&")
-            if raw_card["Expansion"] != "Dominion"
-            else "Base"
-        )
+    purpose = raw_card["Purpose"]
+    if {"Ruins", "Shelter", "Boon", "Hex", "Loot"} & set(types):
+        purpose = "Mixed Pile Card"
 
-        quantity = raw_card["Quantity"]
+    set_ = (
+        raw_card["Expansion"].replace("&amp;", "&")
+        if raw_card["Expansion"] != "Dominion"
+        else "Base"
+    )
 
-        instructions = (
-            fromstring(
-                unicodedata.normalize(
-                    "NFKD", html.unescape(html.unescape(raw_card["Instructions"]))
-                )
-                .replace("'''", "")  # bold
-                .replace("''", "")  # italic
-                .replace("<p>", "\n")
-                .replace("</p>", "\n")
-                .replace("<br>", "\n")
-                .replace(
-                    '<hr style="width:66%;margin-left:17%;text-align:center;" />',
-                    "\n-----\n",
-                )
-                .replace(
-                    '<hr style="width:50%;margin-left:25%;text-align:center;" />',
-                    "\n-----\n",
-                )
-                .replace("\u2013", "-")
-                .replace("\u2019", "'")
+    quantity = raw_card["Quantity"]
+
+    instructions = (
+        fromstring(
+            unicodedata.normalize(
+                "NFKD", html.unescape(html.unescape(raw_card["Instructions"]))
             )
-            .text_content()
-            .strip()
+            .replace("'''", "")  # bold
+            .replace("''", "")  # italic
+            .replace("<p>", "\n")
+            .replace("</p>", "\n")
+            .replace("<br>", "\n")
+            .replace(
+                '<hr style="width:66%;margin-left:17%;text-align:center;" />',
+                "\n-----\n",
+            )
+            .replace(
+                '<hr style="width:50%;margin-left:25%;text-align:center;" />',
+                "\n-----\n",
+            )
+            .replace("\u2013", "-")
+            .replace("\u2019", "'")
         )
-        for pattern, repl in INSTRUCTIONS_PATTERNS_REPLS:
-            instructions = re.sub(pattern, repl, instructions)
+        .text_content()
+        .strip()
+    )
+    for pattern, repl in INSTRUCTIONS_PATTERNS_REPLS:
+        instructions = re.sub(pattern, repl, instructions)
 
-        # prepend "Setup: " to mixed pile cards
-        if quantity == 0 and purpose == "Kingdom Pile":
-            instructions = f"Setup: {instructions}"
+    # prepend "Setup: " to mixed pile cards
+    if quantity == 0 and purpose == "Kingdom Pile":
+        instructions = f"Setup: {instructions}"
 
-        card: Card = {
-            "name": name,
-            "types": types,
-            "purpose": purpose,
-            "cost": cost,
-            "set": set_,
-            "editions": [
-                edition
-                if isinstance(edition, int)
-                else int(edition.removeprefix("amp;"))
-                for edition in raw_card["Edition"]
-            ],
-            "quantity": quantity,
-            "image": html.unescape(raw_card["Image"]),
-            "instructions": instructions,
-        }
-        cards.append(card)
+    return {
+        "name": name,
+        "types": types,
+        "purpose": purpose,
+        "cost": cost,
+        "set": set_,
+        "editions": [
+            edition if isinstance(edition, int) else int(edition.removeprefix("amp;"))
+            for edition in raw_card["Edition"]
+        ],
+        "quantity": quantity,
+        "image": html.unescape(raw_card["Image"]),
+        "instructions": instructions,
+    }
 
+
+def scrape_card_table(*, headless: bool = True) -> list[Card]:
+    """Fetch and parse the cards from the wiki, along with ``PILE_CARDS``."""
+    raw_cards = fetch_raw_cards(headless=headless)
+    cards = [*PILE_CARDS, *map(parse_raw_card, raw_cards)]
     console.print(f"Extracted [bold]{len(cards)}[/bold] cards from the wiki table.")
     return cards
 
