@@ -1,56 +1,67 @@
-import re
-import shlex
+"""Tests for ``dominion_setup.cli``.
+
+The tests invoke the CLI and parse the tables it prints (see ``parse_tables``),
+so they can check exactly which cards it lists.
+"""
+
 import subprocess
 import sys
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Callable
 from importlib import import_module, metadata
-from os import PathLike
 from pathlib import Path
 from typing import Any, NoReturn
 
 import pytest
 from click.testing import CliRunner
 
-from dominion_setup.cli import cli
+from dominion_setup.cli import SET_EDITION_CHOICES, cli
 from dominion_setup.generator import SetupGenerationError
+from dominion_setup.models import (
+    CARD_SETS_WITH_SECOND_EDITIONS,
+    Card,
+    CardDatabase,
+    CardSet,
+    CardSetEdition,
+    CardType,
+    Game,
+    KingdomSortOrder,
+    Material,
+    Pile,
+    PileMark,
+    PileMarkKind,
+)
 
-# copied from `typeshed`
-StrOrBytesPath = str | bytes | PathLike
-Command = StrOrBytesPath | Sequence[StrOrBytesPath]
-
-
-@dataclass
-class CommandResult:
-    """Holds the captured result of an invoked command.
-
-    Inspired by `click.testing.Result`.
-    """
-
-    exit_code: int
-    stdout: str
-    stderr: str
-
-
-def run_command_in_shell(command: Command, **kwargs: Any) -> CommandResult:  # noqa: ANN401
-    """Execute a command through the shell, capturing the exit code and output."""
-    result = subprocess.run(  # noqa: S602
-        command,
-        shell=True,
-        capture_output=True,
-        check=False,
-        **kwargs,
-    )
-    return CommandResult(
-        result.returncode,
-        result.stdout.decode().replace("\r\n", "\n"),
-        result.stderr.decode().replace("\r\n", "\n"),
-    )
+BASIC_SUPPLY = ["Copper", "Silver", "Gold", "Estate", "Duchy", "Province", "Curse"]
 
 
 @pytest.fixture
 def runner() -> CliRunner:
-    return CliRunner()
+    # wide enough that no table cell wraps onto a second line
+    return CliRunner(env={"COLUMNS": "200"})
+
+
+def parse_tables(output: str) -> dict[str, list[list[str]]]:
+    """Parse the tables in *output* into their rows of cells, keyed by title."""
+    tables: dict[str, list[list[str]]] = {}
+    rows: list[list[str]] = []
+    lines = output.splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith("┏"):  # top border, below the title
+            rows = tables[lines[i - 1].strip()] = []
+        elif line.startswith("│"):  # body row
+            rows.append([cell.strip() for cell in line.strip("│").split("│")])
+    return tables
+
+
+def card_rows(cards: list[Card]) -> list[list[str]]:
+    """The numbered rows of a table listing *cards*, as printed by the CLI."""
+    return [
+        [str(i), card.name, str(card.cost), ", ".join(card.types), card.display_set]
+        for i, card in enumerate(cards, start=1)
+    ]
+
+
+# ── Entry points ─────────────────────────────────────────────────────────────
 
 
 def test_main_module() -> None:
@@ -59,22 +70,170 @@ def test_main_module() -> None:
 
 
 def test_run_as_module() -> None:
-    """Is the script runnable as a Python module?"""
-    result = run_command_in_shell(
-        f"{shlex.quote(sys.executable)} -m dominion_setup --help"
+    result = subprocess.run(
+        [sys.executable, "-m", "dominion_setup", "--help"],
+        capture_output=True,
+        check=False,
     )
-    assert result.exit_code == 0
+    assert result.returncode == 0
 
 
 def test_run_as_executable() -> None:
-    """Is the script installed (as a `console_script`) and runnable as an executable?"""
     # console scripts are installed next to the interpreter, which need not be on PATH
     executable = Path(sys.executable).parent / "dominion-setup"
-    result = run_command_in_shell(f"{shlex.quote(str(executable))} --help")
+    result = subprocess.run(  # noqa: S603
+        [executable, "--help"], capture_output=True, check=False
+    )
+    assert result.returncode == 0
+
+
+def test_version(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
+    assert result.output == f"cli, version {metadata.version('dominion-setup')}\n"
 
 
-def test_generate_setup_error_is_usage_error(
+def test_help_lists_the_commands(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["--help"])
+    assert result.exit_code == 0
+    for command in ("generate", "list-cards", "list-sets"):
+        assert command in result.output
+
+
+def test_no_command_runs_generate(runner: CliRunner) -> None:
+    result = runner.invoke(cli, [])
+    assert result.exit_code == 0
+    assert "Kingdom" in parse_tables(result.output)
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["generate", "--set", "nonexistent"],
+        ["generate", "--sort", "nonexistent"],
+        ["list-cards", "--set", "nonexistent"],
+        ["list-cards", "--type", "nonexistent"],
+    ],
+)
+def test_invalid_choice_is_a_usage_error(runner: CliRunner, args: list[str]) -> None:
+    assert runner.invoke(cli, args).exit_code == 2
+
+
+# ── generate ─────────────────────────────────────────────────────────────────
+
+
+def test_generate_defaults_to_base_2e(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["generate"])
+    assert result.exit_code == 0
+    tables = parse_tables(result.output)
+    kingdom = tables["Kingdom"]
+    assert [row[0] for row in kingdom] == [str(i) for i in range(1, 11)]
+    assert {row[4] for row in kingdom} <= {"Base", "Base, 2E"}
+    assert [row[0] for row in tables["Basic Supply"]] == BASIC_SUPPLY
+
+
+@pytest.mark.parametrize(
+    "choices",
+    [*([choice] for choice in SET_EDITION_CHOICES), ["base_2e", "intrigue_2e"]],
+    ids="+".join,
+)
+def test_generate_draws_from_the_given_sets(
+    runner: CliRunner, choices: list[str]
+) -> None:
+    args = [arg for choice in choices for arg in ("--set", choice)]
+    result = runner.invoke(cli, ["generate", *args])
+    assert result.exit_code == 0
+    allowed_sets = set()
+    for choice in choices:
+        set_, edition = SET_EDITION_CHOICES[choice]
+        allowed_sets |= {str(set_), f"{set_}, {edition}E"}
+    for row in parse_tables(result.output)["Kingdom"]:
+        assert row[4] in allowed_sets
+
+
+@pytest.mark.parametrize("sort_order", KingdomSortOrder)
+def test_generate_sorts_the_kingdom(
+    runner: CliRunner, db: CardDatabase, sort_order: KingdomSortOrder
+) -> None:
+    result = runner.invoke(cli, ["generate", "--sort", sort_order.value])
+    assert result.exit_code == 0
+    kingdom = [
+        db.get_card_by_name(row[1]) for row in parse_tables(result.output)["Kingdom"]
+    ]
+    assert kingdom == sorted(kingdom, key=sort_order.sort_key)
+
+
+@pytest.mark.parametrize(
+    ("args", "piles", "included"),
+    [
+        (["--colony"], {"Colony", "Platinum"}, True),
+        (["--no-colony", "--set", "prosperity_2e"], {"Colony", "Platinum"}, False),
+        (["--shelters"], {"Shelters"}, True),
+        (["--no-shelters", "--set", "dark_ages"], {"Shelters"}, False),
+    ],
+)
+def test_generate_forces_basic_piles_on_or_off(
+    runner: CliRunner,
+    args: list[str],
+    piles: set[str],
+    included: bool,  # noqa: FBT001
+) -> None:
+    result = runner.invoke(cli, ["generate", *args])
+    assert result.exit_code == 0
+    basic_names = {row[0] for row in parse_tables(result.output)["Basic Supply"]}
+    expected = piles if included else set()
+    assert piles & basic_names == expected
+
+
+def test_generate_without_landscapes(runner: CliRunner) -> None:
+    result = runner.invoke(
+        cli, ["generate", "--set", "adventures", "--max-landscapes", "0"]
+    )
+    assert result.exit_code == 0
+    assert "Landscapes" not in parse_tables(result.output)
+
+
+def test_generate_prints_every_part_of_the_game(
+    runner: CliRunner, db: CardDatabase, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    game = Game(
+        basic_piles=[Pile(db.get_card_by_name(name)) for name in BASIC_SUPPLY],
+        kingdom_piles=[
+            Pile(db.get_card_by_name("Hamlet"), marks=(PileMark(PileMarkKind.BANE),)),
+            Pile(db.get_card_by_name("Young Witch")),
+        ],
+        non_supply_piles=[Pile(db.get_card_by_name("Madman"))],
+        landscapes=[db.get_card_by_name("Alms")],
+        ally=db.get_card_by_name("Architects' Guild"),
+        prophecy=db.get_card_by_name("Approaching Army"),
+        druid_boons=[db.get_card_by_name("The Earth's Gift")],
+        materials=[Material.COIN_TOKENS],
+        setup_instructions=["Young Witch: Add an extra Kingdom card pile."],
+    )
+    monkeypatch.setattr(
+        "dominion_setup.cli.generate_game", lambda *_args, **_kwargs: game
+    )
+    result = runner.invoke(cli, ["generate"])
+    assert result.exit_code == 0
+    tables = parse_tables(result.output)
+    assert list(tables) == [
+        "Kingdom",
+        "Landscapes",
+        "Ally",
+        "Prophecy",
+        "Druid Boons",
+        "Non-Supply",
+        "Basic Supply",
+    ]
+    assert tables["Kingdom"] == [
+        ["1", "Hamlet", "$2", "Action", "Cornucopia & Guilds", "Bane"],
+        ["2", "Young Witch", "$4", "Action, Attack", "Cornucopia & Guilds", ""],
+    ]
+    assert "Materials:\n  • Coin tokens" in result.output
+    assert "Setup:\n  • Young Witch: Add an extra Kingdom card pile." in result.output
+
+
+def test_generate_setup_error_is_a_usage_error(
     runner: CliRunner, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def _raise(*_args: Any, **_kwargs: Any) -> NoReturn:  # noqa: ANN401
@@ -87,7 +246,7 @@ def test_generate_setup_error_is_usage_error(
     assert "No eligible Bane card" in result.output
 
 
-def test_generate_unexpected_error_is_not_usage_error(
+def test_generate_unexpected_error_is_not_a_usage_error(
     runner: CliRunner, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def _raise(*_args: Any, **_kwargs: Any) -> NoReturn:  # noqa: ANN401
@@ -100,321 +259,89 @@ def test_generate_unexpected_error_is_not_usage_error(
     assert isinstance(result.exception, ValueError)
 
 
-def test_version_runner(runner: CliRunner) -> None:
-    """Does `--version` display the correct version?"""
-    result = runner.invoke(cli, ["--version"])
+# ── list-cards ───────────────────────────────────────────────────────────────
+
+
+def is_base_2e(card: Card) -> bool:
+    return card.set == CardSet.BASE and CardSetEdition.SECOND_EDITION in card.editions
+
+
+@pytest.mark.parametrize(
+    ("args", "is_listed"),
+    [
+        pytest.param([], lambda _card: True, id="all"),
+        pytest.param(["--set", "base_2e"], is_base_2e, id="set"),
+        pytest.param(
+            ["--set", "base_2e", "--set", "alchemy"],
+            lambda card: is_base_2e(card) or card.set == CardSet.ALCHEMY,
+            id="sets",
+        ),
+        pytest.param(
+            ["--type", "attack"], lambda card: CardType.ATTACK in card.types, id="type"
+        ),
+        pytest.param(
+            ["--type", "treasure", "--type", "victory"],
+            lambda card: {CardType.TREASURE, CardType.VICTORY} <= set(card.types),
+            id="types",
+        ),
+        pytest.param(["--cost", "2"], lambda card: card.cost.coins == 2, id="cost"),
+        pytest.param(["--cost", "99"], lambda _card: False, id="no cards"),
+        pytest.param(
+            ["--set", "base_2e", "--type", "action", "--cost", "5"],
+            lambda card: (
+                is_base_2e(card)
+                and CardType.ACTION in card.types
+                and card.cost.coins == 5
+            ),
+            id="set, type and cost",
+        ),
+    ],
+)
+def test_list_cards_filters(
+    runner: CliRunner,
+    db: CardDatabase,
+    args: list[str],
+    is_listed: Callable[[Card], bool],
+) -> None:
+    result = runner.invoke(cli, ["list-cards", *args])
     assert result.exit_code == 0
-    assert result.output == f"cli, version {metadata.version('dominion-setup')}\n"
+    cards = sorted(
+        filter(is_listed, db.kingdom_cards.values()),
+        key=KingdomSortOrder.COST.sort_key,
+    )
+    assert parse_tables(result.output) == {
+        f"Kingdom Cards ({len(cards)})": card_rows(cards)
+    }
 
 
-def test_generate_default(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate"])
-    assert result.exit_code == 0
-    assert "Kingdom" in result.output
-
-
-def test_generate_shows_basic_piles(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate"])
-    assert result.exit_code == 0
-    for name in ("Copper", "Silver", "Gold", "Estate", "Duchy", "Province", "Curse"):
-        assert name in result.output
-
-
-def test_generate_shows_10_kingdom_cards(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "-s", "base_2e"])
-    assert result.exit_code == 0
-    # Kingdom table rows are numbered; match lines like "│  1 │ ..."
-    kingdom_rows = [
-        line
-        for line in result.output.splitlines()
-        if "│" in line and re.search(r"│\s+\d+\s+│", line)
-    ]
-    assert len(kingdom_rows) == 10
-
-
-def test_generate_with_sort_name(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "--sort", "name"])
-    assert result.exit_code == 0
-    assert "Kingdom" in result.output
-
-
-def test_generate_with_sort_cost(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "--sort", "cost"])
-    assert result.exit_code == 0
-    assert "Kingdom" in result.output
-
-
-def test_generate_with_sort_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "--sort", "set"])
-    assert result.exit_code == 0
-    assert "Kingdom" in result.output
-
-
-def test_generate_with_invalid_sort(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "--sort", "invalid"])
-    assert result.exit_code != 0
-
-
-def test_generate_with_single_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "-s", "intrigue_2e"])
-    assert result.exit_code == 0
-    assert "Kingdom" in result.output
-    assert "Intrigue" in result.output
-
-
-def test_generate_with_multiple_sets(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "-s", "intrigue_2e", "-s", "base_2e"])
-    assert result.exit_code == 0
-    assert "Kingdom" in result.output
-
-
-def test_generate_invalid_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "-s", "Nonexistent"])
-    assert result.exit_code != 0
-
-
-def test_generate_default_uses_base_2e(runner: CliRunner) -> None:
-    # Base 1E-only cards are never in the Base 2E pool.  Asserting their
-    # absence is deterministic (unlike checking for a 2E-exclusive card name,
-    # which only appears when that specific card is randomly drawn).
-    base_1e_only = {"Chancellor", "Feast", "Spy", "Thief", "Woodcutter"}
-    result = runner.invoke(cli, ["generate"])
-    assert result.exit_code == 0
-    for name in base_1e_only:
-        assert name not in result.output
-
-
-def test_generate_with_1e_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "-s", "base_1e"])
-    assert result.exit_code == 0
-    assert "Base" in result.output
-
-
-def test_generate_with_seaside_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "-s", "seaside_2e"])
-    assert result.exit_code == 0
-    assert "Kingdom" in result.output
-    assert "Seaside" in result.output
-
-
-def test_generate_with_seaside_1e_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "-s", "seaside_1e"])
-    assert result.exit_code == 0
-    assert "Seaside" in result.output
-
-
-def test_list_cards_default(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-
-
-def test_list_cards_filter_by_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "-s", "base_2e"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-    # should not contain Seaside-only cards
-    assert "Base, 2E" in result.output
-
-
-def test_list_cards_filter_by_type(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "-t", "attack"], env={"COLUMNS": "200"})
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-    # all rows should contain Attack type
-    for line in result.output.splitlines():
-        if "\u2502" in line and "$" in line:  # table data rows with cost
-            assert "Attack" in line
-
-
-def test_list_cards_filter_by_cost(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "--cost", "2"])
-    assert result.exit_code == 0
-    # all listed cards should have cost $2
-    for line in result.output.splitlines():
-        if "\u2502" in line and "$" in line:
-            assert "$2" in line
-
-
-def test_list_cards_combined_filters(runner: CliRunner) -> None:
+@pytest.mark.parametrize("sort_order", KingdomSortOrder)
+def test_list_cards_sorts(
+    runner: CliRunner, db: CardDatabase, sort_order: KingdomSortOrder
+) -> None:
     result = runner.invoke(
-        cli, ["list-cards", "-s", "base_2e", "-t", "action", "--cost", "5"]
+        cli, ["list-cards", "--set", "base_2e", "--sort", sort_order.value]
     )
     assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-    for line in result.output.splitlines():
-        if "\u2502" in line and "$" in line:
-            assert "$5" in line
-            assert "Action" in line
-
-
-def test_list_cards_no_results(runner: CliRunner) -> None:
-    # cost 99 doesn't exist — should succeed with 0 results
-    result = runner.invoke(cli, ["list-cards", "--cost", "99"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards (0)" in result.output
-
-
-def test_list_cards_invalid_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "-s", "nonexistent"])
-    assert result.exit_code != 0
-
-
-def test_list_cards_invalid_type(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "-t", "nonexistent"])
-    assert result.exit_code != 0
-
-
-def test_list_cards_multiple_sets(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "-s", "base_2e", "-s", "intrigue_2e"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-
-
-def test_list_sets(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-sets"])
-    assert result.exit_code == 0
-    assert "Sets" in result.output
-    assert "Base" in result.output
-    assert "Base, 2E" in result.output
-    assert "Intrigue" in result.output
-
-
-def test_list_sets_shows_card_counts(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-sets"])
-    assert result.exit_code == 0
-    # at least some set should have a non-zero count
-    # dominion 2E has 26 kingdom cards in the bundled data
-    lines = result.output.splitlines()
-    data_lines = [
-        row for row in lines if "\u2502" in row and any(c.isdigit() for c in row)
-    ]
-    assert len(data_lines) > 0
-
-
-def test_generate_with_alchemy_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "-s", "alchemy"])
-    assert result.exit_code == 0
-    assert "Kingdom" in result.output
-    assert "Alchemy" in result.output
-
-
-def test_list_cards_alchemy(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "-s", "alchemy"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-
-
-def test_list_sets_includes_alchemy(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-sets"])
-    assert result.exit_code == 0
-    assert "Alchemy" in result.output
-
-
-def test_generate_alchemy_shows_potion_cost(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "-s", "alchemy"])
-    assert result.exit_code == 0
-    # alchemy has 10/12 cards with potion cost displayed as $NP
-    lines = [
-        line for line in result.output.splitlines() if "\u2502" in line and "$" in line
-    ]
-    potion_lines = [
-        line for line in lines if "P" in line.split("$")[1].split("\u2502")[0]
-    ]
-    assert len(potion_lines) > 0
-
-
-def test_list_cards_sort_by_name(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "--sort", "name"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-
-
-def test_list_cards_sort_by_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "--sort", "set"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-
-
-def test_list_cards_sort_by_cost(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "--sort", "cost"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-
-
-def test_list_cards_filter_by_non_edition_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "-s", "alchemy"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-    assert "Alchemy" in result.output
-
-
-def test_list_cards_filter_by_multiple_types(runner: CliRunner) -> None:
-    result = runner.invoke(
-        cli, ["list-cards", "-t", "action", "-t", "attack"], env={"COLUMNS": "200"}
+    cards = sorted(
+        db.get_cards_by_set_edition(CardSet.BASE, CardSetEdition.SECOND_EDITION),
+        key=sort_order.sort_key,
     )
-    assert result.exit_code == 0
-    for line in result.output.splitlines():
-        if "\u2502" in line and "$" in line:
-            assert "Action" in line
-            assert "Attack" in line
+    assert parse_tables(result.output) == {"Kingdom Cards (26)": card_rows(cards)}
 
 
-def test_default_command_no_args(runner: CliRunner) -> None:
-    result = runner.invoke(cli, [])
-    assert result.exit_code == 0
-    assert "Kingdom" in result.output
+# ── list-sets ────────────────────────────────────────────────────────────────
 
 
-def test_help_text(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["--help"])
-    assert result.exit_code == 0
-    assert "generate" in result.output
-    assert "list-cards" in result.output
-    assert "list-sets" in result.output
-
-
-def test_generate_help(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "--help"])
-    assert result.exit_code == 0
-    assert "--sort" in result.output
-    assert "--set" in result.output
-
-
-def test_list_cards_filter_by_1e_set(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "-s", "base_1e"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-    assert "Base" in result.output
-
-
-def test_generate_cornucopia_guilds_1e(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "-s", "cornucopia_guilds_1e"])
-    assert result.exit_code == 0
-    assert "Cornucopia & Guilds" in result.output
-
-
-def test_generate_cornucopia_guilds_2e(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["generate", "-s", "cornucopia_guilds_2e"])
-    assert result.exit_code == 0
-    assert "Cornucopia & Guilds" in result.output
-
-
-def test_list_cards_cornucopia_guilds(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["list-cards", "-s", "cornucopia_guilds_1e"])
-    assert result.exit_code == 0
-    assert "Kingdom Cards" in result.output
-
-
-def test_list_sets_includes_cornucopia_guilds(runner: CliRunner) -> None:
+def test_list_sets(runner: CliRunner, db: CardDatabase) -> None:
     result = runner.invoke(cli, ["list-sets"])
     assert result.exit_code == 0
-    assert "Cornucopia & Guilds" in result.output
-
-
-def test_generate_cornucopia_guilds_shows_setup(runner: CliRunner) -> None:
-    """C&G 2E has many Coffers-triggering cards; verify setup section appears when they do."""
-    result = runner.invoke(cli, ["generate", "-s", "cornucopia_guilds_2e"])
-    assert result.exit_code == 0
-    if "Coffers" in result.output:
-        assert "Setup" in result.output
+    expected_rows = [
+        [
+            f"{set_}, {edition}E"
+            if set_ in CARD_SETS_WITH_SECOND_EDITIONS
+            else str(set_),
+            str(len(db.get_cards_by_set_edition(set_, edition))),
+        ]
+        for set_, edition in SET_EDITION_CHOICES.values()
+    ]
+    assert parse_tables(result.output) == {"Sets": expected_rows}
