@@ -7,9 +7,13 @@ from typing import Any
 
 import pytest
 
-from dominion_setup.generator import SetupGenerationError, generate_game
-from dominion_setup.models import (
+from dominion_setup.generator import (
     DEFAULT_BASIC_CARD_NAMES,
+    SetupGenerationError,
+    generate_game,
+)
+from dominion_setup.models import (
+    CARD_SET_ORDER,
     CardDatabase,
     CardPurpose,
     CardSet,
@@ -21,7 +25,6 @@ from dominion_setup.models import (
     Pile,
     PileMarkKind,
 )
-from dominion_setup.utils import CARD_SET_ORDER
 
 from .conftest import CardDatabaseFactory, CardFactory
 

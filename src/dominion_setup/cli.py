@@ -21,22 +21,21 @@ from .models import (
     KingdomSortOrder,
     Pile,
 )
-from .utils import card_sort_key, parse_raw_set_edition
 
 
 class RichDefaultGroup(DefaultGroup, click.RichGroup):  # ty: ignore[invalid-method-override]
     """DefaultGroup with Rich-formatted help output."""
 
 
-# shared CLI choices
-SET_CHOICES: list[str] = []
+# ``--set`` choices (e.g. "base_2e", "nocturne") and the set and edition each
+# one selects. Only sets with a second edition carry an edition suffix.
+SET_EDITION_CHOICES: dict[str, tuple[CardSet, CardSetEdition]] = {}
 for set_ in CardSet:
-    set_name = set_.name.lower()
     if set_ in CARD_SETS_WITH_SECOND_EDITIONS:
-        SET_CHOICES.append(f"{set_name}_1e")
-        SET_CHOICES.append(f"{set_name}_2e")
+        for edition in CardSetEdition:
+            SET_EDITION_CHOICES[f"{set_.name.lower()}_{edition}e"] = (set_, edition)
     else:
-        SET_CHOICES.append(set_name)
+        SET_EDITION_CHOICES[set_.name.lower()] = (set_, CardSetEdition.FIRST_EDITION)
 
 # single shared console for all status output.
 console = Console()
@@ -144,7 +143,7 @@ def _print_game(game: Game) -> None:
     "-s",
     "--set",
     multiple=True,
-    type=click.Choice(SET_CHOICES),
+    type=click.Choice(list(SET_EDITION_CHOICES)),
     default=(f"{CardSet.BASE.name.lower()}_2e",),
     help="Set(s) to include (repeatable).",
 )
@@ -186,10 +185,7 @@ def generate(
     try:
         game = generate_game(
             db,
-            sets_editions={
-                parse_raw_set_edition(raw_set_edition)
-                for raw_set_edition in raw_sets_editions
-            },
+            sets_editions={SET_EDITION_CHOICES[choice] for choice in raw_sets_editions},
             sort_order=KingdomSortOrder(sort_order),
             use_colony=use_colony,
             use_shelters=use_shelters,
@@ -206,7 +202,7 @@ def generate(
     "-s",
     "--set",
     multiple=True,
-    type=click.Choice(SET_CHOICES),
+    type=click.Choice(list(SET_EDITION_CHOICES)),
     help="Filter by set (repeatable).",
 )
 @click.option(
@@ -224,6 +220,7 @@ def generate(
     help="Filter by exact coin cost.",
 )
 @click.option(
+    "sort_order",
     "--sort",
     type=click.Choice([s.name.lower() for s in KingdomSortOrder]),
     default=KingdomSortOrder.COST.name.lower(),
@@ -233,21 +230,20 @@ def list_cards(
     raw_sets_editions: tuple[str, ...],
     types: tuple[str, ...],
     cost: int | None,
-    sort: str,
+    sort_order: str,
 ) -> None:
     """List available kingdom cards with optional filters."""
     db = load_card_database()
     cards = list(db.kingdom_cards.values())
 
-    sets_editions: set[tuple[CardSet, CardSetEdition]] = {
-        parse_raw_set_edition(raw_set_edition) for raw_set_edition in raw_sets_editions
-    }
+    sets_editions = {SET_EDITION_CHOICES[choice] for choice in raw_sets_editions}
 
     if sets_editions:
-        filtered: set[Card] = set()
-        for set_, edition in sets_editions:
-            filtered.update(db.get_cards_by_set_edition(set_, edition=edition))
-        cards = list(filtered)
+        cards = [
+            card
+            for card in cards
+            if any((card.set, edition) in sets_editions for edition in card.editions)
+        ]
 
     if types:
         type_set = {CardType[t.upper()] for t in types}
@@ -256,7 +252,7 @@ def list_cards(
     if cost is not None:
         cards = [card for card in cards if card.cost.coins == cost]
 
-    cards.sort(key=card_sort_key(KingdomSortOrder(sort)))
+    cards.sort(key=KingdomSortOrder(sort_order).sort_key)
     _print_card_table(cards, title=f"Kingdom Cards ({len(cards)})", numbered=True)
 
 

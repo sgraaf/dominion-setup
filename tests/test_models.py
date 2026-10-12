@@ -1,8 +1,8 @@
 import pytest
 
+from dominion_setup.generator import DEFAULT_BASIC_CARD_NAMES
 from dominion_setup.models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
-    DEFAULT_BASIC_CARD_NAMES,
     Card,
     CardCost,
     CardDatabase,
@@ -462,6 +462,30 @@ def test_kingdom_sort_order_enum_values() -> None:
     assert KingdomSortOrder.COST == "cost"
     assert KingdomSortOrder.SET == "set"
     assert len(KingdomSortOrder) == 3
+
+
+@pytest.mark.parametrize(
+    ("sort_order", "expected_names"),
+    [
+        (KingdomSortOrder.NAME, ["Bazaar", "Cellar", "Moat", "Smithy"]),
+        (KingdomSortOrder.COST, ["Cellar", "Moat", "Smithy", "Bazaar"]),
+        (KingdomSortOrder.SET, ["Moat", "Smithy", "Cellar", "Bazaar"]),
+    ],
+)
+def test_kingdom_sort_order_sort_key(
+    make_card: CardFactory,
+    sort_order: KingdomSortOrder,
+    expected_names: list[str],
+) -> None:
+    cards = [
+        make_card(name="Bazaar", cost_coins=5, set_=CardSet.SEASIDE),
+        make_card(name="Smithy", cost_coins=4),
+        make_card(name="Cellar", cost_coins=2, set_=CardSet.INTRIGUE),
+        make_card(name="Moat", cost_coins=2),
+    ]
+    assert [
+        card.name for card in sorted(cards, key=sort_order.sort_key)
+    ] == expected_names
 
 
 def test_card_has_debt_cost_false(smithy: Card) -> None:

@@ -1,4 +1,13 @@
-"""Domain models for Dominion game setup."""
+"""Domain models for Dominion game setup.
+
+The module is organised in four sections:
+
+- **Sets & editions**: ``CardSet`` and ``CardSetEdition``.
+- **Cards**: ``Card`` and the enums and value objects that describe it.
+- **Card database**: ``CardDatabase``, all cards indexed for lookup.
+- **Game**: ``Game``, the generated setup, and the ``Pile``, ``PileMark``,
+  ``Material`` and ``KingdomSortOrder`` types it is made of.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +17,56 @@ from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+
+# ── Sets & editions ──────────────────────────────────────────────────────────
+
+
+class CardSet(StrEnum):
+    """Card sets -- the base game along with all expansions and promotional cards."""
+
+    BASE = "Base"
+    INTRIGUE = "Intrigue"
+    SEASIDE = "Seaside"
+    ALCHEMY = "Alchemy"
+    PROSPERITY = "Prosperity"
+    CORNUCOPIA_GUILDS = "Cornucopia & Guilds"
+    HINTERLANDS = "Hinterlands"
+    DARK_AGES = "Dark Ages"
+    ADVENTURES = "Adventures"
+    EMPIRES = "Empires"
+    NOCTURNE = "Nocturne"
+    RENAISSANCE = "Renaissance"
+    MENAGERIE = "Menagerie"
+    ALLIES = "Allies"
+    PLUNDER = "Plunder"
+    RISING_SUN = "Rising Sun"
+    PROMO = "Promo"
+
+
+CARD_SET_ORDER: dict[CardSet, int] = {s: i for i, s in enumerate(CardSet)}
+
+
+class CardSetEdition(IntEnum):
+    """Card set editions."""
+
+    FIRST_EDITION = 1
+    SECOND_EDITION = 2
+
+
+CARD_SETS_WITH_SECOND_EDITIONS: frozenset[CardSet] = frozenset(
+    {
+        CardSet.BASE,
+        CardSet.INTRIGUE,
+        CardSet.SEASIDE,
+        CardSet.PROSPERITY,
+        CardSet.CORNUCOPIA_GUILDS,
+        CardSet.HINTERLANDS,
+    }
+)
+
+
+# ── Cards ────────────────────────────────────────────────────────────────────
 
 
 class CardType(StrEnum):
@@ -83,18 +142,6 @@ class CardType(StrEnum):
     SHADOW = "Shadow"
 
 
-# Landscape card types eligible for selection during kingdom generation.
-SELECTABLE_LANDSCAPE_TYPES: frozenset[CardType] = frozenset(
-    {
-        CardType.EVENT,
-        CardType.LANDMARK,
-        CardType.PROJECT,
-        CardType.WAY,
-        CardType.TRAIT,
-    }
-)
-
-
 class CardPurpose(StrEnum):
     """Card purposes in the game."""
 
@@ -137,61 +184,6 @@ class CardCost:
             debt=data.get("debt", 0),
             extra=data.get("extra"),
         )
-
-
-class CardSet(StrEnum):
-    """Card sets -- the base game along with all expansions and promotional cards."""
-
-    BASE = "Base"
-    INTRIGUE = "Intrigue"
-    SEASIDE = "Seaside"
-    ALCHEMY = "Alchemy"
-    PROSPERITY = "Prosperity"
-    CORNUCOPIA_GUILDS = "Cornucopia & Guilds"
-    HINTERLANDS = "Hinterlands"
-    DARK_AGES = "Dark Ages"
-    ADVENTURES = "Adventures"
-    EMPIRES = "Empires"
-    NOCTURNE = "Nocturne"
-    RENAISSANCE = "Renaissance"
-    MENAGERIE = "Menagerie"
-    ALLIES = "Allies"
-    PLUNDER = "Plunder"
-    RISING_SUN = "Rising Sun"
-    PROMO = "Promo"
-
-
-class CardSetEdition(IntEnum):
-    """Card set editions."""
-
-    FIRST_EDITION = 1
-    SECOND_EDITION = 2
-
-
-CARD_SET_ORDER: dict[CardSet, int] = {s: i for i, s in enumerate(CardSet)}
-
-
-CARD_SETS_WITH_SECOND_EDITIONS: frozenset[CardSet] = frozenset(
-    {
-        CardSet.BASE,
-        CardSet.INTRIGUE,
-        CardSet.SEASIDE,
-        CardSet.PROSPERITY,
-        CardSet.CORNUCOPIA_GUILDS,
-        CardSet.HINTERLANDS,
-    }
-)
-
-
-DEFAULT_BASIC_CARD_NAMES: tuple[str, ...] = (
-    "Copper",
-    "Silver",
-    "Gold",
-    "Estate",
-    "Duchy",
-    "Province",
-    "Curse",
-)
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,6 +252,86 @@ class Card:
     @property
     def is_status(self) -> bool:
         return self.purpose == CardPurpose.STATUS
+
+
+# ── Card database ────────────────────────────────────────────────────────────
+
+
+@dataclass(slots=True)
+class CardDatabase:
+    """All loaded card data, indexed for fast lookup."""
+
+    cards: list[Card]
+    card_name_to_card: dict[str, Card] = field(init=False)
+    basic_cards: dict[str, Card] = field(init=False)
+    kingdom_cards: dict[str, Card] = field(init=False)
+    landscape_cards: dict[str, Card] = field(init=False)
+    mixed_pile_cards: dict[str, Card] = field(init=False)
+    non_supply_cards: dict[str, Card] = field(init=False)
+    status_cards: dict[str, Card] = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.card_name_to_card = self._create_index(self.cards)
+        self.basic_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.BASIC)
+        )
+        self.kingdom_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.KINGDOM_PILE)
+        )
+        self.landscape_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.LANDSCAPE)
+        )
+        self.mixed_pile_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.MIXED_PILE_CARD)
+        )
+        self.non_supply_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.NON_SUPPLY)
+        )
+        self.status_cards = self._create_index(
+            self.get_cards_by_purpose(CardPurpose.STATUS)
+        )
+
+    @staticmethod
+    def _create_index(cards: list[Card]) -> dict[str, Card]:
+        """Index cards by name."""
+        return {card.name: card for card in cards}
+
+    def __iter__(self) -> Iterator[Card]:
+        return iter(self.cards)
+
+    def __len__(self) -> int:
+        return len(self.cards)
+
+    def get_card_by_name(self, name: str) -> Card:
+        if (card := self.card_name_to_card.get(name)) is None:
+            msg = f"Card {name!r} not found"
+            raise ValueError(msg)
+        return card
+
+    def get_cards_by_set_edition(
+        self, set_: CardSet, edition: CardSetEdition
+    ) -> list[Card]:
+        """Return all kingdom cards belonging to the given set and edition."""
+        return [
+            card
+            for card in self.kingdom_cards.values()
+            if card.set == set_ and edition in card.editions
+        ]
+
+    def get_cards_by_type(self, card_type: CardType) -> list[Card]:
+        """Return all kingdom cards that include the given type."""
+        return [card for card in self.kingdom_cards.values() if card_type in card.types]
+
+    def get_cards_by_cost(self, card_cost: CardCost) -> list[Card]:
+        """Return all kingdom cards of the given cost."""
+        return [card for card in self.kingdom_cards.values() if card.cost == card_cost]
+
+    def get_cards_by_purpose(self, card_purpose: CardPurpose) -> list[Card]:
+        """Return all cards of the given purpose."""
+        return [card for card in self.cards if card.purpose == card_purpose]
+
+
+# ── Game ─────────────────────────────────────────────────────────────────────
 
 
 class Material(StrEnum):
@@ -337,6 +409,22 @@ class Pile:
     marks: tuple[PileMark, ...] = ()
 
 
+class KingdomSortOrder(StrEnum):
+    """Sort order for kingdom piles in the game output."""
+
+    NAME = "name"
+    COST = "cost"
+    SET = "set"
+
+    def sort_key(self, card: Card) -> tuple[int | CardCost | str, ...]:
+        """Return the key that puts *card* in this sort order."""
+        if self == KingdomSortOrder.NAME:
+            return (card.name,)
+        if self == KingdomSortOrder.SET:
+            return (CARD_SET_ORDER[card.set], card.cost, card.name)
+        return (card.cost, card.name)
+
+
 @dataclass(slots=True)
 class Game:
     """Complete output representing a ready-to-play Dominion setup."""
@@ -373,85 +461,3 @@ class Game:
             {card.set for card in cards},
             key=CARD_SET_ORDER.__getitem__,
         )
-
-
-@dataclass(slots=True)
-class CardDatabase:
-    """All loaded card data, indexed for fast lookup."""
-
-    cards: list[Card]
-    card_name_to_card: dict[str, Card] = field(init=False)
-    basic_cards: dict[str, Card] = field(init=False)
-    kingdom_cards: dict[str, Card] = field(init=False)
-    landscape_cards: dict[str, Card] = field(init=False)
-    mixed_pile_cards: dict[str, Card] = field(init=False)
-    non_supply_cards: dict[str, Card] = field(init=False)
-    status_cards: dict[str, Card] = field(init=False)
-
-    def __post_init__(self) -> None:
-        self.card_name_to_card = self._create_index(self.cards)
-        self.basic_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.BASIC)
-        )
-        self.kingdom_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.KINGDOM_PILE)
-        )
-        self.landscape_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.LANDSCAPE)
-        )
-        self.mixed_pile_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.MIXED_PILE_CARD)
-        )
-        self.non_supply_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.NON_SUPPLY)
-        )
-        self.status_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.STATUS)
-        )
-
-    @staticmethod
-    def _create_index(cards: list[Card]) -> dict[str, Card]:
-        """Index cards by name."""
-        return {card.name: card for card in cards}
-
-    def __iter__(self) -> Iterator[Card]:
-        return iter(self.cards)
-
-    def __len__(self) -> int:
-        return len(self.cards)
-
-    def get_card_by_name(self, name: str) -> Card:
-        if (card := self.card_name_to_card.get(name)) is None:
-            msg = f"Card {name!r} not found"
-            raise ValueError(msg)
-        return card
-
-    def get_cards_by_set_edition(
-        self, set_: CardSet, edition: CardSetEdition
-    ) -> list[Card]:
-        """Return all kingdom cards belonging to the given set and edition."""
-        return [
-            card
-            for card in self.kingdom_cards.values()
-            if card.set == set_ and edition in card.editions
-        ]
-
-    def get_cards_by_type(self, card_type: CardType) -> list[Card]:
-        """Return all kingdom cards that include the given type."""
-        return [card for card in self.kingdom_cards.values() if card_type in card.types]
-
-    def get_cards_by_cost(self, card_cost: CardCost) -> list[Card]:
-        """Return all kingdom cards of the given cost."""
-        return [card for card in self.kingdom_cards.values() if card.cost == card_cost]
-
-    def get_cards_by_purpose(self, card_purpose: CardPurpose) -> list[Card]:
-        """Return all cards of the given purpose."""
-        return [card for card in self.cards if card.purpose == card_purpose]
-
-
-class KingdomSortOrder(StrEnum):
-    """Sort order for kingdom piles in the game output."""
-
-    NAME = "name"
-    COST = "cost"
-    SET = "set"

@@ -13,6 +13,15 @@ The **third number** is for emergencies when we need to start branches for older
 ### Added
 
 - Support for Python 3.15.
+- `KingdomSortOrder.sort_key`, the key that sorts cards in that order.
+
+### Changed
+
+- `DEFAULT_BASIC_CARD_NAMES` and `SELECTABLE_LANDSCAPE_TYPES` moved from `dominion_setup.models` to `dominion_setup.generator`, alongside the other setup rules.
+
+### Removed
+
+- The `dominion_setup.utils` module. Use `KingdomSortOrder.sort_key` instead of `card_sort_key`; `parse_raw_set_edition` was only used by the CLI.
 
 ## [2026.2.0](https://github.com/sgraaf/dominion-setup/compare/2026.1.0...2026.2.0) - 2026-09-13
 

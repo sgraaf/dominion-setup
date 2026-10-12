@@ -34,10 +34,3 @@
 .. automodule:: dominion_setup.models
    :members:
 ```
-
-## `dominion_setup.utils` Module
-
-```{eval-rst}
-.. automodule:: dominion_setup.utils
-   :members:
-```

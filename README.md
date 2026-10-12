@@ -37,12 +37,12 @@
 
 The package is structured around four modules:
 
-| Module      | Responsibility                                                                     |
-| ----------- | ---------------------------------------------------------------------------------- |
-| `models`    | Immutable dataclasses and enums (`Card`, `CardCost`, `CardSet`, `Game`, `Pile`, …) |
-| `loader`    | Reads the bundled JSON data files and populates a `CardDatabase`                   |
-| `generator` | `generate_game()` — pure function that turns a `CardDatabase` into a `Game`        |
-| `cli`       | Click/Rich-Click command group (`generate`, `list-cards`, `list-sets`)             |
+| Module      | Responsibility                                                                           |
+| ----------- | ---------------------------------------------------------------------------------------- |
+| `models`    | Dataclasses and enums (`Card`, `CardCost`, `CardSet`, `CardDatabase`, `Game`, `Pile`, …) |
+| `loader`    | Reads the bundled JSON data files and populates a `CardDatabase`                         |
+| `generator` | `generate_game()`, which turns a `CardDatabase` into a `Game`, and all setup rules       |
+| `cli`       | Click/Rich-Click command group (`generate`, `list-cards`, `list-sets`)                   |
 
 ### Card data
 
@@ -64,16 +64,18 @@ Every card in every set is stored in a small JSON file under `dominion_setup/dat
 
 ### Generation algorithm
 
-`generate_game()` performs the following steps in order:
+`generate_game()` performs the following steps in order. Each step has its own section in the `generator` module, holding the rules it applies.
 
-1. **Build candidate pools** — optionally restricted to particular sets and editions.
-1. **Draw the Kingdom** — randomly draw cards from the combined kingdom + landscape pool until 10 Kingdom piles are chosen, with landscapes drawn opportunistically up to `max_landscapes`.
-1. **Resolve special piles** — inspect the chosen Kingdom by name and type to add all rule-mandated extra piles and marks (Bane, Ferryman, Obelisk, Traits, Approaching Army, …).
-1. **Resolve non-supply piles** — Traveller chains, Spirit/Zombie piles, Prizes, Rewards, Loot, Horse, Artifacts, etc.
-1. **Resolve basic supply** — standard basics plus conditional Colony/Platinum, Potion, Ruins, Shelters, and Heirlooms.
-1. **Collect materials** — scan instruction text with regex and card types to determine which mats and tokens are needed.
-1. **Collect setup instructions** — extract `Setup:` sentences from card instructions and synthesise Heirloom setup text.
-1. **Sort and return** a fully populated `Game` object.
+1. **Kingdom** — shuffle the Kingdom and Landscape cards of the selected sets and editions, and draw until there are 10 Kingdom piles, keeping up to `max_landscapes` Landscapes drawn along the way.
+1. **Extra Kingdom piles & Prophecy** — add the piles required by cards in use (Bane for Young Witch, Ferryman, Way of the Mouse, Riverboat, Approaching Army), and a Prophecy if any Omen is in use. Repeat until nothing new is required, as an extra pile can itself require one.
+1. **Cards dealt out for specific cards** — Druid Boons, the Ally for Liaisons, and the Kingdom pile each Trait applies to.
+1. **Non-Supply piles** — Prizes, Rewards, Traveller chains, Spirits, Zombies, Artifacts, Loot, Horses, etc.
+1. **Basic Supply** — standard basics plus conditional Colony/Platinum, Potion, Ruins, Shelters, and Heirlooms.
+1. **Obelisk** — the Action Supply pile Obelisk applies to.
+1. **Materials** — scan instruction text and card types to determine which mats and tokens are needed.
+1. **Setup instructions** — extract `Setup:` sentences from card instructions and synthesise Heirloom setup text.
+
+Finally, the piles are sorted and returned in a `Game` object.
 
 ## Installation
 

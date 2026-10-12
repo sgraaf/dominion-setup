@@ -4,9 +4,9 @@ from typing import Any, Literal, Protocol
 
 import pytest
 
+from dominion_setup.generator import DEFAULT_BASIC_CARD_NAMES
 from dominion_setup.loader import load_card_database
 from dominion_setup.models import (
-    DEFAULT_BASIC_CARD_NAMES,
     Card,
     CardCost,
     CardDatabase,
