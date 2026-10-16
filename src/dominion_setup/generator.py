@@ -236,7 +236,7 @@ def _is_selectable(card: Card) -> bool:
 def _selectable_cards_by_name(db: CardDatabase, names: Iterable[str]) -> list[Card]:
     """Look up the Kingdom cards and selectable Landscapes called *names*."""
     cards = []
-    for name in names:
+    for name in dict.fromkeys(names):  # each name once, in order
         if (card := db.card_name_to_card.get(name)) is None:
             msg = f"Card {name!r} not found"
             raise SetupGenerationError(msg)

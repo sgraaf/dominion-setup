@@ -543,6 +543,19 @@ def test_draw_kingdom_includes_the_included_cards(db: CardDatabase, seed: int) -
     assert not set(card_names(unused)) & set(included)
 
 
+def test_draw_kingdom_includes_a_repeated_card_once(
+    db: CardDatabase, rng: random.Random
+) -> None:
+    kingdom, _landscapes, _unused = _draw_kingdom(
+        db,
+        sets_editions={BASE_2E},
+        max_landscapes=2,
+        include=["Village", "Village"],
+        rng=rng,
+    )
+    assert card_names(kingdom).count("Village") == 1
+
+
 def test_draw_kingdom_can_include_all_ten_cards(db: CardDatabase) -> None:
     included = sorted(card_names(db.get_cards_by_set_edition(*BASE_2E)))[:10]
     kingdom, _landscapes, _unused = _draw_kingdom(

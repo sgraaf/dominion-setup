@@ -428,17 +428,18 @@ def test_generate_formats_the_game_as_names(
     monkeypatch.setattr(
         "dominion_setup.cli.generate_game", lambda *_args, **_kwargs: game
     )
-    result = runner.invoke(cli, ["generate", "--format", "names"])
+    result = runner.invoke(cli, ["generate", "--format", "names", "--seed", "7"])
     assert result.exit_code == 0
-    assert result.output == (
+    assert result.stdout == (
         "Hamlet, Young Witch, Alms, Architects' Guild, Approaching Army\n"
     )
+    assert result.stderr == "Seed: 7\n"
 
 
 def test_generate_same_seed_formats_the_same_names(runner: CliRunner) -> None:
     args = ["generate", "--seed", "42"]
     table = parse_tables(runner.invoke(cli, args).output)
-    names = runner.invoke(cli, [*args, "--format", "names"]).output
+    names = runner.invoke(cli, [*args, "--format", "names"]).stdout
     assert names.rstrip("\n").split(", ")[:10] == [row[1] for row in table["Kingdom"]]
 
 

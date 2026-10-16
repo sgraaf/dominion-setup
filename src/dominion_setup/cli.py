@@ -183,8 +183,12 @@ def _print_game_json(game: Game, *, seed: int) -> None:
     click.echo(json.dumps(output, indent=2))
 
 
-def _print_game_names(game: Game) -> None:
-    """Print the names of a Game's Kingdom cards, Landscapes, Ally and Prophecy on one line."""
+def _print_game_names(game: Game, *, seed: int) -> None:
+    """Print the names of a Game's Kingdom cards, Landscapes, Ally and Prophecy on one line.
+
+    The *seed* goes to stderr, so the line of names can be piped on its own.
+    """
+    click.echo(f"Seed: {seed}", err=True)
     cards = [*game.kingdom_cards, *game.landscapes, game.ally, game.prophecy]
     click.echo(", ".join(card.name for card in cards if card is not None))
 
@@ -346,7 +350,7 @@ def generate(
     if output_format == "json":
         _print_game_json(game, seed=seed)
     elif output_format == "names":
-        _print_game_names(game)
+        _print_game_names(game, seed=seed)
     else:
         _print_game(game, seed=seed)
 
