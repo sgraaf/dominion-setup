@@ -15,9 +15,11 @@ The **third number** is for emergencies when we need to start branches for older
 - Support for Python 3.15.
 - `KingdomSortOrder.sort_key`, the key that sorts cards in that order.
 - Kingdom requirements: `generate_game(requirements=...)` with `KingdomRequirement` (+Action(s), +Card(s), +Buy(s), Attack, Reaction, Trashing), and the matching `--require-actions`, `--require-cards`, `--require-buys`, `--require-attack`, `--require-reaction` and `--require-trashing` flags of `dominion-setup generate`. Each makes sure at least one of the 10 Kingdom cards provides that effect.
+- Seeds: `generate_game(rng=...)` takes a `random.Random` to draw with, and `dominion-setup generate --seed` replays a game. `generate` prints the seed of every setup, so a game can be replayed or shared.
 
 ### Changed
 
+- `generate_game` no longer uses or changes the global `random` state, so `random.seed()` no longer reproduces a game. Pass `rng=random.Random(seed)` instead.
 - `DEFAULT_BASIC_CARD_NAMES` and `SELECTABLE_LANDSCAPE_TYPES` moved from `dominion_setup.models` to `dominion_setup.generator`, alongside the other setup rules.
 
 ### Removed

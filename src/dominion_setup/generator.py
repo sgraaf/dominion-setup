@@ -52,10 +52,11 @@ def generate_game(  # noqa: PLR0913
     use_shelters: bool | None = None,
     max_landscapes: int = 2,
     requirements: Iterable[KingdomRequirement] = (),
+    rng: random.Random | None = None,
 ) -> Game:
     """Generate a complete, rules-accurate Dominion game setup.
 
-    For a given ``random`` seed, the result is the same in every process.
+    For a given *rng* seed, the result is the same in every process.
 
     Args:
         db: The loaded card database.
@@ -70,6 +71,9 @@ def generate_game(  # noqa: PLR0913
         max_landscapes: Maximum number of landscapes to include. Defaults to 2.
         requirements: Effects (e.g. ``KingdomRequirement.BUYS``) that at least
             one of the 10 Kingdom cards must provide. Defaults to none.
+        rng: The random number generator to draw with, e.g.
+            ``random.Random(42)`` to reproduce a game. Defaults to a new,
+            unseeded one, so the global ``random`` state is never changed.
 
     Returns:
         A Game object with selected Kingdom piles and basic supply.
@@ -78,8 +82,10 @@ def generate_game(  # noqa: PLR0913
         SetupGenerationError: If the selected sets cannot produce a valid
             setup.
     """
-    # NOTE: the steps below consume ``random`` in a fixed order, so reordering
-    # them changes which game a given seed produces.
+    # NOTE: the steps below consume *rng* in a fixed order, so reordering them
+    # changes which game a given seed produces.
+    if rng is None:
+        rng = random.Random()
 
     # 1. Kingdom: 10 Kingdom piles that meet the *requirements*, and up to
     # *max_landscapes* Landscapes
@@ -88,11 +94,12 @@ def generate_game(  # noqa: PLR0913
         sets_editions=sets_editions,
         max_landscapes=max_landscapes,
         requirements=requirements,
+        rng=rng,
     )
 
     # 2. Extra Kingdom piles (Bane, Ferryman, …) and the Prophecy
     extra_piles, prophecy = _choose_extra_piles(
-        db, kingdom_cards, landscapes, unused_kingdom_cards
+        db, kingdom_cards, landscapes, unused_kingdom_cards, rng=rng
     )
     kingdom_cards += [card for rule, card in extra_piles if rule.in_supply]
     set_aside_cards = [card for rule, card in extra_piles if not rule.in_supply]
@@ -102,9 +109,9 @@ def generate_game(  # noqa: PLR0913
     cards_in_use = [*kingdom_cards, *set_aside_cards]
 
     # 3. Cards dealt out for specific cards in use
-    druid_boons = _choose_druid_boons(db, cards_in_use)
-    ally = _choose_ally(db, cards_in_use)
-    trait_marks = _choose_trait_piles(kingdom_cards, landscapes)
+    druid_boons = _choose_druid_boons(db, cards_in_use, rng=rng)
+    ally = _choose_ally(db, cards_in_use, rng=rng)
+    trait_marks = _choose_trait_piles(kingdom_cards, landscapes, rng=rng)
 
     # 4. Non-Supply piles
     non_supply_cards = [
@@ -119,12 +126,13 @@ def generate_game(  # noqa: PLR0913
         cards_in_use,
         use_colony=use_colony,
         use_shelters=use_shelters,
+        rng=rng,
     )
     heirlooms = sorted(_heirlooms(db, cards_in_use), key=sort_order.sort_key)
     basic_cards += heirlooms
 
     # 6. Obelisk
-    obelisk_marks = _choose_obelisk_pile(kingdom_cards, landscapes)
+    obelisk_marks = _choose_obelisk_pile(kingdom_cards, landscapes, rng=rng)
 
     # 7. Materials (mats & tokens)
     materials = sorted(
@@ -206,6 +214,7 @@ def _draw_kingdom(
     sets_editions: set[tuple[CardSet, CardSetEdition]] | None,
     max_landscapes: int,
     requirements: Iterable[KingdomRequirement] = (),
+    rng: random.Random,
 ) -> tuple[list[Card], list[Card], list[Card]]:
     """Draw 10 Kingdom cards and at most *max_landscapes* Landscapes.
 
@@ -238,11 +247,11 @@ def _draw_kingdom(
 
     # shuffle the randomizer deck and draw until there are 10 Kingdom cards,
     # keeping the first *max_landscapes* Landscapes drawn along the way. Sorting
-    # first makes the outcome depend only on the ``random`` state, never on the
+    # first makes the outcome depend only on the *rng* state, never on the
     # order of the database (or of any set it was built from, which varies
     # between processes because string hashing is randomized).
     deck = sorted(candidates, key=KingdomSortOrder.NAME.sort_key)
-    random.shuffle(deck)
+    rng.shuffle(deck)
     kingdom_cards: list[Card] = []
     landscapes: list[Card] = []
     skipped_cards: list[Card] = []
@@ -355,6 +364,8 @@ def _choose_extra_piles(
     kingdom_cards: list[Card],
     landscapes: list[Card],
     unused_kingdom_cards: list[Card],
+    *,
+    rng: random.Random,
 ) -> tuple[list[tuple[ExtraPileRule, Card]], Card | None]:
     """Choose the extra Kingdom piles required by ``EXTRA_PILE_RULES``, and the Prophecy.
 
@@ -378,7 +389,7 @@ def _choose_extra_piles(
         if prophecy is None and any(
             CardType.OMEN in card.types for card in cards_in_use
         ):
-            prophecy = random.choice(
+            prophecy = rng.choice(
                 _cards_of_type(db.landscape_cards.values(), CardType.PROPHECY)
             )
 
@@ -410,28 +421,32 @@ def _choose_extra_piles(
 DRUID_BOON_COUNT = 3
 
 
-def _choose_druid_boons(db: CardDatabase, cards_in_use: list[Card]) -> list[Card]:
+def _choose_druid_boons(
+    db: CardDatabase, cards_in_use: list[Card], *, rng: random.Random
+) -> list[Card]:
     """Return the Boons dealt face up for Druid, if Druid is in use."""
     # if Druid is being used, deal three Boon cards face up for use with it.
     if not any(card.name == "Druid" for card in cards_in_use):
         return []
-    return random.sample(
+    return rng.sample(
         _cards_of_type(db.mixed_pile_cards.values(), CardType.BOON),
         DRUID_BOON_COUNT,
     )
 
 
-def _choose_ally(db: CardDatabase, cards_in_use: list[Card]) -> Card | None:
+def _choose_ally(
+    db: CardDatabase, cards_in_use: list[Card], *, rng: random.Random
+) -> Card | None:
     """Return the Ally, if any Liaison is in use."""
     # in any game using Liaisons, exactly one Ally is chosen, and it determines
     # what effect Favor tokens have in that game.
     if not any(CardType.LIAISON in card.types for card in cards_in_use):
         return None
-    return random.choice(_cards_of_type(db.landscape_cards.values(), CardType.ALLY))
+    return rng.choice(_cards_of_type(db.landscape_cards.values(), CardType.ALLY))
 
 
 def _choose_trait_piles(
-    kingdom_cards: list[Card], landscapes: list[Card]
+    kingdom_cards: list[Card], landscapes: list[Card], *, rng: random.Random
 ) -> list[tuple[Card, PileMark]]:
     """Return the Kingdom pile each Trait applies to, with its mark."""
     # each Trait landscape applies to a different randomly chosen Action or
@@ -447,7 +462,7 @@ def _choose_trait_piles(
     if len(trait_eligible_cards) < len(trait_landscapes):
         msg = f"Not enough Action/Treasure kingdom piles ({len(trait_eligible_cards)}) for {len(trait_landscapes)} Trait landscape(s)"
         raise SetupGenerationError(msg)
-    trait_targets = random.sample(trait_eligible_cards, len(trait_landscapes))
+    trait_targets = rng.sample(trait_eligible_cards, len(trait_landscapes))
     return [
         (target, PileMark(PileMarkKind.TRAIT, trait=trait))
         for target, trait in zip(trait_targets, trait_landscapes, strict=True)
@@ -556,20 +571,21 @@ DEFAULT_BASIC_CARD_NAMES: tuple[str, ...] = (
 HEIRLOOM_PATTERN = re.compile(r"Heirloom: (.*)$")
 
 
-def _basic_cards(
+def _basic_cards(  # noqa: PLR0913
     db: CardDatabase,
     kingdom_cards: list[Card],
     cards_in_use: list[Card],
     *,
     use_colony: bool | None,
     use_shelters: bool | None,
+    rng: random.Random,
 ) -> list[Card]:
     """Return the basic Supply cards, plus Colony/Platinum, Potion, Ruins and Shelters as needed."""
     basic_cards = [db.get_card_by_name(name) for name in DEFAULT_BASIC_CARD_NAMES]
 
     # add Colony/Platinum if ``use_colony`` or determined by Prosperity presence
     if use_colony or (
-        use_colony is None and random.choice(kingdom_cards).set == CardSet.PROSPERITY
+        use_colony is None and rng.choice(kingdom_cards).set == CardSet.PROSPERITY
     ):
         basic_cards.append(db.get_card_by_name("Colony"))
         basic_cards.append(db.get_card_by_name("Platinum"))
@@ -584,7 +600,7 @@ def _basic_cards(
 
     # add Shelters if ``use_shelters`` or determined by Dark Ages presence
     if use_shelters or (
-        use_shelters is None and random.choice(kingdom_cards).set == CardSet.DARK_AGES
+        use_shelters is None and rng.choice(kingdom_cards).set == CardSet.DARK_AGES
     ):
         basic_cards.append(db.get_card_by_name("Shelters"))
 
@@ -606,7 +622,7 @@ def _heirlooms(db: CardDatabase, cards_in_use: list[Card]) -> list[Card]:
 
 
 def _choose_obelisk_pile(
-    kingdom_cards: list[Card], landscapes: list[Card]
+    kingdom_cards: list[Card], landscapes: list[Card], *, rng: random.Random
 ) -> list[tuple[Card, PileMark]]:
     """Return the Kingdom pile Obelisk applies to, with its mark, if Obelisk is in use."""
     # in games using Obelisk, choose a random Action Supply pile whose cards
@@ -618,7 +634,7 @@ def _choose_obelisk_pile(
     if not obelisk_candidate_cards:
         msg = "No eligible card (Action Supply pile) available for Obelisk"
         raise SetupGenerationError(msg)
-    return [(random.choice(obelisk_candidate_cards), PileMark(PileMarkKind.OBELISK))]
+    return [(rng.choice(obelisk_candidate_cards), PileMark(PileMarkKind.OBELISK))]
 
 
 # ── 7. Materials ─────────────────────────────────────────────────────────────

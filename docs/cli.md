@@ -98,6 +98,9 @@ $ dominion-setup generate --help
 │ --require-trashing                                   Require a Kingdom card  │
 │                                                      that trashes other      │
 │                                                      cards.                  │
+│ --seed                       INTEGER                 Seed that reproduces a  │
+│                                                      game. Defaults to a     │
+│                                                      random one.             │
 │ --help                   -h                          Show this message and   │
 │                                                      exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯

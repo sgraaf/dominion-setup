@@ -99,6 +99,7 @@ pydocstyle.convention = "google"
     "A002",  # builtin-argument-shadowing (flake8-builtins)
     "PLR0913",  # too-many-arguments (Pylint)
     "PLR0917",  # too-many-positional-arguments (Pylint)
+    "S311",  # suspicious-non-cryptographic-random-usage (flake8-bandit)
 ]
 "src/dominion_setup/generator.py" = [
     "S311",  # suspicious-non-cryptographic-random-usage (flake8-bandit)
@@ -111,6 +112,7 @@ pydocstyle.convention = "google"
     "D",  # pydocstyle
     "PLR2004",   # magic-value-comparison (Pylint)
     "S101",   # assert (flake8-bandit)
+    "S311",  # suspicious-non-cryptographic-random-usage (flake8-bandit)
     "SIM300",   # yoda-conditions (flake8-simplify)
 ]
 

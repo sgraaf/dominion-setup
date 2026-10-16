@@ -133,6 +133,32 @@ def test_generate_defaults_to_base_2e(runner: CliRunner) -> None:
     assert [row[0] for row in tables["Basic Supply"]] == BASIC_SUPPLY
 
 
+def test_generate_prints_the_seed(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["generate", "--seed", "42"])
+    assert result.exit_code == 0
+    assert "Seed: 42" in result.output.splitlines()
+
+
+def test_generate_same_seed_generates_the_same_game(runner: CliRunner) -> None:
+    args = ["generate", "--set", "base_2e", "--set", "intrigue_2e", "--seed", "42"]
+    outputs = {runner.invoke(cli, args).output for _ in range(2)}
+    assert len(outputs) == 1
+
+
+def test_generate_without_a_seed_prints_one_that_replays_the_game(
+    runner: CliRunner,
+) -> None:
+    args = ["generate", "--set", "base_2e", "--set", "intrigue_2e"]
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 0
+    (seed,) = (
+        line.removeprefix("Seed: ")
+        for line in result.output.splitlines()
+        if line.startswith("Seed: ")
+    )
+    assert runner.invoke(cli, [*args, "--seed", seed]).output == result.output
+
+
 @pytest.mark.parametrize(
     "choices",
     [*([choice] for choice in SET_EDITION_CHOICES), ["base_2e", "intrigue_2e"]],

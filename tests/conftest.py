@@ -16,10 +16,10 @@ from dominion_setup.models import (
 )
 
 
-@pytest.fixture(autouse=True)
-def _seed_random() -> None:
-    """Seed ``random`` before every test, so generated games are reproducible."""
-    random.seed(0)
+@pytest.fixture
+def rng() -> random.Random:
+    """A seeded random number generator, so the cards drawn are reproducible."""
+    return random.Random(0)  # noqa: S311
 
 
 @pytest.fixture(scope="session")

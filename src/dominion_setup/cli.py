@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 from importlib import metadata
 
 import rich_click as click
@@ -85,11 +86,12 @@ def _print_card_table(cards: list[Card], *, title: str, numbered: bool) -> None:
     _print_pile_table([Pile(card) for card in cards], title=title, numbered=numbered)
 
 
-def _print_game(game: Game) -> None:
-    """Print a Game as rich-formatted table output."""
+def _print_game(game: Game, *, seed: int) -> None:
+    """Print a Game, generated with *seed*, as rich-formatted table output."""
     # header
     console.print("[bold]Dominion Setup:[/bold]")
     console.print(f"Sets: {', '.join(game.sets_used)}")
+    console.print(f"Seed: {seed}")
 
     # kingdom piles (includes Bane, Obelisk and Trait marks if present)
     console.print()
@@ -209,6 +211,12 @@ def _print_game(game: Game) -> None:
     is_flag=True,
     help="Require a Kingdom card that trashes other cards.",
 )
+@click.option(
+    "--seed",
+    type=int,
+    default=None,
+    help="Seed that reproduces a game. Defaults to a random one.",
+)
 def generate(
     raw_sets_editions: tuple[str, ...],
     sort_order: str,
@@ -221,9 +229,12 @@ def generate(
     require_attack: bool,
     require_reaction: bool,
     require_trashing: bool,
+    seed: int | None,
 ) -> None:
     """Generate a random Dominion game setup."""
     db = load_card_database()
+    if seed is None:
+        seed = random.randrange(1_000_000)
 
     requirement_flags = {
         KingdomRequirement.ACTIONS: require_actions,
@@ -247,10 +258,11 @@ def generate(
                 for requirement, is_required in requirement_flags.items()
                 if is_required
             ],
+            rng=random.Random(seed),
         )
     except SetupGenerationError as exc:
         raise click.UsageError(str(exc)) from exc
-    _print_game(game)
+    _print_game(game, seed=seed)
 
 
 @cli.command("list-cards")

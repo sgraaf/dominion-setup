@@ -94,9 +94,9 @@ def test_draws_only_from_the_selected_sets_and_editions(
 
 @pytest.mark.parametrize("sort_order", KingdomSortOrder)
 def test_sorts_kingdom_piles_and_landscapes(
-    db: CardDatabase, sort_order: KingdomSortOrder
+    db: CardDatabase, sort_order: KingdomSortOrder, rng: random.Random
 ) -> None:
-    game = generate_game(db, sort_order=sort_order, max_landscapes=10)
+    game = generate_game(db, sort_order=sort_order, max_landscapes=10, rng=rng)
     assert len(game.landscapes) > 1
     assert game.kingdom_cards == sorted(game.kingdom_cards, key=sort_order.sort_key)
     assert game.landscapes == sorted(game.landscapes, key=sort_order.sort_key)
@@ -139,17 +139,22 @@ def test_use_shelters_overrides_the_random_choice(
 
 
 def test_same_seed_generates_the_same_game(db: CardDatabase) -> None:
-    random.seed(42)
-    game = generate_game(db)
-    random.seed(42)
-    assert generate_game(db) == game
+    game = generate_game(db, rng=random.Random(42))
+    assert generate_game(db, rng=random.Random(42)) == game
+
+
+def test_does_not_change_the_global_random_state(db: CardDatabase) -> None:
+    state = random.getstate()
+    generate_game(db)
+    generate_game(db, rng=random.Random(42))
+    assert random.getstate() == state
 
 
 def test_same_seed_generates_the_same_game_in_every_process() -> None:
     """A given seed yields the same setup regardless of string hash randomization."""
     script = (
         "import random; from dominion_setup import generate_game, load_card_database; "
-        "random.seed(42); game = generate_game(load_card_database()); "
+        "game = generate_game(load_card_database(), rng=random.Random(42)); "
         "print([pile.card.name for pile in game.kingdom_piles + game.non_supply_piles])"
     )
     outputs = {
@@ -268,10 +273,10 @@ def test_no_dealt_cards_without_their_triggers(
 
 
 def test_draw_kingdom_draws_ten_cards_and_leaves_the_rest_unused(
-    db: CardDatabase,
+    db: CardDatabase, rng: random.Random
 ) -> None:
     kingdom, _landscapes, unused = _draw_kingdom(
-        db, sets_editions=None, max_landscapes=2
+        db, sets_editions=None, max_landscapes=2, rng=rng
     )
     assert len(kingdom) == 10
     assert sorted(card_names([*kingdom, *unused])) == sorted(db.kingdom_cards)
@@ -279,10 +284,10 @@ def test_draw_kingdom_draws_ten_cards_and_leaves_the_rest_unused(
 
 @pytest.mark.parametrize("max_landscapes", [0, 1, 2, 10])
 def test_draw_kingdom_draws_at_most_max_landscapes(
-    db: CardDatabase, max_landscapes: int
+    db: CardDatabase, max_landscapes: int, rng: random.Random
 ) -> None:
     _kingdom, landscapes, _unused = _draw_kingdom(
-        db, sets_editions=None, max_landscapes=max_landscapes
+        db, sets_editions=None, max_landscapes=max_landscapes, rng=rng
     )
     assert len(landscapes) <= max_landscapes
     selectable_types = {
@@ -297,7 +302,7 @@ def test_draw_kingdom_draws_at_most_max_landscapes(
 
 
 def test_draw_kingdom_never_draws_allies_or_prophecies(
-    db: CardDatabase, smithy: Card
+    db: CardDatabase, smithy: Card, rng: random.Random
 ) -> None:
     kingdom_cards = [replace(smithy, name=f"Card {i}") for i in range(10)]
     ally_and_prophecy = get_cards(db, "Architects' Guild", "Approaching Army")
@@ -305,11 +310,14 @@ def test_draw_kingdom_never_draws_allies_or_prophecies(
         CardDatabase([*kingdom_cards, *ally_and_prophecy]),
         sets_editions=None,
         max_landscapes=2,
+        rng=rng,
     )
     assert landscapes == []
 
 
-def test_draw_kingdom_needs_ten_kingdom_cards(db: CardDatabase, smithy: Card) -> None:
+def test_draw_kingdom_needs_ten_kingdom_cards(
+    db: CardDatabase, smithy: Card, rng: random.Random
+) -> None:
     kingdom_cards = [replace(smithy, name=f"Card {i}") for i in range(9)]
     events = get_cards(db, "Alms", "Ball")  # Landscapes do not count
     with pytest.raises(SetupGenerationError, match="need 10, found 9"):
@@ -317,6 +325,7 @@ def test_draw_kingdom_needs_ten_kingdom_cards(db: CardDatabase, smithy: Card) ->
             CardDatabase([*kingdom_cards, *events]),
             sets_editions=None,
             max_landscapes=2,
+            rng=rng,
         )
 
 
@@ -365,9 +374,12 @@ def test_draw_kingdom_meets_the_requirements(
 ) -> None:
     """Base 2E has a single Reaction (Moat), so requiring one often forces it in."""
     base_2e = (CardSet.BASE, CardSetEdition.SECOND_EDITION)
-    random.seed(seed)
     kingdom, _landscapes, unused = _draw_kingdom(
-        db, sets_editions={base_2e}, max_landscapes=2, requirements=requirements
+        db,
+        sets_editions={base_2e},
+        max_landscapes=2,
+        requirements=requirements,
+        rng=random.Random(seed),
     )
     for requirement in requirements:
         assert any(REQUIREMENT_RULES[requirement](card) for card in kingdom)
@@ -387,12 +399,12 @@ def test_one_card_can_meet_several_requirements(smithy: Card, seed: int) -> None
         KingdomRequirement.CARDS,
         KingdomRequirement.BUYS,
     ]
-    random.seed(seed)
     kingdom, _landscapes, unused = _draw_kingdom(
         CardDatabase([market, *fillers]),
         sets_editions=None,
         max_landscapes=0,
         requirements=requirements,
+        rng=random.Random(seed),
     )
     assert len(kingdom) == 10
     assert "Market" in card_names(kingdom)
@@ -400,8 +412,7 @@ def test_one_card_can_meet_several_requirements(smithy: Card, seed: int) -> None
 
 
 def test_requirement_already_met_does_not_change_the_draw(db: CardDatabase) -> None:
-    random.seed(0)
-    draw = _draw_kingdom(db, sets_editions=None, max_landscapes=2)
+    draw = _draw_kingdom(db, sets_editions=None, max_landscapes=2, rng=random.Random(0))
     kingdom, _landscapes, _unused = draw
     met_requirements = [
         requirement
@@ -409,14 +420,19 @@ def test_requirement_already_met_does_not_change_the_draw(db: CardDatabase) -> N
         if any(is_provider(card) for card in kingdom)
     ]
     assert met_requirements
-    random.seed(0)
     draw_with_requirements = _draw_kingdom(
-        db, sets_editions=None, max_landscapes=2, requirements=met_requirements
+        db,
+        sets_editions=None,
+        max_landscapes=2,
+        requirements=met_requirements,
+        rng=random.Random(0),
     )
     assert draw_with_requirements == draw
 
 
-def test_draw_kingdom_without_a_provider_raises(smithy: Card) -> None:
+def test_draw_kingdom_without_a_provider_raises(
+    smithy: Card, rng: random.Random
+) -> None:
     db = CardDatabase([replace(smithy, name=f"Card {i}") for i in range(10)])
     with pytest.raises(SetupGenerationError, match="selected sets provides Attack"):
         _draw_kingdom(
@@ -424,6 +440,7 @@ def test_draw_kingdom_without_a_provider_raises(smithy: Card) -> None:
             sets_editions=None,
             max_landscapes=2,
             requirements=[KingdomRequirement.ATTACK],
+            rng=rng,
         )
 
 
@@ -433,7 +450,9 @@ ExtraPiles = tuple[list[tuple[str, str]], str | None]
 
 
 @pytest.fixture
-def choose_extra_piles(db: CardDatabase) -> Callable[..., ExtraPiles]:
+def choose_extra_piles(
+    db: CardDatabase, rng: random.Random
+) -> Callable[..., ExtraPiles]:
     """Return ``_choose_extra_piles`` taking and returning card names.
 
     Extra piles are returned as ``(mark, card name)`` pairs in the order they
@@ -452,6 +471,7 @@ def choose_extra_piles(db: CardDatabase) -> Callable[..., ExtraPiles]:
             get_cards(db, *kingdom),
             get_cards(db, *landscapes),
             get_cards(db, *unused),
+            rng=rng,
         )
         return (
             [(str(rule.mark), card.name) for rule, card in extra_piles],
@@ -592,9 +612,13 @@ def test_extra_pile_can_trigger_further_extra_piles(
     assert choose_extra_piles(kingdom, unused=unused) == expected
 
 
-def test_omens_deal_one_prophecy(db: CardDatabase) -> None:
+def test_omens_deal_one_prophecy(db: CardDatabase, rng: random.Random) -> None:
     _extra_piles, prophecy = _choose_extra_piles(
-        db, get_cards(db, "Kitsune", "Poet"), [], get_cards(db, "Militia")
+        db,
+        get_cards(db, "Kitsune", "Poet"),
+        [],
+        get_cards(db, "Militia"),
+        rng=rng,
     )
     assert prophecy is not None
     assert CardType.PROPHECY in prophecy.types
@@ -603,32 +627,34 @@ def test_omens_deal_one_prophecy(db: CardDatabase) -> None:
 # ── 3. Cards dealt out for specific cards in use ─────────────────────────────
 
 
-def test_druid_deals_three_boons(db: CardDatabase) -> None:
-    boons = _choose_druid_boons(db, get_cards(db, "Druid"))
+def test_druid_deals_three_boons(db: CardDatabase, rng: random.Random) -> None:
+    boons = _choose_druid_boons(db, get_cards(db, "Druid"), rng=rng)
     assert len(set(card_names(boons))) == 3
     for boon in boons:
         assert CardType.BOON in boon.types
 
 
-def test_no_boons_dealt_without_druid(db: CardDatabase) -> None:
-    assert _choose_druid_boons(db, get_cards(db, "Bard")) == []
+def test_no_boons_dealt_without_druid(db: CardDatabase, rng: random.Random) -> None:
+    assert _choose_druid_boons(db, get_cards(db, "Bard"), rng=rng) == []
 
 
-def test_liaison_deals_an_ally(db: CardDatabase) -> None:
-    ally = _choose_ally(db, get_cards(db, "Sycophant"))
+def test_liaison_deals_an_ally(db: CardDatabase, rng: random.Random) -> None:
+    ally = _choose_ally(db, get_cards(db, "Sycophant"), rng=rng)
     assert ally is not None
     assert CardType.ALLY in ally.types
 
 
-def test_no_ally_dealt_without_liaison(db: CardDatabase) -> None:
-    assert _choose_ally(db, get_cards(db, "Village")) is None
+def test_no_ally_dealt_without_liaison(db: CardDatabase, rng: random.Random) -> None:
+    assert _choose_ally(db, get_cards(db, "Village"), rng=rng) is None
 
 
 def test_each_trait_marks_a_different_action_or_treasure_pile(
-    db: CardDatabase,
+    db: CardDatabase, rng: random.Random
 ) -> None:
     trait_marks = _choose_trait_piles(
-        get_cards(db, "Village", "Ducat", "Duke"), get_cards(db, "Cheap", "Cursed")
+        get_cards(db, "Village", "Ducat", "Duke"),
+        get_cards(db, "Cheap", "Cursed"),
+        rng=rng,
     )
     assert sorted(card.name for card, _mark in trait_marks) == ["Ducat", "Village"]
     assert sorted(str(mark) for _card, mark in trait_marks) == [
@@ -637,16 +663,21 @@ def test_each_trait_marks_a_different_action_or_treasure_pile(
     ]
 
 
-def test_no_trait_piles_without_traits(db: CardDatabase) -> None:
-    assert _choose_trait_piles(get_cards(db, "Village"), get_cards(db, "Alms")) == []
+def test_no_trait_piles_without_traits(db: CardDatabase, rng: random.Random) -> None:
+    assert (
+        _choose_trait_piles(get_cards(db, "Village"), get_cards(db, "Alms"), rng=rng)
+        == []
+    )
 
 
 def test_traits_without_enough_action_or_treasure_piles_raise(
-    db: CardDatabase,
+    db: CardDatabase, rng: random.Random
 ) -> None:
     with pytest.raises(SetupGenerationError, match="Not enough Action/Treasure"):
         _choose_trait_piles(
-            get_cards(db, "Village", "Duke"), get_cards(db, "Cheap", "Cursed")
+            get_cards(db, "Village", "Duke"),
+            get_cards(db, "Cheap", "Cursed"),
+            rng=rng,
         )
 
 
@@ -719,13 +750,14 @@ def test_shared_companion_card_is_set_out_once(db: CardDatabase) -> None:
 # ── 5. Basic Supply piles & Heirlooms ────────────────────────────────────────
 
 
-def basic_card_names(
+def basic_card_names(  # noqa: PLR0913
     db: CardDatabase,
     kingdom: Sequence[str],
     *,
     other_cards_in_use: Sequence[str] = (),
     use_colony: bool | None = None,
     use_shelters: bool | None = None,
+    seed: int = 0,
 ) -> list[str]:
     """Return the names ``_basic_cards`` picks for the Kingdom cards named *kingdom*."""
     kingdom_cards = get_cards(db, *kingdom)
@@ -736,6 +768,7 @@ def basic_card_names(
         cards_in_use,
         use_colony=use_colony,
         use_shelters=use_shelters,
+        rng=random.Random(seed),
     )
     return card_names(basic_cards)
 
@@ -812,7 +845,7 @@ def test_shelters(
 def test_some_cards_from_the_set_make_the_pile_random(
     db: CardDatabase, kingdom: list[str], pile: str
 ) -> None:
-    outcomes = {pile in basic_card_names(db, kingdom) for _ in range(20)}
+    outcomes = {pile in basic_card_names(db, kingdom, seed=seed) for seed in range(20)}
     assert outcomes == {True, False}
 
 
@@ -839,22 +872,31 @@ def test_no_heirlooms_without_heirloom_cards(db: CardDatabase) -> None:
 # ── 6. Obelisk ───────────────────────────────────────────────────────────────
 
 
-def test_obelisk_marks_an_action_pile(db: CardDatabase) -> None:
+def test_obelisk_marks_an_action_pile(db: CardDatabase, rng: random.Random) -> None:
     obelisk_marks = _choose_obelisk_pile(
-        get_cards(db, "Duke", "Village"), get_cards(db, "Obelisk")
+        get_cards(db, "Duke", "Village"), get_cards(db, "Obelisk"), rng=rng
     )
     assert [(card.name, str(mark)) for card, mark in obelisk_marks] == [
         ("Village", "Obelisk")
     ]
 
 
-def test_no_obelisk_pile_without_obelisk(db: CardDatabase) -> None:
-    assert _choose_obelisk_pile(get_cards(db, "Village"), get_cards(db, "Arena")) == []
+def test_no_obelisk_pile_without_obelisk(db: CardDatabase, rng: random.Random) -> None:
+    assert (
+        _choose_obelisk_pile(get_cards(db, "Village"), get_cards(db, "Arena"), rng=rng)
+        == []
+    )
 
 
-def test_obelisk_without_an_action_pile_raises(db: CardDatabase) -> None:
+def test_obelisk_without_an_action_pile_raises(
+    db: CardDatabase, rng: random.Random
+) -> None:
     with pytest.raises(SetupGenerationError, match="available for Obelisk"):
-        _choose_obelisk_pile(get_cards(db, "Duke", "Gardens"), get_cards(db, "Obelisk"))
+        _choose_obelisk_pile(
+            get_cards(db, "Duke", "Gardens"),
+            get_cards(db, "Obelisk"),
+            rng=rng,
+        )
 
 
 # ── 7. Materials ─────────────────────────────────────────────────────────────
