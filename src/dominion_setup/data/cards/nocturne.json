@@ -1246,6 +1246,7 @@
     ],
     "purpose": "Non-Supply",
     "cost": {
+      "coins": 0,
       "extra": "*"
     },
     "set": "Nocturne",
@@ -1263,6 +1264,7 @@
     ],
     "purpose": "Non-Supply",
     "cost": {
+      "coins": 0,
       "extra": "*"
     },
     "set": "Nocturne",

@@ -790,7 +790,7 @@ CARDS: dict[str, str] = {
     "Wild Hunt": "Kingdom Pile | Action, Gathering | $5 | Empires | 10",
     "Temple": "Kingdom Pile | Action, Gathering | $4 | Empires | 10",
     "Catapult/Rocks": "Kingdom Pile | Action, Attack | $3 | Empires | 0",
-    "Arena": "Landscape | Landmark | $0 | Empires | 1",
+    "Arena": "Landscape | Landmark |  | Empires | 1",
     "Donate": "Landscape | Event | 8D | Empires | 1",
     "Overlord": "Kingdom Pile | Action, Command | 8D | Empires | 10",
     # Renaissance
@@ -800,7 +800,7 @@ CARDS: dict[str, str] = {
     "Scepter": "Kingdom Pile | Treasure, Command | $5 | Renaissance | 10",
     "Patron": "Kingdom Pile | Action, Reaction | $4 | Renaissance | 10",
     "Academy": "Landscape | Project | $5 | Renaissance | 1",
-    "Flag": "Status | Artifact | $0 | Renaissance | 1",
+    "Flag": "Status | Artifact |  | Renaissance | 1",
     # Menagerie
     "Barge": "Kingdom Pile | Action, Duration | $5 | Menagerie | 10",
     "Stockpile": "Kingdom Pile | Treasure | $3 | Menagerie | 10",
@@ -809,7 +809,7 @@ CARDS: dict[str, str] = {
     "Destrier": "Kingdom Pile | Action | $6* | Menagerie | 10",
     "Wayfarer": "Kingdom Pile | Action | $6* | Menagerie | 10",
     "Animal Fair": "Kingdom Pile | Action | $7* | Menagerie | 10",
-    "Way of the Butterfly": "Landscape | Way | $0 | Menagerie | 1",
+    "Way of the Butterfly": "Landscape | Way |  | Menagerie | 1",
     "Ride": "Landscape | Event | $2 | Menagerie | 1",
     "Horse": "Non-Supply | Action | $3* | Menagerie | 30",
     "Black Cat": "Kingdom Pile | Action, Attack, Reaction | $2 | Menagerie | 10",
@@ -823,7 +823,7 @@ CARDS: dict[str, str] = {
     # Allies
     "Barbarian": "Kingdom Pile | Action, Attack | $5 | Allies | 10",
     "Sycophant": "Kingdom Pile | Action, Liaison | $2 | Allies | 10",
-    "Architects' Guild": "Landscape | Ally | $0 | Allies | 1",
+    "Architects' Guild": "Landscape | Ally |  | Allies | 1",
     "Bauble": "Kingdom Pile | Treasure, Liaison | $2 | Allies | 10",
     # Plunder
     "Cutthroat": "Kingdom Pile | Action, Duration, Attack | $5 | Plunder | 10",
@@ -831,7 +831,7 @@ CARDS: dict[str, str] = {
     "Flagship": "Kingdom Pile | Action, Duration, Command | $4 | Plunder | 10",
     "Loot": "Non-Supply | Treasure, Loot | $7* | Plunder | 0",
     "Doubloons": "Mixed Pile Card | Treasure, Loot | $7* | Plunder | 2",
-    "Cheap": "Landscape | Trait | $0 | Plunder | 1",
+    "Cheap": "Landscape | Trait |  | Plunder | 1",
     "Looting": "Landscape | Event | $6 | Plunder | 1",
     "Shield": "Mixed Pile Card | Treasure, Reaction, Loot | $7* | Plunder | 2",
     "Spell Scroll": "Mixed Pile Card | Action, Treasure, Loot | $7* | Plunder | 2",
@@ -841,7 +841,7 @@ CARDS: dict[str, str] = {
     "Continue": "Landscape | Event | 8D | Rising Sun | 1",
     "Daimyo": "Kingdom Pile | Action, Command | 6D | Rising Sun | 10",
     "Rice": "Kingdom Pile | Treasure | $7 | Rising Sun | 10",
-    "Approaching Army": "Landscape | Prophecy | $0 | Rising Sun | 1",
+    "Approaching Army": "Landscape | Prophecy |  | Rising Sun | 1",
     "Kitsune": "Kingdom Pile | Action, Attack, Omen | $5 | Rising Sun | 10",
     "Samurai": "Kingdom Pile | Action, Duration, Attack | $6 | Rising Sun | 10",
     # Promo

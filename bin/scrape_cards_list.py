@@ -217,17 +217,19 @@ def fetch_raw_cards(*, headless: bool = True) -> list[dict[str, Any]]:
 def parse_raw_card(raw_card: dict[str, Any]) -> Card:
     """Parse a single raw card from the wiki's Cargo export."""
     cost: Cost = {}
-    if coins := raw_card["Cost Coin"]:
+    coins = raw_card["Cost Coin"]
+    potion = raw_card["Cost Potion"]
+    debt = raw_card["Cost Debt"]
+    # keep a zero coin cost (e.g. Copper's $0, Bag of Gold's $0*), unless the
+    # card only costs Potion or Debt (e.g. Transmute's P, Engineer's 4D)
+    if coins or (coins is not None and not (potion or debt)):
         cost["coins"] = coins
-    if potion := raw_card["Cost Potion"]:
+    if potion:
         cost["potion"] = bool(potion)
-    if debt := raw_card["Cost Debt"]:
+    if debt:
         cost["debt"] = debt
     if extra := raw_card["Cost Extra"]:
         cost["extra"] = extra
-
-    if not cost and coins is not None:  # card with zero cost
-        cost["coins"] = coins
 
     name = html.unescape(raw_card["Name"]) if raw_card["Name"] != "Farm" else "Harem"
 

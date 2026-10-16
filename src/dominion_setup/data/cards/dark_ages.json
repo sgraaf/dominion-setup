@@ -468,6 +468,7 @@
     ],
     "purpose": "Non-Supply",
     "cost": {
+      "coins": 0,
       "extra": "*"
     },
     "set": "Dark Ages",
@@ -523,6 +524,7 @@
     ],
     "purpose": "Non-Supply",
     "cost": {
+      "coins": 0,
       "extra": "*"
     },
     "set": "Dark Ages",
@@ -915,6 +917,7 @@
     ],
     "purpose": "Non-Supply",
     "cost": {
+      "coins": 0,
       "extra": "*"
     },
     "set": "Dark Ages",

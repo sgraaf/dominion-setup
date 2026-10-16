@@ -22,12 +22,17 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Changed
 
+- `CardCost.coins` is now `None` (the new default) for a cost without coins, such as Engineer's 4D or a Landmark, which has no cost; before, it was 0. So `CardCost()` no longer equals `CardCost(coins=0)`, and `list-cards --cost 0` no longer lists cards that only cost Potion or Debt. Costs still sort as if a cost without coins were \$0.
 - `generate_game` no longer uses or changes the global `random` state, so `random.seed()` no longer reproduces a game. Pass `rng=random.Random(seed)` instead.
 - `DEFAULT_BASIC_CARD_NAMES` and `SELECTABLE_LANDSCAPE_TYPES` moved from `dominion_setup.models` to `dominion_setup.generator`, alongside the other setup rules.
 
 ### Removed
 
 - The `dominion_setup.utils` module. Use `KingdomSortOrder.sort_key` instead of `card_sort_key`; `parse_raw_set_edition` was only used by the CLI.
+
+### Fixed
+
+- Landscapes without a cost (Landmarks, Ways, Traits, Allies, Prophecies) no longer show a cost of \$0.
 
 ## [2026.2.0](https://github.com/sgraaf/dominion-setup/compare/2026.1.0...2026.2.0) - 2026-09-13
 

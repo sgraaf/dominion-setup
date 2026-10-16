@@ -154,19 +154,38 @@ class CardPurpose(StrEnum):
     STATUS = "Status"
 
 
-@dataclass(order=True, frozen=True, slots=True)
+@dataclass(frozen=True, slots=True)
 class CardCost:
-    """Card cost, supporting coins, Potion and Debt."""
+    """Card cost, supporting coins, Potion and Debt.
 
-    coins: int = 0
+    ``coins`` is ``None`` for a cost without coins (e.g. Engineer's 4D, or a
+    Landmark that has no cost), which orders like a cost of $0.
+    """
+
+    coins: int | None = None
     potion: bool = False
     debt: int = 0
     extra: Literal["+", "*"] | None = field(default=None, compare=False)
 
+    def _sort_key(self) -> tuple[int, bool, int]:
+        return (self.coins or 0, self.potion, self.debt)
+
+    def __lt__(self, other: CardCost) -> bool:
+        return self._sort_key() < other._sort_key()
+
+    def __le__(self, other: CardCost) -> bool:
+        return self._sort_key() <= other._sort_key()
+
+    def __gt__(self, other: CardCost) -> bool:
+        return self._sort_key() > other._sort_key()
+
+    def __ge__(self, other: CardCost) -> bool:
+        return self._sort_key() >= other._sort_key()
+
     def __str__(self) -> str:
-        """Format cost for display (e.g. '$3', '$2P', 'P', '8D')."""
+        """Format cost for display (e.g. '$3', '$2P', 'P', '8D', or '' for no cost)."""
         s = ""
-        if self.coins or not (self.potion or self.debt):
+        if self.coins is not None:
             s += f"${self.coins}"
         if self.potion:
             s += "P"
@@ -180,7 +199,7 @@ class CardCost:
     def from_dict(cls, data: dict[str, Any]) -> CardCost:
         """Create a Cost from a JSON-derived dictionary."""
         return cls(
-            coins=data.get("coins", 0),
+            coins=data.get("coins"),
             potion=data.get("potion", False),
             debt=data.get("debt", 0),
             extra=data.get("extra"),
@@ -189,7 +208,7 @@ class CardCost:
     def to_dict(self) -> dict[str, Any]:
         """Convert to a JSON-serializable dictionary, omitting default fields like the card data."""
         data: dict[str, Any] = {}
-        if self.coins:
+        if self.coins is not None:
             data["coins"] = self.coins
         if self.potion:
             data["potion"] = self.potion

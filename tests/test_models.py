@@ -30,10 +30,11 @@ from dominion_setup.models import (
 @pytest.mark.parametrize(
     ("data", "cost"),
     [
-        ({}, CardCost(coins=0, potion=False, debt=0, extra=None)),
+        ({}, CardCost(coins=None, potion=False, debt=0, extra=None)),
+        ({"coins": 0}, CardCost(coins=0)),
         ({"coins": 5}, CardCost(coins=5)),
         ({"coins": 2, "potion": True}, CardCost(coins=2, potion=True)),
-        ({"coins": 0, "debt": 8}, CardCost(debt=8)),
+        ({"debt": 8}, CardCost(debt=8)),
         ({"coins": 3, "extra": "+"}, CardCost(coins=3, extra="+")),
     ],
 )
@@ -41,10 +42,15 @@ def test_card_cost_from_dict(data: dict[str, Any], cost: CardCost) -> None:
     assert CardCost.from_dict(data) == cost
 
 
+def test_card_cost_without_coins_is_not_a_zero_coin_cost() -> None:
+    assert CardCost() != CardCost(coins=0)
+
+
 @pytest.mark.parametrize(
     ("cost", "data"),
     [
         (CardCost(), {}),
+        (CardCost(coins=0), {"coins": 0}),
         (CardCost(coins=5), {"coins": 5}),
         (CardCost(coins=2, potion=True), {"coins": 2, "potion": True}),
         (CardCost(debt=8), {"debt": 8}),
@@ -62,18 +68,43 @@ def test_card_cost_to_dict(cost: CardCost, data: dict[str, Any]) -> None:
 @pytest.mark.parametrize(
     ("cost", "text"),
     [
+        (CardCost(), ""),
+        (CardCost(coins=0), "$0"),
         (CardCost(coins=5), "$5"),
         (CardCost(coins=3, potion=True), "$3P"),
         (CardCost(potion=True), "P"),
         (CardCost(debt=8), "8D"),
         (CardCost(coins=4, debt=3), "$43D"),
         (CardCost(coins=3, extra="+"), "$3+"),
-        (CardCost(extra="*"), "$0*"),
+        (CardCost(coins=0, extra="*"), "$0*"),
         (CardCost(coins=2, potion=True, debt=4, extra="+"), "$2P4D+"),
     ],
 )
 def test_card_cost_str(cost: CardCost, text: str) -> None:
     assert str(cost) == text
+
+
+def test_card_cost_orders_no_coins_as_zero_coins() -> None:
+    costs = [
+        CardCost(coins=5),
+        CardCost(coins=2),
+        CardCost(debt=8),
+        CardCost(coins=0),
+        CardCost(coins=3, potion=True),
+        CardCost(coins=3),
+    ]
+    assert sorted(costs) == [
+        CardCost(coins=0),
+        CardCost(debt=8),
+        CardCost(coins=2),
+        CardCost(coins=3),
+        CardCost(coins=3, potion=True),
+        CardCost(coins=5),
+    ]
+    assert CardCost() <= CardCost(coins=0) <= CardCost()
+    assert CardCost() >= CardCost(coins=0) >= CardCost()
+    assert CardCost(debt=4) < CardCost(coins=2)
+    assert CardCost(coins=2) > CardCost(debt=4)
 
 
 def test_card_cost_is_frozen() -> None:
@@ -275,9 +306,9 @@ def test_pile_is_frozen(smithy: Card) -> None:
 @pytest.mark.parametrize(
     ("sort_order", "expected_names"),
     [
-        (KingdomSortOrder.NAME, ["Bazaar", "Cellar", "Moat", "Smithy"]),
-        (KingdomSortOrder.COST, ["Cellar", "Moat", "Smithy", "Bazaar"]),
-        (KingdomSortOrder.SET, ["Moat", "Smithy", "Cellar", "Bazaar"]),
+        (KingdomSortOrder.NAME, ["Bazaar", "Cellar", "Engineer", "Moat", "Smithy"]),
+        (KingdomSortOrder.COST, ["Engineer", "Cellar", "Moat", "Smithy", "Bazaar"]),
+        (KingdomSortOrder.SET, ["Moat", "Smithy", "Cellar", "Bazaar", "Engineer"]),
     ],
 )
 def test_kingdom_sort_order_sort_key(
@@ -288,6 +319,7 @@ def test_kingdom_sort_order_sort_key(
         smithy,
         replace(smithy, name="Cellar", cost=CardCost(coins=2), set=CardSet.INTRIGUE),
         replace(smithy, name="Moat", cost=CardCost(coins=2)),
+        replace(smithy, name="Engineer", cost=CardCost(debt=4), set=CardSet.EMPIRES),
     ]
     sorted_names = [card.name for card in sorted(cards, key=sort_order.sort_key)]
     assert sorted_names == expected_names
