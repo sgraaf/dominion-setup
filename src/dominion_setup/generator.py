@@ -54,6 +54,7 @@ def generate_game(  # noqa: PLR0913
     requirements: Iterable[KingdomRequirement] = (),
     include: Iterable[str] = (),
     exclude: Iterable[str] = (),
+    black_market_size: int = 15,
     rng: random.Random | None = None,
 ) -> Game:
     """Generate a complete, rules-accurate Dominion game setup.
@@ -77,6 +78,8 @@ def generate_game(  # noqa: PLR0913
             game, from any set. Defaults to none.
         exclude: Names of Kingdom cards and Landscapes that must not be drawn.
             Defaults to none.
+        black_market_size: How many unused Kingdom cards to deal into the
+            Black Market deck, if Black Market is in use. Defaults to 15.
         rng: The random number generator to draw with, e.g.
             ``random.Random(42)`` to reproduce a game. Defaults to a new,
             unseeded one, so the global ``random`` state is never changed.
@@ -106,16 +109,23 @@ def generate_game(  # noqa: PLR0913
         rng=rng,
     )
 
-    # 2. Extra Kingdom piles (Bane, Ferryman, …) and the Prophecy
-    extra_piles, prophecy = _choose_extra_piles(
-        db, kingdom_cards, landscapes, unused_kingdom_cards, rng=rng
+    # 2. Extra Kingdom piles (Bane, Ferryman, …), the Prophecy and the Black
+    # Market deck
+    extra_piles, prophecy, black_market_deck = _choose_extra_piles(
+        db,
+        kingdom_cards,
+        landscapes,
+        unused_kingdom_cards,
+        black_market_size=black_market_size,
+        rng=rng,
     )
     kingdom_cards += [card for rule, card in extra_piles if rule.in_supply]
     set_aside_cards = [card for rule, card in extra_piles if not rule.in_supply]
 
-    # cards set aside for Ferryman, Way of the Mouse and Riverboat can still be
-    # gained or played, so they trigger setup just like Supply Kingdom cards
-    cards_in_use = [*kingdom_cards, *set_aside_cards]
+    # cards set aside for Ferryman, Way of the Mouse and Riverboat, and those in
+    # the Black Market deck, can still be gained or played, so they trigger
+    # setup just like Supply Kingdom cards
+    cards_in_use = [*kingdom_cards, *set_aside_cards, *black_market_deck]
 
     # 3. Cards dealt out for specific cards in use
     druid_boons = _choose_druid_boons(db, cards_in_use, rng=rng)
@@ -172,6 +182,7 @@ def generate_game(  # noqa: PLR0913
         ally=ally,
         prophecy=prophecy,
         druid_boons=druid_boons,
+        black_market_deck=sorted(black_market_deck, key=sort_order.sort_key),
         materials=materials,
         setup_instructions=setup_instructions,
     )
@@ -376,7 +387,7 @@ def _draw_kingdom(  # noqa: PLR0913
     return kingdom_cards, landscapes, [*unused_kingdom_cards, *skipped_cards]
 
 
-# ── 2. Extra Kingdom piles & Prophecy ────────────────────────────────────────
+# ── 2. Extra Kingdom piles, Prophecy & Black Market deck ─────────────────────
 
 
 @dataclass(frozen=True, slots=True)
@@ -447,30 +458,39 @@ EXTRA_PILE_RULES: tuple[ExtraPileRule, ...] = (
 )
 
 
-def _choose_extra_piles(
+def _choose_extra_piles(  # noqa: PLR0913
     db: CardDatabase,
     kingdom_cards: list[Card],
     landscapes: list[Card],
     unused_kingdom_cards: list[Card],
     *,
+    black_market_size: int,
     rng: random.Random,
-) -> tuple[list[tuple[ExtraPileRule, Card]], Card | None]:
-    """Choose the extra Kingdom piles required by ``EXTRA_PILE_RULES``, and the Prophecy.
+) -> tuple[list[tuple[ExtraPileRule, Card]], Card | None, list[Card]]:
+    """Choose the extra Kingdom piles, the Prophecy and the Black Market deck.
 
-    Extra piles are chosen from *unused_kingdom_cards*, which must be in random
-    order. Returns each extra pile along with the rule that required it, in
-    the order they were chosen, and the Prophecy.
+    Extra piles (required by ``EXTRA_PILE_RULES``) and the Black Market deck
+    are chosen from *unused_kingdom_cards*, which must be in random order.
+    Returns each extra pile along with the rule that required it, in the order
+    they were chosen, the Prophecy, and the (at most *black_market_size*) cards
+    of the Black Market deck.
     """
     candidates = list(unused_kingdom_cards)  # copy, as chosen cards are removed
     extra_piles: list[tuple[ExtraPileRule, Card]] = []
     prophecy: Card | None = None
+    black_market_deck: list[Card] = []
     resolved_triggers: set[str] = set()
 
     # an extra pile can trigger further setup (e.g. Ferryman choosing Young
     # Witch, which needs a Bane; or a Bane that is an Omen, which needs a
-    # Prophecy), so repeat until nothing new is triggered
+    # Prophecy), and so can a card in the Black Market deck, so repeat until
+    # nothing new is triggered
     while True:
-        cards_in_use = [*kingdom_cards, *(card for _, card in extra_piles)]
+        cards_in_use = [
+            *kingdom_cards,
+            *(card for _, card in extra_piles),
+            *black_market_deck,
+        ]
 
         # in every game with one or more Omen cards, deal out one Prophecy for
         # it. Only use one Prophecy no matter how many Omens you have.
@@ -484,13 +504,22 @@ def _choose_extra_piles(
         triggers = {card.name for card in (*cards_in_use, *landscapes)}
         if prophecy is not None:
             triggers.add(prophecy.name)
+
+        # make a Black Market deck out of different unused Kingdom cards. They
+        # are in random order, so the first ones are a uniformly random choice.
+        if "Black Market" in triggers and "Black Market" not in resolved_triggers:
+            resolved_triggers.add("Black Market")
+            black_market_deck = candidates[:black_market_size]
+            del candidates[:black_market_size]
+            continue
+
         pending_rules = [
             rule
             for rule in EXTRA_PILE_RULES
             if rule.trigger in triggers and rule.trigger not in resolved_triggers
         ]
         if not pending_rules:
-            return extra_piles, prophecy
+            return extra_piles, prophecy, black_market_deck
 
         for rule in pending_rules:
             resolved_triggers.add(rule.trigger)

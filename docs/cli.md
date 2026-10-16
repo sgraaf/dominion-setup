@@ -105,6 +105,10 @@ $ dominion-setup generate --help
 │ --exclude                    CARD                    Kingdom card or         │
 │                                                      Landscape to exclude    │
 │                                                      (repeatable).           │
+│ --black-market-size          INTEGER RANGE [x>=1]    Number of cards in the  │
+│                                                      Black Market deck, if   │
+│                                                      Black Market is in use. │
+│                                                      [default: 15]           │
 │ --seed                       INTEGER                 Seed that reproduces a  │
 │                                                      game. Defaults to a     │
 │                                                      random one.             │

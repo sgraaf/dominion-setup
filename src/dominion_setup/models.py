@@ -480,6 +480,7 @@ class Game:
     ally: Card | None = None
     prophecy: Card | None = None
     druid_boons: list[Card] = field(default_factory=list)
+    black_market_deck: list[Card] = field(default_factory=list)
     materials: list[Material] = field(default_factory=list)
     setup_instructions: list[str] = field(default_factory=list)
 
@@ -500,7 +501,12 @@ class Game:
 
     @property
     def sets_used(self) -> list[CardSet]:
-        cards = self.kingdom_cards + self.non_supply_cards + self.landscapes
+        cards = [
+            *self.kingdom_cards,
+            *self.non_supply_cards,
+            *self.landscapes,
+            *self.black_market_deck,
+        ]
         return sorted(
             {card.set for card in cards},
             key=CARD_SET_ORDER.__getitem__,

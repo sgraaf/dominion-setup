@@ -355,7 +355,7 @@ def test_game_card_properties_drop_the_marks(smithy: Card) -> None:
 
 
 def test_game_sets_used(smithy: Card) -> None:
-    """The sets of the Kingdom, non-Supply and Landscape cards, in set order."""
+    """The sets of the Kingdom, non-Supply, Black Market and Landscape cards, in set order."""
     game = Game(
         basic_piles=[
             Pile(card=replace(smithy, name="Platinum", set=CardSet.PROSPERITY))
@@ -369,10 +369,12 @@ def test_game_sets_used(smithy: Card) -> None:
             Pile(card=replace(smithy, name="Madman", set=CardSet.DARK_AGES))
         ],
         landscapes=[replace(smithy, name="Alms", set=CardSet.ADVENTURES)],
+        black_market_deck=[replace(smithy, name="Pooka", set=CardSet.NOCTURNE)],
     )
     assert game.sets_used == [
         CardSet.BASE,
         CardSet.CORNUCOPIA_GUILDS,
         CardSet.DARK_AGES,
         CardSet.ADVENTURES,
+        CardSet.NOCTURNE,
     ]

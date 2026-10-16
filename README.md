@@ -23,6 +23,7 @@
   - Adding extra piles required by specific cards (Bane for Young Witch, Ferryman pile, Way of the Mouse pile, Riverboat pile, Approaching Army pile, Traveller chains for Page and Peasant, Prizes for Tournament, Rewards for Joust, Spirit/Zombie/Imp/Ghost piles for Nocturne cards, Artifacts for Flag Bearer / Border Guard / Treasurer / Swashbuckler, Loot, Horse pile, and more).
   - Choosing an Ally when any Liaison card is in the Kingdom.
   - Choosing a Prophecy when any Omen card is in the Kingdom.
+  - Dealing a Black Market deck (15 unused Kingdom cards by default) when Black Market is in use, with the setup its cards need.
   - Assigning Traits to random Action/Treasure Kingdom piles.
   - Randomly determining Colony/Platinum and Shelters based on Prosperity/Dark Ages representation, or allowing you to force them on or off.
   - Deriving the correct Potion, Ruins, and Heirloom basic piles.
@@ -67,7 +68,7 @@ Every card in every set is stored in a small JSON file under `dominion_setup/dat
 `generate_game()` performs the following steps in order. Each step has its own section in the `generator` module, holding the rules it applies.
 
 1. **Kingdom** — start from the `include`d cards (from any set), shuffle the other Kingdom and Landscape cards of the selected sets and editions (minus the `exclude`d ones), and draw until there are 10 Kingdom piles, keeping up to `max_landscapes` Landscapes in total. If `requirements` are given (e.g. +Buy(s), an Attack, Trashing), the last free Kingdom slots are kept for cards that meet a requirement no drawn card meets yet.
-1. **Extra Kingdom piles & Prophecy** — add the piles required by cards in use (Bane for Young Witch, Ferryman, Way of the Mouse, Riverboat, Approaching Army), and a Prophecy if any Omen is in use. Repeat until nothing new is required, as an extra pile can itself require one.
+1. **Extra Kingdom piles, Prophecy & Black Market deck** — add the piles required by cards in use (Bane for Young Witch, Ferryman, Way of the Mouse, Riverboat, Approaching Army), a Prophecy if any Omen is in use, and a Black Market deck of up to `black_market_size` unused Kingdom cards if Black Market is in use. Repeat until nothing new is required, as an extra pile or a Black Market card can itself require one.
 1. **Cards dealt out for specific cards** — Druid Boons, the Ally for Liaisons, and the Kingdom pile each Trait applies to.
 1. **Non-Supply piles** — Prizes, Rewards, Traveller chains, Spirits, Zombies, Artifacts, Loot, Horses, etc.
 1. **Basic Supply** — standard basics plus conditional Colony/Platinum, Potion, Ruins, Shelters, and Heirlooms.
@@ -192,6 +193,10 @@ if game.non_supply_piles:
     print("Non-Supply:")
     for pile in game.non_supply_piles:
         print(f"  {pile.card.name}")
+
+# Black Market deck (present when Black Market is in use)
+if game.black_market_deck:
+    print("Black Market:", ", ".join(c.name for c in game.black_market_deck))
 
 # Basic supply (Copper, Silver, Gold, Estate, Duchy, Province, Curse,
 #               + conditional Colony/Platinum, Potion, Ruins, Shelters, Heirlooms)

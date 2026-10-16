@@ -123,6 +123,12 @@ def _print_game(game: Game, *, seed: int) -> None:
         console.print()
         _print_pile_table(game.non_supply_piles, title="Non-Supply", numbered=False)
 
+    if game.black_market_deck:
+        console.print()
+        _print_card_table(
+            game.black_market_deck, title="Black Market Deck", numbered=False
+        )
+
     # basic supply
     console.print()
     _print_pile_table(game.basic_piles, title="Basic Supply", numbered=False)
@@ -169,6 +175,7 @@ def _print_game_json(game: Game, *, seed: int) -> None:
         "prophecy": _card_to_dict(game.prophecy),
         "druid_boons": [_card_to_dict(card) for card in game.druid_boons],
         "non_supply": [_pile_to_dict(pile) for pile in game.non_supply_piles],
+        "black_market": [_card_to_dict(card) for card in game.black_market_deck],
         "basic_supply": [_pile_to_dict(pile) for pile in game.basic_piles],
         "materials": game.materials,
         "setup": game.setup_instructions,
@@ -266,6 +273,12 @@ def _print_game_names(game: Game) -> None:
     help="Kingdom card or Landscape to exclude (repeatable).",
 )
 @click.option(
+    "--black-market-size",
+    type=click.IntRange(1),
+    default=15,
+    help="Number of cards in the Black Market deck, if Black Market is in use.",
+)
+@click.option(
     "--seed",
     type=int,
     default=None,
@@ -292,6 +305,7 @@ def generate(
     require_trashing: bool,
     include: tuple[str, ...],
     exclude: tuple[str, ...],
+    black_market_size: int,
     seed: int | None,
     output_format: str,
 ) -> None:
@@ -324,6 +338,7 @@ def generate(
             ],
             include=include,
             exclude=exclude,
+            black_market_size=black_market_size,
             rng=random.Random(seed),
         )
     except SetupGenerationError as exc:

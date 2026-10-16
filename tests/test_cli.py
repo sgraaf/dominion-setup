@@ -308,6 +308,7 @@ def test_generate_prints_every_part_of_the_game(
         ally=db.get_card_by_name("Architects' Guild"),
         prophecy=db.get_card_by_name("Approaching Army"),
         druid_boons=[db.get_card_by_name("The Earth's Gift")],
+        black_market_deck=[db.get_card_by_name("Smithy")],
         materials=[Material.COIN_TOKENS],
         setup_instructions=["Young Witch: Add an extra Kingdom card pile."],
     )
@@ -324,6 +325,7 @@ def test_generate_prints_every_part_of_the_game(
         "Prophecy",
         "Druid Boons",
         "Non-Supply",
+        "Black Market Deck",
         "Basic Supply",
     ]
     assert tables["Kingdom"] == [
@@ -348,6 +350,7 @@ def test_generate_formats_the_game_as_json(
         ally=db.get_card_by_name("Architects' Guild"),
         prophecy=db.get_card_by_name("Approaching Army"),
         druid_boons=[db.get_card_by_name("The Earth's Gift")],
+        black_market_deck=[db.get_card_by_name("Smithy")],
         materials=[Material.COIN_TOKENS],
         setup_instructions=["Young Witch: Add an extra Kingdom card pile."],
     )
@@ -376,6 +379,7 @@ def test_generate_formats_the_game_as_json(
         "prophecy": card_dict("Approaching Army"),
         "druid_boons": [card_dict("The Earth's Gift")],
         "non_supply": [card_dict("Madman")],
+        "black_market": [card_dict("Smithy")],
         "basic_supply": [card_dict("Copper")],
         "materials": ["Coin tokens"],
         "setup": ["Young Witch: Add an extra Kingdom card pile."],
@@ -391,6 +395,21 @@ def test_generate_formats_a_game_without_ally_or_prophecy_as_json(
     assert game["ally"] is None
     assert game["prophecy"] is None
     assert len(game["kingdom"]) == 10
+
+
+@pytest.mark.parametrize("size", [1, 3])
+def test_generate_deals_a_black_market_deck_of_the_given_size(
+    runner: CliRunner, size: int
+) -> None:
+    args = ["generate", "--include", "Black Market", "--format", "json"]
+    result = runner.invoke(cli, [*args, "--black-market-size", str(size)])
+    assert result.exit_code == 0
+    assert len(json.loads(result.output)["black_market"]) == size
+
+
+def test_generate_black_market_size_must_be_positive(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["generate", "--black-market-size", "0"])
+    assert result.exit_code == 2
 
 
 def test_generate_formats_the_game_as_names(

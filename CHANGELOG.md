@@ -19,6 +19,7 @@ The **third number** is for emergencies when we need to start branches for older
 - Seeds: `generate_game(rng=...)` takes a `random.Random` to draw with, and `dominion-setup generate --seed` replays a game. `generate` prints the seed of every setup, so a game can be replayed or shared.
 - Included and excluded cards: `generate_game(include=..., exclude=...)` and the repeatable `--include CARD` and `--exclude CARD` options of `dominion-setup generate`. Included Kingdom cards and Landscapes (from any set) are always used; excluded ones are never drawn.
 - Output formats: `dominion-setup generate --format json` prints the game (and its seed) as JSON, for scripts, bots and front ends; `--format names` prints the Kingdom cards, Landscapes, Ally and Prophecy on one comma-separated line, to paste into a chat or a client like dominion.games.
+- Black Market deck: when Black Market is in use, `generate_game` deals out a Black Market deck of different unused Kingdom cards into the new `Game.black_market_deck`, and runs the setup they need (e.g. a Bane for Young Witch, Heirlooms, materials). Its size is set by `generate_game(black_market_size=...)` and `dominion-setup generate --black-market-size` (default 15).
 
 ### Changed
 

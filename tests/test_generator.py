@@ -208,6 +208,7 @@ def generate_with(
         kingdom: Sequence[str],
         landscapes: Sequence[str] = (),
         unused: Sequence[str] = (),
+        black_market_size: int = 15,
     ) -> Game:
         monkeypatch.setattr(
             generator,
@@ -218,7 +219,12 @@ def generate_with(
                 get_cards(db, *unused),
             ),
         )
-        return generate_game(db, use_colony=False, use_shelters=False)
+        return generate_game(
+            db,
+            use_colony=False,
+            use_shelters=False,
+            black_market_size=black_market_size,
+        )
 
     return _generate_with
 
@@ -250,6 +256,33 @@ def test_set_aside_card_brings_its_own_setup(
         "Miserable": [],
         "Imp": [],
     }
+
+
+def test_black_market_deck_is_sorted(generate_with: Callable[..., Game]) -> None:
+    game = generate_with(
+        kingdom=["Black Market"],
+        unused=["Smithy", "Village", "Market"],
+        black_market_size=2,
+    )
+    assert card_names(game.black_market_deck) == ["Village", "Smithy"]
+
+
+def test_black_market_deck_brings_its_own_setup(
+    generate_with: Callable[..., Game],
+) -> None:
+    """Cards in the Black Market deck can be bought, so they need their components."""
+    game = generate_with(kingdom=["Black Market"], unused=["Tormentor", "Pooka"])
+    assert card_names(game.black_market_deck) == ["Pooka", "Tormentor"]
+    assert card_names(game.non_supply_cards) == ["Hexes", "Deluded", "Miserable", "Imp"]
+    assert card_names(game.basic_cards) == [*BASIC_SUPPLY, "Cursed Gold"]
+    assert game.setup_instructions[-1].startswith("Heirlooms: ")
+
+
+def test_no_black_market_deck_without_black_market(
+    generate_with: Callable[..., Game],
+) -> None:
+    game = generate_with(kingdom=["Village"], unused=["Smithy"])
+    assert game.black_market_deck == []
 
 
 def test_pile_can_carry_several_marks(generate_with: Callable[..., Game]) -> None:
@@ -653,7 +686,7 @@ def test_draw_kingdom_counts_the_included_cards_as_drawn(
 
 # ── 2. Extra Kingdom piles & Prophecy ────────────────────────────────────────
 
-ExtraPiles = tuple[list[tuple[str, str]], str | None]
+ExtraPiles = tuple[list[tuple[str, str]], str | None, list[str]]
 
 
 @pytest.fixture
@@ -663,8 +696,8 @@ def choose_extra_piles(
     """Return ``_choose_extra_piles`` taking and returning card names.
 
     Extra piles are returned as ``(mark, card name)`` pairs in the order they
-    were chosen, along with the Prophecy. Approaching Army is the only Prophecy
-    on offer, so any Omen deals it.
+    were chosen, along with the Prophecy and the Black Market deck. Approaching
+    Army is the only Prophecy on offer, so any Omen deals it.
     """
     prophecies = CardDatabase(get_cards(db, "Approaching Army"))
 
@@ -672,17 +705,20 @@ def choose_extra_piles(
         kingdom: Sequence[str],
         landscapes: Sequence[str] = (),
         unused: Sequence[str] = (),
+        black_market_size: int = 15,
     ) -> ExtraPiles:
-        extra_piles, prophecy = _choose_extra_piles(
+        extra_piles, prophecy, black_market_deck = _choose_extra_piles(
             prophecies,
             get_cards(db, *kingdom),
             get_cards(db, *landscapes),
             get_cards(db, *unused),
+            black_market_size=black_market_size,
             rng=rng,
         )
         return (
             [(str(rule.mark), card.name) for rule, card in extra_piles],
             None if prophecy is None else prophecy.name,
+            card_names(black_market_deck),
         )
 
     return _choose_extra_piles_by_name
@@ -691,7 +727,11 @@ def choose_extra_piles(
 def test_no_extra_piles_without_triggers(
     choose_extra_piles: Callable[..., ExtraPiles],
 ) -> None:
-    assert choose_extra_piles(["Village", "Smithy"], unused=["Hamlet"]) == ([], None)
+    assert choose_extra_piles(["Village", "Smithy"], unused=["Hamlet"]) == (
+        [],
+        None,
+        [],
+    )
 
 
 @pytest.mark.parametrize(
@@ -741,7 +781,7 @@ def test_extra_pile_is_the_first_eligible_unused_card(
     unused: list[str],
     extra_pile: tuple[str, str],
 ) -> None:
-    extra_piles, _prophecy = choose_extra_piles(kingdom, landscapes, unused)
+    extra_piles, _prophecy, _deck = choose_extra_piles(kingdom, landscapes, unused)
     assert extra_piles == [extra_pile]
 
 
@@ -769,7 +809,7 @@ def test_extra_pile_without_an_eligible_card_raises(
 def test_each_extra_pile_is_a_different_card(
     choose_extra_piles: Callable[..., ExtraPiles],
 ) -> None:
-    extra_piles, _prophecy = choose_extra_piles(
+    extra_piles, _prophecy, _deck = choose_extra_piles(
         ["Young Witch"], ["Way of the Mouse"], unused=["Hamlet", "Village"]
     )
     assert extra_piles == [("Bane", "Hamlet"), ("Way of the Mouse", "Village")]
@@ -781,13 +821,13 @@ def test_each_extra_pile_is_a_different_card(
         pytest.param(
             ["Ferryman"],
             ["Young Witch", "Hamlet"],
-            ([("Ferryman", "Young Witch"), ("Bane", "Hamlet")], None),
+            ([("Ferryman", "Young Witch"), ("Bane", "Hamlet")], None, []),
             id="Ferryman sets aside Young Witch, who needs a Bane",
         ),
         pytest.param(
             ["Riverboat"],
             ["Ferryman", "Smithy"],
-            ([("Riverboat", "Ferryman"), ("Ferryman", "Smithy")], None),
+            ([("Riverboat", "Ferryman"), ("Ferryman", "Smithy")], None, []),
             id="Riverboat sets aside Ferryman, who needs a Ferryman pile",
         ),
         pytest.param(
@@ -796,6 +836,7 @@ def test_each_extra_pile_is_a_different_card(
             (
                 [("Approaching Army", "Young Witch"), ("Bane", "Hamlet")],
                 "Approaching Army",
+                [],
             ),
             id="Approaching Army adds Young Witch, who needs a Bane",
         ),
@@ -805,6 +846,7 @@ def test_each_extra_pile_is_a_different_card(
             (
                 [("Ferryman", "Poet"), ("Approaching Army", "Militia")],
                 "Approaching Army",
+                [],
             ),
             id="Ferryman sets aside an Omen, which needs a Prophecy",
         ),
@@ -819,12 +861,71 @@ def test_extra_pile_can_trigger_further_extra_piles(
     assert choose_extra_piles(kingdom, unused=unused) == expected
 
 
+def test_black_market_deck_is_the_first_unused_cards(
+    choose_extra_piles: Callable[..., ExtraPiles],
+) -> None:
+    assert choose_extra_piles(
+        ["Black Market"], unused=["Village", "Smithy", "Hamlet"], black_market_size=2
+    ) == ([], None, ["Village", "Smithy"])
+
+
+def test_black_market_deck_can_be_smaller_than_its_size(
+    choose_extra_piles: Callable[..., ExtraPiles],
+) -> None:
+    assert choose_extra_piles(
+        ["Black Market"], unused=["Village", "Smithy"], black_market_size=15
+    ) == ([], None, ["Village", "Smithy"])
+
+
+def test_black_market_deck_and_extra_piles_are_different_cards(
+    choose_extra_piles: Callable[..., ExtraPiles],
+) -> None:
+    assert choose_extra_piles(
+        ["Young Witch", "Black Market"],
+        unused=["Hamlet", "Village", "Smithy"],
+        black_market_size=1,
+    ) == ([("Bane", "Village")], None, ["Hamlet"])
+
+
+@pytest.mark.parametrize(
+    ("kingdom", "unused", "expected"),
+    [
+        pytest.param(
+            ["Black Market"],
+            ["Young Witch", "Hamlet"],
+            ([("Bane", "Hamlet")], None, ["Young Witch"]),
+            id="Black Market deals Young Witch, who needs a Bane",
+        ),
+        pytest.param(
+            ["Black Market"],
+            ["Poet", "Militia"],
+            ([("Approaching Army", "Militia")], "Approaching Army", ["Poet"]),
+            id="Black Market deals an Omen, which needs a Prophecy",
+        ),
+        pytest.param(
+            ["Ferryman"],
+            ["Black Market", "Smithy"],
+            ([("Ferryman", "Black Market")], None, ["Smithy"]),
+            id="Ferryman sets aside Black Market, which needs a deck",
+        ),
+    ],
+)
+def test_black_market_deck_can_trigger_further_extra_piles(
+    choose_extra_piles: Callable[..., ExtraPiles],
+    kingdom: list[str],
+    unused: list[str],
+    expected: ExtraPiles,
+) -> None:
+    assert choose_extra_piles(kingdom, unused=unused, black_market_size=1) == expected
+
+
 def test_omens_deal_one_prophecy(db: CardDatabase, rng: random.Random) -> None:
-    _extra_piles, prophecy = _choose_extra_piles(
+    _extra_piles, prophecy, _deck = _choose_extra_piles(
         db,
         get_cards(db, "Kitsune", "Poet"),
         [],
         get_cards(db, "Militia"),
+        black_market_size=15,
         rng=rng,
     )
     assert prophecy is not None
