@@ -98,6 +98,13 @@ $ dominion-setup generate --help
 │ --require-trashing                                   Require a Kingdom card  │
 │                                                      that trashes other      │
 │                                                      cards.                  │
+│ --include                    CARD                    Kingdom card or         │
+│                                                      Landscape to include,   │
+│                                                      from any set            │
+│                                                      (repeatable).           │
+│ --exclude                    CARD                    Kingdom card or         │
+│                                                      Landscape to exclude    │
+│                                                      (repeatable).           │
 │ --seed                       INTEGER                 Seed that reproduces a  │
 │                                                      game. Defaults to a     │
 │                                                      random one.             │

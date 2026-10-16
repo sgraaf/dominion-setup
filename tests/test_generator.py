@@ -9,6 +9,7 @@ seed happens to draw.
 
 import os
 import random
+import re
 import subprocess
 import sys
 from collections.abc import Callable, Iterable, Sequence
@@ -22,6 +23,7 @@ from dominion_setup.generator import (
     REQUIREMENT_RULES,
     SetupGenerationError,
     _basic_cards,
+    _cards_of_type,
     _choose_ally,
     _choose_druid_boons,
     _choose_extra_piles,
@@ -136,6 +138,18 @@ def test_use_shelters_overrides_the_random_choice(
         use_shelters=use_shelters,
     )
     assert ("Shelters" in card_names(game.basic_cards)) is use_shelters
+
+
+def test_includes_and_excludes_cards(db: CardDatabase, rng: random.Random) -> None:
+    game = generate_game(
+        db,
+        sets_editions={(CardSet.BASE, CardSetEdition.SECOND_EDITION)},
+        include=["Witch"],
+        exclude=["Moat"],
+        rng=rng,
+    )
+    assert "Witch" in card_names(game.kingdom_cards)
+    assert "Moat" not in card_names(game.kingdom_cards)
 
 
 def test_same_seed_generates_the_same_game(db: CardDatabase) -> None:
@@ -442,6 +456,199 @@ def test_draw_kingdom_without_a_provider_raises(
             requirements=[KingdomRequirement.ATTACK],
             rng=rng,
         )
+
+
+BASE_2E = (CardSet.BASE, CardSetEdition.SECOND_EDITION)
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_draw_kingdom_never_draws_excluded_cards(db: CardDatabase, seed: int) -> None:
+    """Base 2E has 26 Kingdom cards, so excluding 16 leaves exactly 10."""
+    base_2e_cards = sorted(card_names(db.get_cards_by_set_edition(*BASE_2E)))
+    kingdom, _landscapes, unused = _draw_kingdom(
+        db,
+        sets_editions={BASE_2E},
+        max_landscapes=2,
+        exclude=base_2e_cards[10:],
+        rng=random.Random(seed),
+    )
+    assert sorted(card_names(kingdom)) == base_2e_cards[:10]
+    assert unused == []
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_draw_kingdom_never_draws_excluded_landscapes(
+    db: CardDatabase, seed: int
+) -> None:
+    adventures = (CardSet.ADVENTURES, CardSetEdition.FIRST_EDITION)
+    events = _cards_of_type(db.landscape_cards.values(), CardType.EVENT)
+    adventures_events = [card.name for card in events if card.set == CardSet.ADVENTURES]
+    _kingdom, landscapes, _unused = _draw_kingdom(
+        db,
+        sets_editions={adventures},
+        max_landscapes=10,
+        exclude=adventures_events,
+        rng=random.Random(seed),
+    )
+    assert not set(card_names(landscapes)) & set(adventures_events)
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_draw_kingdom_includes_the_included_cards(db: CardDatabase, seed: int) -> None:
+    """Included cards need not come from the selected sets."""
+    included = ["Moat", "Young Witch", "Alms"]  # Young Witch and Alms are not Base
+    kingdom, landscapes, unused = _draw_kingdom(
+        db,
+        sets_editions={BASE_2E},
+        max_landscapes=1,
+        include=included,
+        rng=random.Random(seed),
+    )
+    assert len(kingdom) == 10
+    assert {"Moat", "Young Witch"} <= set(card_names(kingdom))
+    assert card_names(landscapes) == ["Alms"]
+    assert not set(card_names(unused)) & set(included)
+
+
+def test_draw_kingdom_can_include_all_ten_cards(db: CardDatabase) -> None:
+    included = sorted(card_names(db.get_cards_by_set_edition(*BASE_2E)))[:10]
+    kingdom, _landscapes, _unused = _draw_kingdom(
+        db,
+        sets_editions={BASE_2E},
+        max_landscapes=2,
+        include=included,
+        rng=random.Random(0),
+    )
+    assert sorted(card_names(kingdom)) == included
+
+
+def test_included_card_meets_a_requirement(smithy: Card, rng: random.Random) -> None:
+    militia = replace(smithy, name="Militia", types=(CardType.ACTION, CardType.ATTACK))
+    fillers = [replace(smithy, name=f"Card {i}") for i in range(9)]
+    kingdom, _landscapes, _unused = _draw_kingdom(
+        CardDatabase([militia, *fillers]),
+        sets_editions=None,
+        max_landscapes=2,
+        requirements=[KingdomRequirement.ATTACK],
+        include=["Militia"],
+        rng=rng,
+    )
+    assert "Militia" in card_names(kingdom)
+
+
+def test_including_and_excluding_nothing_does_not_change_the_draw(
+    db: CardDatabase,
+) -> None:
+    draw = _draw_kingdom(db, sets_editions=None, max_landscapes=2, rng=random.Random(0))
+    assert (
+        _draw_kingdom(
+            db,
+            sets_editions=None,
+            max_landscapes=2,
+            include=[],
+            exclude=[],
+            rng=random.Random(0),
+        )
+        == draw
+    )
+
+
+@pytest.mark.parametrize(
+    ("include", "exclude", "max_landscapes", "requirements", "message"),
+    [
+        (["Smithee"], [], 2, [], "Card 'Smithee' not found"),
+        ([], ["Smithee"], 2, [], "Card 'Smithee' not found"),
+        (["Copper"], [], 2, [], "'Copper' is not a Kingdom card or Landscape"),
+        ([], ["Approaching Army"], 2, [], "'Approaching Army' is not a Kingdom"),
+        (["Moat"], ["Moat"], 2, [], "'Moat' is both included and excluded"),
+        (
+            [
+                *("Artisan", "Bandit", "Bureaucrat", "Cellar", "Chapel"),
+                *("Council Room", "Festival", "Gardens", "Harbinger"),
+                *("Laboratory", "Library"),
+            ],
+            [],
+            2,
+            [],
+            "Cannot include 11 Kingdom cards",
+        ),
+        (
+            ["Alms", "Ball"],
+            [],
+            1,
+            [],
+            "Cannot include 2 Landscapes with at most 1",
+        ),
+        (
+            # 9 included cards, none an Attack or Reaction, leave 1 slot for 2
+            # requirements
+            [
+                *("Artisan", "Cellar", "Chapel", "Council Room", "Festival"),
+                *("Gardens", "Harbinger", "Laboratory", "Library"),
+            ],
+            [],
+            2,
+            [KingdomRequirement.ATTACK, KingdomRequirement.REACTION],
+            "1 free Kingdom slot(s) for 2 requirement(s)",
+        ),
+        (
+            # Moat is the only Reaction in Base 2E
+            [],
+            ["Moat"],
+            2,
+            [KingdomRequirement.REACTION],
+            "provides Reaction",
+        ),
+        (
+            # 26 - 17 = 9 Kingdom cards left
+            [],
+            [
+                *("Artisan", "Bandit", "Bureaucrat", "Cellar", "Chapel"),
+                *("Council Room", "Festival", "Gardens", "Harbinger"),
+                *("Laboratory", "Library", "Market", "Merchant", "Militia"),
+                *("Mine", "Moat", "Moneylender"),
+            ],
+            2,
+            [],
+            "need 10, found 9",
+        ),
+    ],
+)
+def test_draw_kingdom_with_invalid_includes_or_excludes_raises(  # noqa: PLR0913, PLR0917
+    db: CardDatabase,
+    include: list[str],
+    exclude: list[str],
+    max_landscapes: int,
+    requirements: list[KingdomRequirement],
+    message: str,
+    rng: random.Random,
+) -> None:
+    with pytest.raises(SetupGenerationError, match=re.escape(message)):
+        _draw_kingdom(
+            db,
+            sets_editions={BASE_2E},
+            max_landscapes=max_landscapes,
+            requirements=requirements,
+            include=include,
+            exclude=exclude,
+            rng=rng,
+        )
+
+
+def test_draw_kingdom_counts_the_included_cards_as_drawn(
+    db: CardDatabase, rng: random.Random
+) -> None:
+    """With 9 of Base 2E's 26 cards included and 16 excluded, 1 is left for 1 slot."""
+    base_2e_cards = sorted(card_names(db.get_cards_by_set_edition(*BASE_2E)))
+    kingdom, _landscapes, _unused = _draw_kingdom(
+        db,
+        sets_editions={BASE_2E},
+        max_landscapes=2,
+        include=base_2e_cards[:9],
+        exclude=base_2e_cards[9:25],
+        rng=rng,
+    )
+    assert sorted(card_names(kingdom)) == [*base_2e_cards[:9], base_2e_cards[25]]
 
 
 # ── 2. Extra Kingdom piles & Prophecy ────────────────────────────────────────

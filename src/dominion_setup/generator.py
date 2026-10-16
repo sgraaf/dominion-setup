@@ -52,6 +52,8 @@ def generate_game(  # noqa: PLR0913
     use_shelters: bool | None = None,
     max_landscapes: int = 2,
     requirements: Iterable[KingdomRequirement] = (),
+    include: Iterable[str] = (),
+    exclude: Iterable[str] = (),
     rng: random.Random | None = None,
 ) -> Game:
     """Generate a complete, rules-accurate Dominion game setup.
@@ -71,6 +73,10 @@ def generate_game(  # noqa: PLR0913
         max_landscapes: Maximum number of landscapes to include. Defaults to 2.
         requirements: Effects (e.g. ``KingdomRequirement.BUYS``) that at least
             one of the 10 Kingdom cards must provide. Defaults to none.
+        include: Names of Kingdom cards and Landscapes that must be in the
+            game, from any set. Defaults to none.
+        exclude: Names of Kingdom cards and Landscapes that must not be drawn.
+            Defaults to none.
         rng: The random number generator to draw with, e.g.
             ``random.Random(42)`` to reproduce a game. Defaults to a new,
             unseeded one, so the global ``random`` state is never changed.
@@ -88,12 +94,15 @@ def generate_game(  # noqa: PLR0913
         rng = random.Random()
 
     # 1. Kingdom: 10 Kingdom piles that meet the *requirements*, and up to
-    # *max_landscapes* Landscapes
+    # *max_landscapes* Landscapes, with the *include*d cards and without the
+    # *exclude*d ones
     kingdom_cards, landscapes, unused_kingdom_cards = _draw_kingdom(
         db,
         sets_editions=sets_editions,
         max_landscapes=max_landscapes,
         requirements=requirements,
+        include=include,
+        exclude=exclude,
         rng=rng,
     )
 
@@ -208,42 +217,124 @@ REQUIREMENT_RULES: dict[KingdomRequirement, Callable[[Card], bool]] = {
 }
 
 
-def _draw_kingdom(
+def _is_selectable(card: Card) -> bool:
+    """Return whether *card* is a Kingdom card or a selectable Landscape."""
+    return card.is_kingdom or bool(SELECTABLE_LANDSCAPE_TYPES & set(card.types))
+
+
+def _selectable_cards_by_name(db: CardDatabase, names: Iterable[str]) -> list[Card]:
+    """Look up the Kingdom cards and selectable Landscapes called *names*."""
+    cards = []
+    for name in names:
+        if (card := db.card_name_to_card.get(name)) is None:
+            msg = f"Card {name!r} not found"
+            raise SetupGenerationError(msg)
+        if not _is_selectable(card):
+            msg = f"{name!r} is not a Kingdom card or Landscape"
+            raise SetupGenerationError(msg)
+        cards.append(card)
+    return cards
+
+
+def _included_and_excluded_cards(
+    db: CardDatabase,
+    include: Iterable[str],
+    exclude: Iterable[str],
+    *,
+    max_landscapes: int,
+) -> tuple[list[Card], list[Card], list[Card]]:
+    """Return the included Kingdom cards, the included Landscapes and the excluded cards."""
+    included_cards = _selectable_cards_by_name(db, include)
+    excluded_cards = _selectable_cards_by_name(db, exclude)
+    for card in included_cards:
+        if card in excluded_cards:
+            msg = f"{card.name!r} is both included and excluded"
+            raise SetupGenerationError(msg)
+
+    kingdom_cards = [card for card in included_cards if card.is_kingdom]
+    landscapes = [card for card in included_cards if not card.is_kingdom]
+    if len(kingdom_cards) > KINGDOM_PILE_COUNT:
+        msg = f"Cannot include {len(kingdom_cards)} Kingdom cards: the Kingdom has {KINGDOM_PILE_COUNT}"
+        raise SetupGenerationError(msg)
+    if len(landscapes) > max_landscapes:
+        msg = (
+            f"Cannot include {len(landscapes)} Landscapes with at most {max_landscapes}"
+        )
+        raise SetupGenerationError(msg)
+    return kingdom_cards, landscapes, excluded_cards
+
+
+def _unmet_requirements(
+    requirements: Iterable[KingdomRequirement],
+    kingdom_cards: list[Card],
+    candidates: list[Card],
+) -> set[KingdomRequirement]:
+    """Return the *requirements* that the (included) *kingdom_cards* do not meet.
+
+    Raises ``SetupGenerationError`` if the *candidates* cannot meet them in the
+    free Kingdom slots.
+    """
+    unmet_requirements = [
+        requirement
+        for requirement in requirements
+        if not any(REQUIREMENT_RULES[requirement](card) for card in kingdom_cards)
+    ]
+    for requirement in unmet_requirements:
+        is_provider = REQUIREMENT_RULES[requirement]
+        if not any(card.is_kingdom and is_provider(card) for card in candidates):
+            msg = f"No Kingdom card in the selected sets provides {requirement}"
+            raise SetupGenerationError(msg)
+    # ``_draw_kingdom`` keeps a free slot for each unmet requirement
+    free_slot_count = KINGDOM_PILE_COUNT - len(kingdom_cards)
+    if len(unmet_requirements) > free_slot_count:
+        msg = f"Only {free_slot_count} free Kingdom slot(s) for {len(unmet_requirements)} requirement(s) the included cards do not meet"
+        raise SetupGenerationError(msg)
+    return set(unmet_requirements)
+
+
+def _draw_kingdom(  # noqa: PLR0913
     db: CardDatabase,
     *,
     sets_editions: set[tuple[CardSet, CardSetEdition]] | None,
     max_landscapes: int,
     requirements: Iterable[KingdomRequirement] = (),
+    include: Iterable[str] = (),
+    exclude: Iterable[str] = (),
     rng: random.Random,
 ) -> tuple[list[Card], list[Card], list[Card]]:
     """Draw 10 Kingdom cards and at most *max_landscapes* Landscapes.
 
-    Each of the *requirements* is met by at least one of the Kingdom cards.
+    Each of the *requirements* is met by at least one of the Kingdom cards. The
+    cards named in *include* (from any set) are always used, and the cards
+    named in *exclude* never are.
 
     Returns the Kingdom cards, the Landscapes, and the unused Kingdom cards in
     random order.
     """
+    # the included cards are drawn before the randomizer deck is shuffled
+    kingdom_cards, landscapes, excluded_cards = _included_and_excluded_cards(
+        db, include, exclude, max_landscapes=max_landscapes
+    )
+
+    unavailable_cards = {*kingdom_cards, *landscapes, *excluded_cards}
     candidates = [
         card
         for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
-        if (card.is_kingdom or SELECTABLE_LANDSCAPE_TYPES & set(card.types))
+        if _is_selectable(card)
+        and card not in unavailable_cards
         and (
             sets_editions is None
             or any((card.set, edition) in sets_editions for edition in card.editions)
         )
     ]
 
+    free_slot_count = KINGDOM_PILE_COUNT - len(kingdom_cards)
     kingdom_candidate_count = sum(card.is_kingdom for card in candidates)
-    if kingdom_candidate_count < KINGDOM_PILE_COUNT:
-        msg = f"Not enough kingdom cards: need {KINGDOM_PILE_COUNT}, found {kingdom_candidate_count}"
+    if kingdom_candidate_count < free_slot_count:
+        msg = f"Not enough kingdom cards: need {free_slot_count}, found {kingdom_candidate_count}"
         raise SetupGenerationError(msg)
 
-    requirements = list(requirements)
-    for requirement in requirements:
-        is_provider = REQUIREMENT_RULES[requirement]
-        if not any(card.is_kingdom and is_provider(card) for card in candidates):
-            msg = f"No Kingdom card in the selected sets provides {requirement}"
-            raise SetupGenerationError(msg)
+    unmet_requirements = _unmet_requirements(requirements, kingdom_cards, candidates)
 
     # shuffle the randomizer deck and draw until there are 10 Kingdom cards,
     # keeping the first *max_landscapes* Landscapes drawn along the way. Sorting
@@ -252,10 +343,7 @@ def _draw_kingdom(
     # between processes because string hashing is randomized).
     deck = sorted(candidates, key=KingdomSortOrder.NAME.sort_key)
     rng.shuffle(deck)
-    kingdom_cards: list[Card] = []
-    landscapes: list[Card] = []
     skipped_cards: list[Card] = []
-    unmet_requirements = set(requirements)
 
     def spare_slots() -> int:
         """Return the free Kingdom slots beyond one for each unmet requirement."""

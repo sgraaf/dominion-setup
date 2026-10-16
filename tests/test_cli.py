@@ -262,6 +262,36 @@ def test_generate_requirement_without_a_provider_is_a_usage_error(
     assert "No Kingdom card in the selected sets provides Reaction" in result.output
 
 
+def test_generate_includes_and_excludes_cards(
+    runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def _generate_game(*_args: Any, **kwargs: Any) -> Game:  # noqa: ANN401
+        calls.append(kwargs)
+        return Game(basic_piles=[], kingdom_piles=[])
+
+    monkeypatch.setattr("dominion_setup.cli.generate_game", _generate_game)
+    args = ["--include", "Witch", "--include", "Alms", "--exclude", "Moat"]
+    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
+    assert calls[0]["include"] == ("Witch", "Alms")
+    assert calls[0]["exclude"] == ("Moat",)
+
+
+def test_generate_includes_a_card_from_another_set(runner: CliRunner) -> None:
+    result = runner.invoke(
+        cli, ["generate", "--set", "base_2e", "--include", "Young Witch"]
+    )
+    assert result.exit_code == 0
+    assert "Young Witch" in [row[1] for row in parse_tables(result.output)["Kingdom"]]
+
+
+def test_generate_unknown_card_is_a_usage_error(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["generate", "--exclude", "Smithee"])
+    assert result.exit_code == 2
+    assert "Card 'Smithee' not found" in result.output
+
+
 def test_generate_prints_every_part_of_the_game(
     runner: CliRunner, db: CardDatabase, monkeypatch: pytest.MonkeyPatch
 ) -> None:

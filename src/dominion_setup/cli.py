@@ -212,6 +212,18 @@ def _print_game(game: Game, *, seed: int) -> None:
     help="Require a Kingdom card that trashes other cards.",
 )
 @click.option(
+    "--include",
+    metavar="CARD",
+    multiple=True,
+    help="Kingdom card or Landscape to include, from any set (repeatable).",
+)
+@click.option(
+    "--exclude",
+    metavar="CARD",
+    multiple=True,
+    help="Kingdom card or Landscape to exclude (repeatable).",
+)
+@click.option(
     "--seed",
     type=int,
     default=None,
@@ -229,6 +241,8 @@ def generate(
     require_attack: bool,
     require_reaction: bool,
     require_trashing: bool,
+    include: tuple[str, ...],
+    exclude: tuple[str, ...],
     seed: int | None,
 ) -> None:
     """Generate a random Dominion game setup."""
@@ -258,6 +272,8 @@ def generate(
                 for requirement, is_required in requirement_flags.items()
                 if is_required
             ],
+            include=include,
+            exclude=exclude,
             rng=random.Random(seed),
         )
     except SetupGenerationError as exc:

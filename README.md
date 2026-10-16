@@ -66,7 +66,7 @@ Every card in every set is stored in a small JSON file under `dominion_setup/dat
 
 `generate_game()` performs the following steps in order. Each step has its own section in the `generator` module, holding the rules it applies.
 
-1. **Kingdom** — shuffle the Kingdom and Landscape cards of the selected sets and editions, and draw until there are 10 Kingdom piles, keeping up to `max_landscapes` Landscapes drawn along the way. If `requirements` are given (e.g. +Buy(s), an Attack, Trashing), the last free Kingdom slots are kept for cards that meet a requirement no drawn card meets yet.
+1. **Kingdom** — start from the `include`d cards (from any set), shuffle the other Kingdom and Landscape cards of the selected sets and editions (minus the `exclude`d ones), and draw until there are 10 Kingdom piles, keeping up to `max_landscapes` Landscapes in total. If `requirements` are given (e.g. +Buy(s), an Attack, Trashing), the last free Kingdom slots are kept for cards that meet a requirement no drawn card meets yet.
 1. **Extra Kingdom piles & Prophecy** — add the piles required by cards in use (Bane for Young Witch, Ferryman, Way of the Mouse, Riverboat, Approaching Army), and a Prophecy if any Omen is in use. Repeat until nothing new is required, as an extra pile can itself require one.
 1. **Cards dealt out for specific cards** — Druid Boons, the Ally for Liaisons, and the Kingdom pile each Trait applies to.
 1. **Non-Supply piles** — Prizes, Rewards, Traveller chains, Spirits, Zombies, Artifacts, Loot, Horses, etc.
@@ -147,6 +147,8 @@ game = generate_game(
     use_shelters=False,  # never use Shelters
     max_landscapes=1,  # at most 1 landscape card
     requirements=[KingdomRequirement.BUYS],  # at least 1 kingdom card with +Buy(s)
+    include=["Witch"],  # always use Witch
+    exclude=["Chapel"],  # never use Chapel
 )
 ```
 
@@ -270,6 +272,12 @@ Require a Kingdom card with +Buy(s) and one that trashes cards:
 
 ```sh
 dominion-setup generate --set base_2e --set intrigue_2e --require-buys --require-trashing
+```
+
+Always use Witch (and the Alms Event), never Chapel:
+
+```sh
+dominion-setup generate --set base_2e --include Witch --include Alms --exclude Chapel
 ```
 
 Force Colony/Platinum on when playing with a Prosperity mix:

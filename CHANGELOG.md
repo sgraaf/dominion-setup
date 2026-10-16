@@ -16,6 +16,7 @@ The **third number** is for emergencies when we need to start branches for older
 - `KingdomSortOrder.sort_key`, the key that sorts cards in that order.
 - Kingdom requirements: `generate_game(requirements=...)` with `KingdomRequirement` (+Action(s), +Card(s), +Buy(s), Attack, Reaction, Trashing), and the matching `--require-actions`, `--require-cards`, `--require-buys`, `--require-attack`, `--require-reaction` and `--require-trashing` flags of `dominion-setup generate`. Each makes sure at least one of the 10 Kingdom cards provides that effect.
 - Seeds: `generate_game(rng=...)` takes a `random.Random` to draw with, and `dominion-setup generate --seed` replays a game. `generate` prints the seed of every setup, so a game can be replayed or shared.
+- Included and excluded cards: `generate_game(include=..., exclude=...)` and the repeatable `--include CARD` and `--exclude CARD` options of `dominion-setup generate`. Included Kingdom cards and Landscapes (from any set) are always used; excluded ones are never drawn.
 
 ### Changed
 
