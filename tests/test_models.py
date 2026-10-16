@@ -42,6 +42,24 @@ def test_card_cost_from_dict(data: dict[str, Any], cost: CardCost) -> None:
 
 
 @pytest.mark.parametrize(
+    ("cost", "data"),
+    [
+        (CardCost(), {}),
+        (CardCost(coins=5), {"coins": 5}),
+        (CardCost(coins=2, potion=True), {"coins": 2, "potion": True}),
+        (CardCost(debt=8), {"debt": 8}),
+        (CardCost(coins=3, extra="+"), {"coins": 3, "extra": "+"}),
+        (
+            CardCost(coins=2, potion=True, debt=4, extra="*"),
+            {"coins": 2, "potion": True, "debt": 4, "extra": "*"},
+        ),
+    ],
+)
+def test_card_cost_to_dict(cost: CardCost, data: dict[str, Any]) -> None:
+    assert cost.to_dict() == data
+
+
+@pytest.mark.parametrize(
     ("cost", "text"),
     [
         (CardCost(coins=5), "$5"),

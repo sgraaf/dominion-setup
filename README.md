@@ -280,6 +280,13 @@ Always use Witch (and the Alms Event), never Chapel:
 dominion-setup generate --set base_2e --include Witch --include Alms --exclude Chapel
 ```
 
+Print the setup as JSON, or as one line of card names to paste elsewhere:
+
+```sh
+dominion-setup generate --format json
+dominion-setup generate --format names
+```
+
 Force Colony/Platinum on when playing with a Prosperity mix:
 
 ```sh

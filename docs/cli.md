@@ -108,6 +108,10 @@ $ dominion-setup generate --help
 │ --seed                       INTEGER                 Seed that reproduces a  │
 │                                                      game. Defaults to a     │
 │                                                      random one.             │
+│ --format                     [table|json|names]      Output format: tables,  │
+│                                                      JSON, or a one-line     │
+│                                                      list of card names.     │
+│                                                      [default: table]        │
 │ --help                   -h                          Show this message and   │
 │                                                      exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯

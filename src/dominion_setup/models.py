@@ -186,6 +186,19 @@ class CardCost:
             extra=data.get("extra"),
         )
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dictionary, omitting default fields like the card data."""
+        data: dict[str, Any] = {}
+        if self.coins:
+            data["coins"] = self.coins
+        if self.potion:
+            data["potion"] = self.potion
+        if self.debt:
+            data["debt"] = self.debt
+        if self.extra is not None:
+            data["extra"] = self.extra
+        return data
+
 
 @dataclass(frozen=True, slots=True)
 class Card:

@@ -4,6 +4,7 @@ The tests invoke the CLI and parse the tables it prints (see ``parse_tables``),
 so they can check exactly which cards it lists.
 """
 
+import json
 import subprocess
 import sys
 from collections.abc import Callable
@@ -112,6 +113,7 @@ def test_no_command_runs_generate(runner: CliRunner) -> None:
     [
         ["generate", "--set", "nonexistent"],
         ["generate", "--sort", "nonexistent"],
+        ["generate", "--format", "nonexistent"],
         ["list-cards", "--set", "nonexistent"],
         ["list-cards", "--type", "nonexistent"],
     ],
@@ -330,6 +332,95 @@ def test_generate_prints_every_part_of_the_game(
     ]
     assert "Materials:\n  • Coin tokens" in result.output
     assert "Setup:\n  • Young Witch: Add an extra Kingdom card pile." in result.output
+
+
+def test_generate_formats_the_game_as_json(
+    runner: CliRunner, db: CardDatabase, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    game = Game(
+        basic_piles=[Pile(db.get_card_by_name("Copper"))],
+        kingdom_piles=[
+            Pile(db.get_card_by_name("Hamlet"), marks=(PileMark(PileMarkKind.BANE),)),
+            Pile(db.get_card_by_name("Young Witch")),
+        ],
+        non_supply_piles=[Pile(db.get_card_by_name("Madman"))],
+        landscapes=[db.get_card_by_name("Alms")],
+        ally=db.get_card_by_name("Architects' Guild"),
+        prophecy=db.get_card_by_name("Approaching Army"),
+        druid_boons=[db.get_card_by_name("The Earth's Gift")],
+        materials=[Material.COIN_TOKENS],
+        setup_instructions=["Young Witch: Add an extra Kingdom card pile."],
+    )
+    monkeypatch.setattr(
+        "dominion_setup.cli.generate_game", lambda *_args, **_kwargs: game
+    )
+    result = runner.invoke(cli, ["generate", "--seed", "42", "--format", "json"])
+    assert result.exit_code == 0
+
+    def card_dict(name: str, *marks: str) -> dict[str, Any]:
+        card = db.get_card_by_name(name)
+        return {
+            "name": card.name,
+            "cost": card.cost.to_dict(),
+            "types": list(card.types),
+            "set": card.display_set,
+            "marks": list(marks),
+        }
+
+    assert json.loads(result.output) == {
+        "seed": 42,
+        "sets": [str(set_) for set_ in game.sets_used],
+        "kingdom": [card_dict("Hamlet", "Bane"), card_dict("Young Witch")],
+        "landscapes": [card_dict("Alms")],
+        "ally": card_dict("Architects' Guild"),
+        "prophecy": card_dict("Approaching Army"),
+        "druid_boons": [card_dict("The Earth's Gift")],
+        "non_supply": [card_dict("Madman")],
+        "basic_supply": [card_dict("Copper")],
+        "materials": ["Coin tokens"],
+        "setup": ["Young Witch: Add an extra Kingdom card pile."],
+    }
+
+
+def test_generate_formats_a_game_without_ally_or_prophecy_as_json(
+    runner: CliRunner,
+) -> None:
+    result = runner.invoke(cli, ["generate", "--seed", "42", "--format", "json"])
+    assert result.exit_code == 0
+    game = json.loads(result.output)
+    assert game["ally"] is None
+    assert game["prophecy"] is None
+    assert len(game["kingdom"]) == 10
+
+
+def test_generate_formats_the_game_as_names(
+    runner: CliRunner, db: CardDatabase, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    game = Game(
+        basic_piles=[Pile(db.get_card_by_name("Copper"))],
+        kingdom_piles=[
+            Pile(db.get_card_by_name("Hamlet"), marks=(PileMark(PileMarkKind.BANE),)),
+            Pile(db.get_card_by_name("Young Witch")),
+        ],
+        landscapes=[db.get_card_by_name("Alms")],
+        ally=db.get_card_by_name("Architects' Guild"),
+        prophecy=db.get_card_by_name("Approaching Army"),
+    )
+    monkeypatch.setattr(
+        "dominion_setup.cli.generate_game", lambda *_args, **_kwargs: game
+    )
+    result = runner.invoke(cli, ["generate", "--format", "names"])
+    assert result.exit_code == 0
+    assert result.output == (
+        "Hamlet, Young Witch, Alms, Architects' Guild, Approaching Army\n"
+    )
+
+
+def test_generate_same_seed_formats_the_same_names(runner: CliRunner) -> None:
+    args = ["generate", "--seed", "42"]
+    table = parse_tables(runner.invoke(cli, args).output)
+    names = runner.invoke(cli, [*args, "--format", "names"]).output
+    assert names.rstrip("\n").split(", ")[:10] == [row[1] for row in table["Kingdom"]]
 
 
 def test_generate_setup_error_is_a_usage_error(

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import random
 from importlib import metadata
+from typing import Any
 
 import rich_click as click
 from click_default_group import DefaultGroup
@@ -140,6 +142,46 @@ def _print_game(game: Game, *, seed: int) -> None:
             console.print(f"  • {instruction}")
 
 
+def _pile_to_dict(pile: Pile) -> dict[str, Any]:
+    """Convert a Pile to a JSON-serializable dict, with the columns of its table row."""
+    return {
+        "name": pile.card.name,
+        "cost": pile.card.cost.to_dict(),
+        "types": list(pile.card.types),
+        "set": pile.card.display_set,
+        "marks": [str(mark) for mark in pile.marks],
+    }
+
+
+def _card_to_dict(card: Card | None) -> dict[str, Any] | None:
+    """Convert a card (e.g. a Landscape, Ally) to a JSON-serializable dict, if any."""
+    return None if card is None else _pile_to_dict(Pile(card))
+
+
+def _print_game_json(game: Game, *, seed: int) -> None:
+    """Print a Game, generated with *seed*, as JSON."""
+    output = {
+        "seed": seed,
+        "sets": game.sets_used,
+        "kingdom": [_pile_to_dict(pile) for pile in game.kingdom_piles],
+        "landscapes": [_card_to_dict(card) for card in game.landscapes],
+        "ally": _card_to_dict(game.ally),
+        "prophecy": _card_to_dict(game.prophecy),
+        "druid_boons": [_card_to_dict(card) for card in game.druid_boons],
+        "non_supply": [_pile_to_dict(pile) for pile in game.non_supply_piles],
+        "basic_supply": [_pile_to_dict(pile) for pile in game.basic_piles],
+        "materials": game.materials,
+        "setup": game.setup_instructions,
+    }
+    click.echo(json.dumps(output, indent=2))
+
+
+def _print_game_names(game: Game) -> None:
+    """Print the names of a Game's Kingdom cards, Landscapes, Ally and Prophecy on one line."""
+    cards = [*game.kingdom_cards, *game.landscapes, game.ally, game.prophecy]
+    click.echo(", ".join(card.name for card in cards if card is not None))
+
+
 @cli.command()
 @click.option(
     "raw_sets_editions",
@@ -229,6 +271,13 @@ def _print_game(game: Game, *, seed: int) -> None:
     default=None,
     help="Seed that reproduces a game. Defaults to a random one.",
 )
+@click.option(
+    "output_format",
+    "--format",
+    type=click.Choice(["table", "json", "names"]),
+    default="table",
+    help="Output format: tables, JSON, or a one-line list of card names.",
+)
 def generate(
     raw_sets_editions: tuple[str, ...],
     sort_order: str,
@@ -244,6 +293,7 @@ def generate(
     include: tuple[str, ...],
     exclude: tuple[str, ...],
     seed: int | None,
+    output_format: str,
 ) -> None:
     """Generate a random Dominion game setup."""
     db = load_card_database()
@@ -278,7 +328,12 @@ def generate(
         )
     except SetupGenerationError as exc:
         raise click.UsageError(str(exc)) from exc
-    _print_game(game, seed=seed)
+    if output_format == "json":
+        _print_game_json(game, seed=seed)
+    elif output_format == "names":
+        _print_game_names(game)
+    else:
+        _print_game(game, seed=seed)
 
 
 @cli.command("list-cards")
