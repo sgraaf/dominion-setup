@@ -152,6 +152,47 @@ def test_includes_and_excludes_cards(db: CardDatabase, rng: random.Random) -> No
     assert "Moat" not in card_names(game.kingdom_cards)
 
 
+@pytest.mark.parametrize("seed", range(10))
+def test_including_a_whole_kingdom_sets_up_that_kingdom(
+    db: CardDatabase, seed: int
+) -> None:
+    """Including 10 Kingdom cards skips the draw (step 1) but runs steps 2-8.
+
+    This is how to set up a given Kingdom: the extra piles and the Black Market
+    deck come from the selected sets, and no other Landscapes are drawn.
+    """
+    kingdom = [
+        "Young Witch",
+        "Black Market",
+        # the $4 cards of Base 2E, so the Bane ($2-$3) is not one of them
+        "Bureaucrat",
+        "Gardens",
+        "Militia",
+        "Moneylender",
+        "Poacher",
+        "Remodel",
+        "Smithy",
+        "Throne Room",
+    ]
+    game = generate_game(
+        db,
+        sets_editions={BASE_2E},
+        include=[*kingdom, "Obelisk"],
+        black_market_size=5,
+        rng=random.Random(seed),
+    )
+
+    marks = pile_marks(game.kingdom_piles)
+    [bane] = [name for name, card_marks in marks.items() if "Bane" in card_marks]
+    assert sorted(marks) == sorted([*kingdom, bane])
+    assert card_names(game.landscapes) == ["Obelisk"]
+    assert any("Obelisk" in card_marks for card_marks in marks.values())
+    assert len(game.black_market_deck) == 5
+    base_cards = set(card_names(db.get_cards_by_set_edition(*BASE_2E)))
+    assert {bane, *card_names(game.black_market_deck)} <= base_cards - set(kingdom)
+    assert any(line.startswith("Black Market: ") for line in game.setup_instructions)
+
+
 def test_same_seed_generates_the_same_game(db: CardDatabase) -> None:
     game = generate_game(db, rng=random.Random(42))
     assert generate_game(db, rng=random.Random(42)) == game
