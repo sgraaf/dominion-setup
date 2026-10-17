@@ -10,6 +10,8 @@ from typing import Any
 import pytest
 
 from dominion_setup.models import (
+    CARD_SETS_WITH_SECOND_EDITIONS,
+    SET_EDITION_CHOICES,
     Card,
     CardCost,
     CardDatabase,
@@ -24,6 +26,44 @@ from dominion_setup.models import (
     PileMark,
     PileMarkKind,
 )
+
+# ── Sets & editions ──────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("choice", "set_edition"),
+    [
+        ("base_1e", (CardSet.BASE, CardSetEdition.FIRST_EDITION)),
+        ("base_2e", (CardSet.BASE, CardSetEdition.SECOND_EDITION)),
+        (
+            "cornucopia_guilds_2e",
+            (CardSet.CORNUCOPIA_GUILDS, CardSetEdition.SECOND_EDITION),
+        ),
+        ("nocturne", (CardSet.NOCTURNE, CardSetEdition.FIRST_EDITION)),
+        ("promo", (CardSet.PROMO, CardSetEdition.FIRST_EDITION)),
+    ],
+)
+def test_set_edition_choices(
+    choice: str,
+    set_edition: tuple[CardSet, CardSetEdition],
+) -> None:
+    assert SET_EDITION_CHOICES[choice] == set_edition
+
+
+def test_set_edition_choices_cover_every_set_and_edition() -> None:
+    assert set(SET_EDITION_CHOICES.values()) == {
+        *(
+            (set_, edition)
+            for set_ in CARD_SETS_WITH_SECOND_EDITIONS
+            for edition in CardSetEdition
+        ),
+        *(
+            (set_, CardSetEdition.FIRST_EDITION)
+            for set_ in CardSet
+            if set_ not in CARD_SETS_WITH_SECOND_EDITIONS
+        ),
+    }
+
 
 # ── Cards ────────────────────────────────────────────────────────────────────
 

@@ -18,6 +18,7 @@ from .generator import MAX_PLAYERS, MIN_PLAYERS, SetupGenerationError, generate_
 from .loader import load_card_database
 from .models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
+    SET_EDITION_CHOICES,
     Card,
     CardSet,
     CardSetEdition,
@@ -32,16 +33,6 @@ from .models import (
 class RichDefaultGroup(DefaultGroup, click.RichGroup):  # ty: ignore[invalid-method-override]
     """DefaultGroup with Rich-formatted help output."""
 
-
-# ``--set`` choices (e.g. "base_2e", "nocturne") and the set and edition each
-# one selects. Only sets with a second edition carry an edition suffix.
-SET_EDITION_CHOICES: dict[str, tuple[CardSet, CardSetEdition]] = {}
-for set_ in CardSet:
-    if set_ in CARD_SETS_WITH_SECOND_EDITIONS:
-        for edition in CardSetEdition:
-            SET_EDITION_CHOICES[f"{set_.name.lower()}_{edition}e"] = (set_, edition)
-    else:
-        SET_EDITION_CHOICES[set_.name.lower()] = (set_, CardSetEdition.FIRST_EDITION)
 
 # single shared console for all status output.
 console = Console()

@@ -15,10 +15,11 @@ from typing import Any, NoReturn
 import pytest
 from click.testing import CliRunner
 
-from dominion_setup.cli import SET_EDITION_CHOICES, cli
+from dominion_setup.cli import cli
 from dominion_setup.generator import SetupGenerationError
 from dominion_setup.models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
+    SET_EDITION_CHOICES,
     Card,
     CardDatabase,
     CardSet,

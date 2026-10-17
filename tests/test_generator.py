@@ -19,7 +19,6 @@ from typing import Any
 import pytest
 
 from dominion_setup import generator
-from dominion_setup.cli import SET_EDITION_CHOICES
 from dominion_setup.generator import (
     REQUIREMENT_RULES,
     SetupGenerationError,
@@ -39,6 +38,7 @@ from dominion_setup.generator import (
     generate_game,
 )
 from dominion_setup.models import (
+    SET_EDITION_CHOICES,
     Card,
     CardDatabase,
     CardSet,

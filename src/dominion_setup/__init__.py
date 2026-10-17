@@ -3,6 +3,8 @@
 from dominion_setup.generator import SetupGenerationError, generate_game
 from dominion_setup.loader import load_card_database
 from dominion_setup.models import (
+    CARD_SETS_WITH_SECOND_EDITIONS,
+    SET_EDITION_CHOICES,
     Card,
     CardCost,
     CardDatabase,
@@ -19,6 +21,8 @@ from dominion_setup.models import (
 )
 
 __all__ = [
+    "CARD_SETS_WITH_SECOND_EDITIONS",
+    "SET_EDITION_CHOICES",
     "Card",
     "CardCost",
     "CardDatabase",

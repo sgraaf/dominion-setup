@@ -36,6 +36,8 @@ def test_import() -> None:
 def test_public_api_exports() -> None:
     """All documented public names are importable from the top-level package."""
     expected = {
+        "CARD_SETS_WITH_SECOND_EDITIONS",
+        "SET_EDITION_CHOICES",
         "CardDatabase",
         "CardSet",
         "Game",

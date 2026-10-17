@@ -6,9 +6,9 @@ list cannot silently add, drop or change cards.
 
 import pytest
 
-from dominion_setup.cli import SET_EDITION_CHOICES
 from dominion_setup.models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
+    SET_EDITION_CHOICES,
     Card,
     CardCost,
     CardDatabase,

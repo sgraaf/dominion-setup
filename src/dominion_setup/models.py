@@ -66,6 +66,17 @@ CARD_SETS_WITH_SECOND_EDITIONS: frozenset[CardSet] = frozenset(
     },
 )
 
+# Set and edition choices, as for ``--set`` (e.g. "base_2e", "nocturne"), and
+# the set and edition each one selects. Only sets with a second edition carry an
+# edition suffix.
+SET_EDITION_CHOICES: dict[str, tuple[CardSet, CardSetEdition]] = {}
+for set_ in CardSet:
+    if set_ in CARD_SETS_WITH_SECOND_EDITIONS:
+        for edition in CardSetEdition:
+            SET_EDITION_CHOICES[f"{set_.name.lower()}_{edition}e"] = (set_, edition)
+    else:
+        SET_EDITION_CHOICES[set_.name.lower()] = (set_, CardSetEdition.FIRST_EDITION)
+
 
 # ── Cards ────────────────────────────────────────────────────────────────────
 
