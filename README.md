@@ -75,7 +75,7 @@ Every card in every set is stored in a small JSON file under `dominion_setup/dat
 1. **Basic Supply** — standard basics plus conditional Colony/Platinum, Potion, Ruins, Shelters, and Heirlooms.
 1. **Obelisk** — the Action Supply pile Obelisk applies to.
 1. **Materials** — scan instruction text and card types to determine which mats and tokens are needed.
-1. **Setup instructions** — extract `Setup:` sentences from card instructions and synthesise Heirloom setup text.
+1. **Setup instructions** — extract `Setup:` sentences from card instructions and describe the starting decks when Shelters or Heirlooms change them.
 1. **Pile sizes** — if `players` is given, how many cards go in each pile (e.g. 8 Provinces for two players, 10 Curses per player after the first).
 
 Finally, the piles are sorted and returned in a `Game` object.

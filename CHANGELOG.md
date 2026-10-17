@@ -21,10 +21,12 @@ The **third number** is for emergencies when we need to start branches for older
 - Output formats: `dominion-setup generate --format json` prints the game (and its seed) as JSON, for scripts, bots and front ends; `--format names` prints the Kingdom cards, Landscapes, Ally and Prophecy on one comma-separated line, to paste into a chat or a client like dominion.games.
 - Black Market deck: when Black Market is in use, `generate_game` deals out a Black Market deck of different unused Kingdom cards into the new `Game.black_market_deck`, and runs the setup they need (e.g. a Bane for Young Witch, Heirlooms, materials). Its size is set by `generate_game(black_market_size=...)` and `dominion-setup generate --black-market-size` (default 15).
 - Pile sizes: `generate_game(players=...)` and `dominion-setup generate --players` (2 to 6) work out how many cards go in each pile, into the new `Pile.size` (and `Game.players`): 8 or 12 of each Victory pile (15 or 18 Provinces for 5 or 6 players), 10 Curses and Ruins per player after the first, and the Coppers not in starting decks. The CLI prints them in a Size column, and `--format json` as `players` and each pile's `size`. Without a player count, sizes are `None`. With a player count, the setup instructions of the Landmarks that start with VP per player (Arena, Basilica, …) give the total, e.g. "Put 24 VP here (6 VP per player)." for four players.
+- Starting decks: when Shelters or Heirlooms are in use, a "Starting decks: …" setup instruction lists each player's starting cards, e.g. "Each player starts with 6 Coppers, Pouch, Hovel, Necropolis, Overgrown Estate."
 
 ### Changed
 
 - `CardCost.coins` is now `None` (the new default) for a cost without coins, such as Engineer's 4D or a Landmark, which has no cost; before, it was 0. So `CardCost()` no longer equals `CardCost(coins=0)`, and `list-cards --cost 0` no longer lists cards that only cost Potion or Debt. Costs still sort as if a cost without coins were \$0.
+- The "Heirlooms: Each player replaces … starting Coppers with …" setup instruction, and Shelters' own "Shelters: …" one, are replaced by the new "Starting decks: …" instruction.
 - `generate_game` no longer uses or changes the global `random` state, so `random.seed()` no longer reproduces a game. Pass `rng=random.Random(seed)` instead.
 - `DEFAULT_BASIC_CARD_NAMES` and `SELECTABLE_LANDSCAPE_TYPES` moved from `dominion_setup.models` to `dominion_setup.generator`, alongside the other setup rules.
 

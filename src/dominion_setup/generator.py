@@ -837,6 +837,11 @@ def _materials(cards: list[Card]) -> set[Material]:  # noqa: C901, PLR0912
 SETUP_PATTERN = re.compile(r"Setup: (.*)$")
 VP_PER_PLAYER_PATTERN = re.compile(r"Put (\d+) VP here per player\.")
 
+STARTING_COPPER_COUNT = 7
+STARTING_ESTATE_COUNT = 3
+# Shelters replace the starting Estates
+SHELTER_NAMES: tuple[str, ...] = ("Hovel", "Necropolis", "Overgrown Estate")
+
 
 def _setup_instructions(
     cards: list[Card],
@@ -845,7 +850,11 @@ def _setup_instructions(
     *,
     players: int | None = None,
 ) -> list[str]:
-    """Return the "Setup:" instructions of *cards*, plus how to deal out *heirlooms*.
+    """Return the "Setup:" instructions of *cards*, plus the starting decks.
+
+    The starting decks are described if they differ from the usual 7 Coppers
+    and 3 Estates: with Shelters (if in *cards*), or with *heirlooms*. This
+    replaces Shelters' own setup, which also says when to use Shelters.
 
     With *players*, the VP to put on a Landmark "per player" (e.g. Arena) are
     counted out.
@@ -853,7 +862,8 @@ def _setup_instructions(
     setup_instructions = [
         f"{card.name}: {setup_match.group(1)}"
         for card in sorted(cards, key=sort_order.sort_key)
-        if (setup_match := SETUP_PATTERN.search(card.instructions))
+        if card.name != "Shelters"
+        and (setup_match := SETUP_PATTERN.search(card.instructions))
     ]
     if players is not None:
 
@@ -865,10 +875,23 @@ def _setup_instructions(
             VP_PER_PLAYER_PATTERN.sub(count_out_vp, instruction)
             for instruction in setup_instructions
         ]
-    if heirlooms:
-        setup_instructions.append(
-            f"Heirlooms: Each player replaces {len(heirlooms)} starting Coppers with {', '.join(heirloom.name for heirloom in heirlooms)}. The unused Coppers go in the Copper pile."
+    use_shelters = any(card.name == "Shelters" for card in cards)
+    if use_shelters or heirlooms:
+        # each Heirloom replaces a starting Copper
+        starting_cards = [
+            f"{STARTING_COPPER_COUNT - len(heirlooms)} Coppers",
+            *(heirloom.name for heirloom in heirlooms),
+        ]
+        if use_shelters:
+            starting_cards += SHELTER_NAMES
+        else:
+            starting_cards.append(f"{STARTING_ESTATE_COUNT} Estates")
+        starting_decks = (
+            f"Starting decks: Each player starts with {', '.join(starting_cards)}."
         )
+        if heirlooms:
+            starting_decks += " The unused Coppers go in the Copper pile."
+        setup_instructions.append(starting_decks)
     return setup_instructions
 
 
@@ -876,7 +899,6 @@ def _setup_instructions(
 
 MIN_PLAYERS = 2
 MAX_PLAYERS = 6
-STARTING_COPPER_COUNT = 7
 
 # Sizes of the piles made of several different cards, whose own card has no
 # quantity.

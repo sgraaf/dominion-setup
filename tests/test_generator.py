@@ -324,7 +324,7 @@ def test_black_market_deck_brings_its_own_setup(
     assert card_names(game.black_market_deck) == ["Pooka", "Tormentor"]
     assert card_names(game.non_supply_cards) == ["Hexes", "Deluded", "Miserable", "Imp"]
     assert card_names(game.basic_cards) == [*BASIC_SUPPLY, "Cursed Gold"]
-    assert game.setup_instructions[-1].startswith("Heirlooms: ")
+    assert game.setup_instructions[-1].startswith("Starting decks: ")
 
 
 def test_no_black_market_deck_without_black_market(
@@ -345,7 +345,7 @@ def test_heirlooms_join_the_basic_supply_in_sort_order(
     game = generate_with(kingdom=["Pooka", "Tracker"])
     assert card_names(game.basic_cards) == [*BASIC_SUPPLY, "Pouch", "Cursed Gold"]
     assert game.setup_instructions[-1].startswith(
-        "Heirlooms: Each player replaces 2 starting Coppers with Pouch, Cursed Gold."
+        "Starting decks: Each player starts with 5 Coppers, Pouch, Cursed Gold"
     )
 
 
@@ -1437,8 +1437,7 @@ def test_setup_instruction_is_prefixed_with_the_card_name(db: CardDatabase) -> N
         "Odysseys",
         "Townsfolk",
         "Wizards",
-        # basic and landscape cards
-        "Shelters",
+        # landscape cards
         "Obelisk",
     ],
 )
@@ -1494,14 +1493,48 @@ def test_players_count_out_the_vp_in_a_game(
     assert "Arena: Put 24 VP here (6 VP per player)." in game.setup_instructions
 
 
-def test_heirlooms_get_a_setup_instruction(db: CardDatabase) -> None:
+def test_heirlooms_get_a_starting_decks_instruction(db: CardDatabase) -> None:
     heirlooms = get_cards(db, "Haunted Mirror", "Lucky Coin")
     assert _setup_instructions([], heirlooms, KingdomSortOrder.COST) == [
         (
-            "Heirlooms: Each player replaces 2 starting Coppers with Haunted Mirror, "
-            "Lucky Coin. The unused Coppers go in the Copper pile."
+            "Starting decks: Each player starts with 5 Coppers, Haunted Mirror, "
+            "Lucky Coin, 3 Estates. The unused Coppers go in the Copper pile."
         )
     ]
+
+
+def test_shelters_get_a_starting_decks_instruction(db: CardDatabase) -> None:
+    """Shelters' own setup, which also says when to use Shelters, is left out."""
+    instructions = _setup_instructions(
+        get_cards(db, "Shelters"), [], KingdomSortOrder.COST
+    )
+    assert instructions == [
+        (
+            "Starting decks: Each player starts with 7 Coppers, Hovel, Necropolis, "
+            "Overgrown Estate."
+        )
+    ]
+
+
+def test_shelters_and_heirlooms_share_a_starting_decks_instruction(
+    db: CardDatabase,
+) -> None:
+    instructions = _setup_instructions(
+        get_cards(db, "Shelters"), get_cards(db, "Pouch"), KingdomSortOrder.COST
+    )
+    assert instructions == [
+        (
+            "Starting decks: Each player starts with 6 Coppers, Pouch, Hovel, "
+            "Necropolis, Overgrown Estate. The unused Coppers go in the Copper pile."
+        )
+    ]
+
+
+def test_no_starting_decks_instruction_for_the_usual_starting_decks(
+    db: CardDatabase,
+) -> None:
+    cards = get_cards(db, "Copper", "Estate")
+    assert _setup_instructions(cards, [], KingdomSortOrder.COST) == []
 
 
 # ── 9. Pile sizes ────────────────────────────────────────────────────────────
