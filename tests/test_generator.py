@@ -36,6 +36,7 @@ from dominion_setup.generator import (
     _pile_size,
     _setup_instructions,
     generate_game,
+    is_selectable,
 )
 from dominion_setup.models import (
     SET_EDITION_CHOICES,
@@ -527,6 +528,25 @@ def test_no_dealt_cards_without_their_triggers(
 
 
 # ── 1. Kingdom ───────────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("name", "selectable"),
+    [
+        ("Village", True),  # Kingdom card
+        ("Alms", True),  # Event
+        ("Aqueduct", True),  # Landmark
+        ("Academy", True),  # Project
+        ("Way of the Mole", True),  # Way
+        ("Cheap", True),  # Trait
+        ("Architects' Guild", False),  # Ally
+        ("Approaching Army", False),  # Prophecy
+        ("Copper", False),  # basic card
+        ("Spoils", False),  # non-Supply card
+    ],
+)
+def test_is_selectable(db: CardDatabase, name: str, *, selectable: bool) -> None:
+    assert is_selectable(db.get_card_by_name(name)) is selectable
 
 
 def test_draw_kingdom_draws_ten_cards_and_leaves_the_rest_unused(

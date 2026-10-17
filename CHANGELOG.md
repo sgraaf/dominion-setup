@@ -14,6 +14,7 @@ The **third number** is for emergencies when we need to start branches for older
 
 - `generate_game(promos=...)`, which draws from the given Promos only, like `--promo CARD` (also with every set, `sets_editions=None`), and raises `SetupGenerationError` for a name that isn't a Promo card.
 - `SET_EDITION_CHOICES`, the `--set` choices (e.g. "base_2e", "nocturne") and the set and edition each one selects, moved from `dominion_setup.cli` to `dominion_setup.models`. It and `CARD_SETS_WITH_SECOND_EDITIONS` are now exported from `dominion_setup`.
+- `is_selectable(card)`, which returns whether a card is a Kingdom card or a Landscape that can be drawn, included or excluded (an Event, Landmark, Project, Way or Trait). It was private (`generator._is_selectable`) and is now exported from `dominion_setup`.
 
 ## [2026.3.0](https://github.com/sgraaf/dominion-setup/compare/2026.2.0...2026.3.0) - 2026-10-17
 

@@ -295,7 +295,7 @@ REQUIREMENT_RULES: dict[KingdomRequirement, Callable[[Card], bool]] = {
 }
 
 
-def _is_selectable(card: Card) -> bool:
+def is_selectable(card: Card) -> bool:
     """Return whether *card* is a Kingdom card or a selectable Landscape."""
     return card.is_kingdom or bool(SELECTABLE_LANDSCAPE_TYPES & set(card.types))
 
@@ -307,7 +307,7 @@ def _selectable_cards_by_name(db: CardDatabase, names: Iterable[str]) -> list[Ca
         if (card := db.card_name_to_card.get(name)) is None:
             msg = f"Card {name!r} not found"
             raise SetupGenerationError(msg)
-        if not _is_selectable(card):
+        if not is_selectable(card):
             msg = f"{name!r} is not a Kingdom card or Landscape"
             raise SetupGenerationError(msg)
         cards.append(card)
@@ -401,7 +401,7 @@ def _draw_kingdom(  # noqa: PLR0913
     candidates = [
         card
         for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
-        if _is_selectable(card)
+        if is_selectable(card)
         and card not in unavailable_cards
         and (
             sets_editions is None

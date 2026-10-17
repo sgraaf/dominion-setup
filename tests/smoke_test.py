@@ -46,6 +46,7 @@ def test_public_api_exports() -> None:
         "PileMark",
         "PileMarkKind",
         "generate_game",
+        "is_selectable",
         "load_card_database",
     }
     assert expected <= set(dominion_setup.__all__)
