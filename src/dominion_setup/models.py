@@ -5,9 +5,9 @@ The module is organised in four sections:
 - **Sets & editions**: ``CardSet`` and ``CardSetEdition``.
 - **Cards**: ``Card`` and the enums and value objects that describe it.
 - **Card database**: ``CardDatabase``, all cards indexed for lookup.
-- **Game**: ``Game``, the generated setup, the ``Pile``, ``PileMark`` and
-  ``Material`` types it is made of, and the ``KingdomSortOrder`` and
-  ``KingdomRequirement`` options for generating it.
+- **Game**: ``Game``, the generated setup, the ``Pile``, ``PileMark``,
+  ``Material`` and ``SetupInstruction`` types it is made of, and the
+  ``KingdomSortOrder`` and ``KingdomRequirement`` options for generating it.
 """
 
 from __future__ import annotations
@@ -475,6 +475,25 @@ class Pile:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class SetupInstruction:
+    """An instruction for setting up the game, labelled with what it is for.
+
+    The label is the card that needs the setup (e.g. "Arena"), or
+    "Starting decks".
+    """
+
+    label: str
+    text: str
+
+    def __str__(self) -> str:
+        return f"{self.label}: {self.text}"
+
+    def to_dict(self) -> dict[str, str]:
+        """Convert to a JSON-serializable dictionary of the label and text."""
+        return {"label": self.label, "text": self.text}
+
+
 class KingdomSortOrder(StrEnum):
     """Sort order for kingdom piles in the game output."""
 
@@ -515,7 +534,7 @@ class Game:
     druid_boons: list[Card] = field(default_factory=list)
     black_market_deck: list[Card] = field(default_factory=list)
     materials: list[Material] = field(default_factory=list)
-    setup_instructions: list[str] = field(default_factory=list)
+    setup_instructions: list[SetupInstruction] = field(default_factory=list)
     players: int | None = None
 
     @property
@@ -568,5 +587,5 @@ class Game:
             "black_market": [card_to_dict(card) for card in self.black_market_deck],
             "basic_supply": [pile.to_dict() for pile in self.basic_piles],
             "materials": self.materials,
-            "setup": self.setup_instructions,
+            "setup": [instruction.to_dict() for instruction in self.setup_instructions],
         }

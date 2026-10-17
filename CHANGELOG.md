@@ -17,6 +17,10 @@ The **third number** is for emergencies when we need to start branches for older
 - `is_selectable(card)`, which returns whether a card is a Kingdom card or a Landscape that can be drawn, included or excluded (an Event, Landmark, Project, Way or Trait). It was private (`generator._is_selectable`) and is now exported from `dominion_setup`.
 - Each card in `Pile.to_dict` and `Game.to_dict` (and so in `--format json`) now includes its `purpose` (e.g. "Kingdom Pile" or "Landscape"), so front ends can tell Landscapes from Kingdom cards without keeping their own list of Landscape types.
 
+### Changed
+
+- `Game.setup_instructions` is now a list of `SetupInstruction`s, which keep the label (the card, or "Starting decks") and the text apart, so front ends don't have to split the string. `str()` of one gives the old string, e.g. "Arena: Put 6 VP here per player.", and `SetupInstruction` is exported from `dominion_setup`. In `Game.to_dict` (and so in `--format json`), `setup` is now a list of `{"label": …, "text": …}` objects instead of strings.
+
 ## [2026.3.0](https://github.com/sgraaf/dominion-setup/compare/2026.2.0...2026.3.0) - 2026-10-17
 
 This release gives you more control over your Kingdom. You can now require certain effects (such as +Buy, Trashing or an Attack), force cards in or ban them with `--include` and `--exclude`, and draw only from the Promos you own. A config file can store your collection, bans and default requirements. Every setup now comes with a seed you can use to replay or share it, and `--format json` and `--format names` make the output easy to use in scripts, bots and chats. Setups are also more complete: give a player count and you get the size of each pile, Black Market comes with its own deck, and Shelters and Heirlooms come with a clear list of each player's starting cards.

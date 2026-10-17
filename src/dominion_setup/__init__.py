@@ -18,6 +18,7 @@ from dominion_setup.models import (
     Pile,
     PileMark,
     PileMarkKind,
+    SetupInstruction,
 )
 
 __all__ = [
@@ -37,6 +38,7 @@ __all__ = [
     "PileMark",
     "PileMarkKind",
     "SetupGenerationError",
+    "SetupInstruction",
     "generate_game",
     "is_selectable",
     "load_card_database",

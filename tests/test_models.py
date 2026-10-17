@@ -25,6 +25,7 @@ from dominion_setup.models import (
     Pile,
     PileMark,
     PileMarkKind,
+    SetupInstruction,
 )
 
 # ── Sets & editions ──────────────────────────────────────────────────────────
@@ -362,6 +363,19 @@ def test_pile_to_dict(smithy: Card) -> None:
     }
 
 
+def test_setup_instruction_str() -> None:
+    instruction = SetupInstruction("Baker", "Each player gets +1 Coffers.")
+    assert str(instruction) == "Baker: Each player gets +1 Coffers."
+
+
+def test_setup_instruction_to_dict() -> None:
+    instruction = SetupInstruction("Baker", "Each player gets +1 Coffers.")
+    assert instruction.to_dict() == {
+        "label": "Baker",
+        "text": "Each player gets +1 Coffers.",
+    }
+
+
 @pytest.mark.parametrize(
     ("sort_order", "expected_names"),
     [
@@ -449,7 +463,7 @@ def test_game_to_dict(smithy: Card) -> None:
         kingdom_piles=[Pile(card=smithy, size=10)],
         landscapes=[alms],
         materials=[Material.COIN_TOKENS],
-        setup_instructions=["Starting decks: …"],
+        setup_instructions=[SetupInstruction("Starting decks", "…")],
         players=2,
     )
     assert game.to_dict() == {
@@ -464,5 +478,5 @@ def test_game_to_dict(smithy: Card) -> None:
         "black_market": [],
         "basic_supply": [Pile(card=copper, size=46).to_dict()],
         "materials": ["Coin tokens"],
-        "setup": ["Starting decks: …"],
+        "setup": [{"label": "Starting decks", "text": "…"}],
     }

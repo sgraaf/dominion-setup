@@ -50,6 +50,7 @@ from dominion_setup.models import (
     KingdomSortOrder,
     Material,
     Pile,
+    SetupInstruction,
 )
 
 BASIC_SUPPLY = ["Copper", "Silver", "Gold", "Estate", "Duchy", "Province", "Curse"]
@@ -301,7 +302,9 @@ def test_including_a_whole_kingdom_sets_up_that_kingdom(
     assert len(game.black_market_deck) == 5
     base_cards = set(card_names(db.get_cards_by_set_edition(*BASE_2E)))
     assert {bane, *card_names(game.black_market_deck)} <= base_cards - set(kingdom)
-    assert any(line.startswith("Black Market: ") for line in game.setup_instructions)
+    assert "Black Market" in [
+        instruction.label for instruction in game.setup_instructions
+    ]
 
 
 def test_same_seed_generates_the_same_game(db: CardDatabase) -> None:
@@ -430,7 +433,7 @@ def test_black_market_deck_brings_its_own_setup(
     assert card_names(game.black_market_deck) == ["Pooka", "Tormentor"]
     assert card_names(game.non_supply_cards) == ["Hexes", "Deluded", "Miserable", "Imp"]
     assert card_names(game.basic_cards) == [*BASIC_SUPPLY, "Cursed Gold"]
-    assert game.setup_instructions[-1].startswith("Starting decks: ")
+    assert game.setup_instructions[-1].label == "Starting decks"
 
 
 def test_no_black_market_deck_without_black_market(
@@ -450,8 +453,8 @@ def test_heirlooms_join_the_basic_supply_in_sort_order(
 ) -> None:
     game = generate_with(kingdom=["Pooka", "Tracker"])
     assert card_names(game.basic_cards) == [*BASIC_SUPPLY, "Pouch", "Cursed Gold"]
-    assert game.setup_instructions[-1].startswith(
-        "Starting decks: Each player starts with 5 Coppers, Pouch, Cursed Gold",
+    assert game.setup_instructions[-1].text.startswith(
+        "Each player starts with 5 Coppers, Pouch, Cursed Gold",
     )
 
 
@@ -1585,13 +1588,13 @@ def test_materials_from_instructions(
 # ── 8. Setup instructions ────────────────────────────────────────────────────
 
 
-def test_setup_instruction_is_prefixed_with_the_card_name(db: CardDatabase) -> None:
+def test_setup_instruction_is_labelled_with_the_card_name(db: CardDatabase) -> None:
     instructions = _setup_instructions(
         get_cards(db, "Baker"),
         [],
         KingdomSortOrder.COST,
     )
-    assert instructions == ["Baker: Each player gets +1 Coffers."]
+    assert instructions == [SetupInstruction("Baker", "Each player gets +1 Coffers.")]
 
 
 @pytest.mark.parametrize(
@@ -1619,7 +1622,7 @@ def test_setup_instruction_is_prefixed_with_the_card_name(db: CardDatabase) -> N
 )
 def test_card_with_a_setup_instruction(db: CardDatabase, card: str) -> None:
     [instruction] = _setup_instructions(get_cards(db, card), [], KingdomSortOrder.COST)
-    assert instruction.startswith(f"{card}: ")
+    assert instruction.label == card
 
 
 def test_no_setup_instructions_without_setup(db: CardDatabase) -> None:
@@ -1641,7 +1644,7 @@ def test_setup_instructions_follow_the_sort_order(
 ) -> None:
     cards = get_cards(db, "Baker", "Necromancer")
     instructions = _setup_instructions(cards, [], sort_order)
-    assert [instruction.split(":")[0] for instruction in instructions] == card_order
+    assert [instruction.label for instruction in instructions] == card_order
 
 
 @pytest.mark.parametrize(
@@ -1661,7 +1664,7 @@ def test_players_count_out_the_vp_per_player(
         KingdomSortOrder.COST,
         players=players,
     )
-    assert instruction == f"{card}: Put {vp} VP here (6 VP per player)."
+    assert instruction == SetupInstruction(card, f"Put {vp} VP here (6 VP per player).")
 
 
 def test_vp_per_player_without_players(db: CardDatabase) -> None:
@@ -1670,22 +1673,26 @@ def test_vp_per_player_without_players(db: CardDatabase) -> None:
         [],
         KingdomSortOrder.COST,
     )
-    assert instruction == "Arena: Put 6 VP here per player."
+    assert instruction == SetupInstruction("Arena", "Put 6 VP here per player.")
 
 
 def test_players_count_out_the_vp_in_a_game(
     generate_with: Callable[..., Game],
 ) -> None:
     game = generate_with(["Village"], landscapes=["Arena"], players=4)
-    assert "Arena: Put 24 VP here (6 VP per player)." in game.setup_instructions
+    assert (
+        SetupInstruction("Arena", "Put 24 VP here (6 VP per player).")
+        in game.setup_instructions
+    )
 
 
 def test_heirlooms_get_a_starting_decks_instruction(db: CardDatabase) -> None:
     heirlooms = get_cards(db, "Haunted Mirror", "Lucky Coin")
     assert _setup_instructions([], heirlooms, KingdomSortOrder.COST) == [
-        (
-            "Starting decks: Each player starts with 5 Coppers, Haunted Mirror, "
-            "Lucky Coin, 3 Estates. The unused Coppers go in the Copper pile."
+        SetupInstruction(
+            "Starting decks",
+            "Each player starts with 5 Coppers, Haunted Mirror, Lucky Coin, "
+            "3 Estates. The unused Coppers go in the Copper pile.",
         ),
     ]
 
@@ -1698,9 +1705,9 @@ def test_shelters_get_a_starting_decks_instruction(db: CardDatabase) -> None:
         KingdomSortOrder.COST,
     )
     assert instructions == [
-        (
-            "Starting decks: Each player starts with 7 Coppers, Hovel, Necropolis, "
-            "Overgrown Estate."
+        SetupInstruction(
+            "Starting decks",
+            "Each player starts with 7 Coppers, Hovel, Necropolis, Overgrown Estate.",
         ),
     ]
 
@@ -1714,9 +1721,10 @@ def test_shelters_and_heirlooms_share_a_starting_decks_instruction(
         KingdomSortOrder.COST,
     )
     assert instructions == [
-        (
-            "Starting decks: Each player starts with 6 Coppers, Pouch, Hovel, "
-            "Necropolis, Overgrown Estate. The unused Coppers go in the Copper pile."
+        SetupInstruction(
+            "Starting decks",
+            "Each player starts with 6 Coppers, Pouch, Hovel, Necropolis, "
+            "Overgrown Estate. The unused Coppers go in the Copper pile.",
         ),
     ]
 

@@ -32,6 +32,7 @@ from dominion_setup.models import (
     Pile,
     PileMark,
     PileMarkKind,
+    SetupInstruction,
 )
 
 BASIC_SUPPLY = ["Copper", "Silver", "Gold", "Estate", "Duchy", "Province", "Curse"]
@@ -336,7 +337,9 @@ def test_generate_prints_every_part_of_the_game(
         druid_boons=[db.get_card_by_name("The Earth's Gift")],
         black_market_deck=[db.get_card_by_name("Smithy")],
         materials=[Material.COIN_TOKENS],
-        setup_instructions=["Young Witch: Add an extra Kingdom card pile."],
+        setup_instructions=[
+            SetupInstruction("Young Witch", "Add an extra Kingdom card pile."),
+        ],
     )
     monkeypatch.setattr(
         "dominion_setup.cli.generate_game",
@@ -419,7 +422,9 @@ def test_generate_formats_the_game_as_json(
         druid_boons=[db.get_card_by_name("The Earth's Gift")],
         black_market_deck=[db.get_card_by_name("Smithy")],
         materials=[Material.COIN_TOKENS],
-        setup_instructions=["Young Witch: Add an extra Kingdom card pile."],
+        setup_instructions=[
+            SetupInstruction("Young Witch", "Add an extra Kingdom card pile."),
+        ],
     )
     monkeypatch.setattr(
         "dominion_setup.cli.generate_game",
@@ -455,7 +460,9 @@ def test_generate_formats_the_game_as_json(
         "black_market": [card_dict("Smithy")],
         "basic_supply": [card_dict("Copper")],
         "materials": ["Coin tokens"],
-        "setup": ["Young Witch: Add an extra Kingdom card pile."],
+        "setup": [
+            {"label": "Young Witch", "text": "Add an extra Kingdom card pile."},
+        ],
     }
 
 

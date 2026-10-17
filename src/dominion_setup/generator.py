@@ -10,7 +10,7 @@ from __future__ import annotations
 import random
 import re
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 from .models import (
@@ -28,6 +28,7 @@ from .models import (
     Pile,
     PileMark,
     PileMarkKind,
+    SetupInstruction,
 )
 
 if TYPE_CHECKING:
@@ -914,7 +915,7 @@ def _setup_instructions(
     sort_order: KingdomSortOrder,
     *,
     players: int | None = None,
-) -> list[str]:
+) -> list[SetupInstruction]:
     """Return the "Setup:" instructions of *cards*, plus the starting decks.
 
     The starting decks are described if they differ from the usual 7 Coppers
@@ -925,7 +926,7 @@ def _setup_instructions(
     counted out.
     """
     setup_instructions = [
-        f"{card.name}: {setup_match.group(1)}"
+        SetupInstruction(card.name, setup_match.group(1))
         for card in sorted(cards, key=sort_order.sort_key)
         if card.name != "Shelters"
         and (setup_match := SETUP_PATTERN.search(card.instructions))
@@ -937,7 +938,10 @@ def _setup_instructions(
             return f"Put {vp_per_player * players} VP here ({vp_per_player} VP per player)."
 
         setup_instructions = [
-            VP_PER_PLAYER_PATTERN.sub(count_out_vp, instruction)
+            replace(
+                instruction,
+                text=VP_PER_PLAYER_PATTERN.sub(count_out_vp, instruction.text),
+            )
             for instruction in setup_instructions
         ]
     use_shelters = any(card.name == "Shelters" for card in cards)
@@ -951,12 +955,10 @@ def _setup_instructions(
             starting_cards += SHELTER_NAMES
         else:
             starting_cards.append(f"{STARTING_ESTATE_COUNT} Estates")
-        starting_decks = (
-            f"Starting decks: Each player starts with {', '.join(starting_cards)}."
-        )
+        starting_decks = f"Each player starts with {', '.join(starting_cards)}."
         if heirlooms:
             starting_decks += " The unused Coppers go in the Copper pile."
-        setup_instructions.append(starting_decks)
+        setup_instructions.append(SetupInstruction("Starting decks", starting_decks))
     return setup_instructions
 
 
