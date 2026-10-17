@@ -37,9 +37,35 @@ BASIC_SUPPLY = ["Copper", "Silver", "Gold", "Estate", "Duchy", "Province", "Curs
 
 
 @pytest.fixture
-def runner() -> CliRunner:
+def config_dir(tmp_path: Path) -> Path:
+    """An empty config directory, so the tests never read the user's own config."""
+    return tmp_path / "config"
+
+
+@pytest.fixture
+def runner(config_dir: Path) -> CliRunner:
     # wide enough that no table cell wraps onto a second line
-    return CliRunner(env={"COLUMNS": "200"})
+    return CliRunner(env={"COLUMNS": "200", "XDG_CONFIG_HOME": str(config_dir)})
+
+
+def write_config(config_dir: Path, text: str) -> None:
+    """Write *text* to the ``config.toml`` in *config_dir*."""
+    path = config_dir / "dominion-setup" / "config.toml"
+    path.parent.mkdir(parents=True)
+    path.write_text(text)
+
+
+@pytest.fixture
+def generate_game_calls(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
+    """The keyword arguments of each call to ``generate_game``, which returns an empty Game."""
+    calls: list[dict[str, Any]] = []
+
+    def _generate_game(*_args: Any, **kwargs: Any) -> Game:  # noqa: ANN401
+        calls.append(kwargs)
+        return Game(basic_piles=[], kingdom_piles=[])
+
+    monkeypatch.setattr("dominion_setup.cli.generate_game", _generate_game)
+    return calls
 
 
 def parse_tables(output: str) -> dict[str, list[list[str]]]:
@@ -235,19 +261,12 @@ def test_generate_without_landscapes(runner: CliRunner) -> None:
 )
 def test_generate_require_flag(
     runner: CliRunner,
-    monkeypatch: pytest.MonkeyPatch,
+    generate_game_calls: list[dict[str, Any]],
     flag: str,
     requirement: KingdomRequirement,
 ) -> None:
-    calls: list[dict[str, Any]] = []
-
-    def _generate_game(*_args: Any, **kwargs: Any) -> Game:  # noqa: ANN401
-        calls.append(kwargs)
-        return Game(basic_piles=[], kingdom_piles=[])
-
-    monkeypatch.setattr("dominion_setup.cli.generate_game", _generate_game)
     assert runner.invoke(cli, ["generate", flag]).exit_code == 0
-    assert calls[0]["requirements"] == [requirement]
+    assert generate_game_calls[0]["requirements"] == [requirement]
 
 
 def test_generate_requires_the_only_reaction(runner: CliRunner) -> None:
@@ -265,19 +284,12 @@ def test_generate_requirement_without_a_provider_is_a_usage_error(
 
 
 def test_generate_includes_and_excludes_cards(
-    runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    runner: CliRunner, generate_game_calls: list[dict[str, Any]]
 ) -> None:
-    calls: list[dict[str, Any]] = []
-
-    def _generate_game(*_args: Any, **kwargs: Any) -> Game:  # noqa: ANN401
-        calls.append(kwargs)
-        return Game(basic_piles=[], kingdom_piles=[])
-
-    monkeypatch.setattr("dominion_setup.cli.generate_game", _generate_game)
     args = ["--include", "Witch", "--include", "Alms", "--exclude", "Moat"]
     assert runner.invoke(cli, ["generate", *args]).exit_code == 0
-    assert calls[0]["include"] == ("Witch", "Alms")
-    assert calls[0]["exclude"] == ("Moat",)
+    assert generate_game_calls[0]["include"] == ("Witch", "Alms")
+    assert generate_game_calls[0]["exclude"] == ("Moat",)
 
 
 def test_generate_includes_a_card_from_another_set(runner: CliRunner) -> None:
@@ -507,6 +519,154 @@ def test_generate_unexpected_error_is_not_a_usage_error(
     result = runner.invoke(cli, ["generate"])
     assert result.exit_code == 1
     assert isinstance(result.exception, ValueError)
+
+
+def test_generate_draws_from_the_given_promos_only(
+    runner: CliRunner, db: CardDatabase, generate_game_calls: list[dict[str, Any]]
+) -> None:
+    args = ["--set", "base_2e", "--promo", "Stash", "--promo", "Summon"]
+    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
+    (kwargs,) = generate_game_calls
+    promo = (CardSet.PROMO, CardSetEdition.FIRST_EDITION)
+    assert kwargs["sets_editions"] == {
+        (CardSet.BASE, CardSetEdition.SECOND_EDITION),
+        promo,
+    }
+    other_promos = {
+        card.name
+        for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
+        if card.set == CardSet.PROMO
+    } - {"Stash", "Summon"}
+    assert "Walled Village" in other_promos
+    assert set(kwargs["exclude"]) == other_promos
+
+
+def test_generate_includes_a_promo_that_is_not_given(
+    runner: CliRunner, generate_game_calls: list[dict[str, Any]]
+) -> None:
+    args = ["--promo", "Stash", "--include", "Envoy", "--exclude", "Moat"]
+    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
+    (kwargs,) = generate_game_calls
+    assert "Envoy" not in kwargs["exclude"]
+    assert "Moat" in kwargs["exclude"]
+
+
+def test_generate_promo_with_the_whole_promo_set_excludes_nothing(
+    runner: CliRunner, generate_game_calls: list[dict[str, Any]]
+) -> None:
+    args = ["--set", "promo", "--promo", "Stash"]
+    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
+    assert generate_game_calls[0]["exclude"] == ()
+
+
+@pytest.mark.parametrize("name", ["Smithy", "Smithee"])
+def test_generate_promo_that_is_not_a_promo_is_a_usage_error(
+    runner: CliRunner, name: str
+) -> None:
+    result = runner.invoke(cli, ["generate", "--promo", name])
+    assert result.exit_code == 2
+    assert f"{name!r} is not a Promo card" in result.output
+
+
+def test_generate_reads_its_defaults_from_the_config_file(
+    runner: CliRunner, config_dir: Path, generate_game_calls: list[dict[str, Any]]
+) -> None:
+    write_config(
+        config_dir,
+        """
+set = ["intrigue_2e", "seaside_2e"]
+promo = ["Stash"]
+exclude = ["Masquerade"]
+require-buys = true
+colony = false
+max-landscapes = 1
+players = 3
+""",
+    )
+    assert runner.invoke(cli, ["generate"]).exit_code == 0
+    (kwargs,) = generate_game_calls
+    assert kwargs["sets_editions"] == {
+        (CardSet.INTRIGUE, CardSetEdition.SECOND_EDITION),
+        (CardSet.SEASIDE, CardSetEdition.SECOND_EDITION),
+        (CardSet.PROMO, CardSetEdition.FIRST_EDITION),
+    }
+    assert "Masquerade" in kwargs["exclude"]
+    assert "Walled Village" in kwargs["exclude"]
+    assert kwargs["requirements"] == [KingdomRequirement.BUYS]
+    assert kwargs["use_colony"] is False
+    assert kwargs["max_landscapes"] == 1
+    assert kwargs["players"] == 3
+
+
+def test_generate_options_override_the_config_file(
+    runner: CliRunner, config_dir: Path, generate_game_calls: list[dict[str, Any]]
+) -> None:
+    write_config(config_dir, 'set = ["intrigue_2e"]\nexclude = ["Masquerade"]\n')
+    args = ["--set", "base_2e", "--exclude", "Moat"]
+    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
+    (kwargs,) = generate_game_calls
+    assert kwargs["sets_editions"] == {(CardSet.BASE, CardSetEdition.SECOND_EDITION)}
+    assert kwargs["exclude"] == ("Moat",)
+
+
+def test_generate_reads_the_config_file_in_the_home_directory(
+    tmp_path: Path, generate_game_calls: list[dict[str, Any]]
+) -> None:
+    write_config(tmp_path / ".config", "players = 5\n")
+    runner = CliRunner(env={"HOME": str(tmp_path), "XDG_CONFIG_HOME": None})
+    assert runner.invoke(cli, ["generate"]).exit_code == 0
+    assert generate_game_calls[0]["players"] == 5
+
+
+def test_generate_reads_the_given_config_file(
+    runner: CliRunner,
+    config_dir: Path,
+    tmp_path: Path,
+    generate_game_calls: list[dict[str, Any]],
+) -> None:
+    write_config(config_dir, "players = 5\nmax-landscapes = 1\n")
+    path = tmp_path / "game-night.toml"
+    path.write_text("players = 3\n")
+    args = ["generate", "--config-file", str(path)]
+    assert runner.invoke(cli, args).exit_code == 0
+    (kwargs,) = generate_game_calls
+    assert kwargs["players"] == 3
+    assert kwargs["max_landscapes"] == 2  # not read from the default config file
+
+
+def test_generate_given_config_file_that_does_not_exist_is_a_usage_error(
+    runner: CliRunner, tmp_path: Path
+) -> None:
+    path = tmp_path / "missing.toml"
+    result = runner.invoke(cli, ["generate", "--config-file", str(path)])
+    assert result.exit_code == 2
+    assert "Invalid value for '--config-file'" in result.output
+
+
+def test_generate_config_value_is_validated(
+    runner: CliRunner, config_dir: Path
+) -> None:
+    write_config(config_dir, "players = 7\n")
+    result = runner.invoke(cli, ["generate"])
+    assert result.exit_code == 2
+    assert "Invalid value for '--players'" in result.output
+
+
+@pytest.mark.parametrize(
+    ("text", "message"),
+    [
+        ("seats = 4\n", "unknown option 'seats'"),
+        ("players = \n", "Invalid value"),
+    ],
+)
+def test_generate_invalid_config_file_is_an_error(
+    runner: CliRunner, config_dir: Path, text: str, message: str
+) -> None:
+    write_config(config_dir, text)
+    result = runner.invoke(cli, ["generate"])
+    assert result.exit_code == 1
+    assert "config.toml" in result.output
+    assert message in result.output
 
 
 # ── list-cards ───────────────────────────────────────────────────────────────

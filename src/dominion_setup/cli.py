@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import os
 import random
+import tomllib
 from importlib import metadata
+from pathlib import Path
 from typing import Any
 
 import rich_click as click
@@ -54,6 +57,48 @@ console = Console()
 @click.version_option(metadata.version("dominion_setup"), "-V", "--version")
 def cli() -> None:
     """Dominion game setup generator."""
+
+
+def _config_path() -> Path:
+    """Return the path of the config file, in ``$XDG_CONFIG_HOME`` or ``~/.config``."""
+    config_home = os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config"
+    return Path(config_home) / "dominion-setup" / "config.toml"
+
+
+def _read_config(
+    ctx: click.Context, _param: click.Parameter, path: Path | None
+) -> None:
+    """Set the defaults of the command's options to the config file's values.
+
+    The config file is the one at *path*, or else the one at ``_config_path()``,
+    if any.
+    The config file's keys are the options' long names (e.g. ``set`` or
+    ``require-buys``).
+    """
+    if path is None:
+        path = _config_path()
+    try:
+        with path.open("rb") as file:
+            config = tomllib.load(file)
+    except FileNotFoundError:
+        return
+    except tomllib.TOMLDecodeError as exc:
+        msg = f"Invalid config file {path}: {exc}"
+        raise click.ClickException(msg) from exc
+
+    param_names = {
+        opt.removeprefix("--"): param.name
+        for param in ctx.command.params
+        for opt in param.opts
+        if opt.startswith("--") and param.expose_value
+    }
+    defaults = {}
+    for key, value in config.items():
+        if key not in param_names:
+            msg = f"Invalid config file {path}: unknown option {key!r}"
+            raise click.ClickException(msg)
+        defaults[param_names[key]] = value
+    ctx.default_map = defaults
 
 
 def _print_pile_table(piles: list[Pile], *, title: str, numbered: bool) -> None:
@@ -286,6 +331,13 @@ def _print_game_names(game: Game, *, seed: int) -> None:
     help="Kingdom card or Landscape to exclude (repeatable).",
 )
 @click.option(
+    "promos",
+    "--promo",
+    metavar="CARD",
+    multiple=True,
+    help="Promo card to draw from, without the rest of the Promo set (repeatable).",
+)
+@click.option(
     "--black-market-size",
     type=click.IntRange(1),
     default=15,
@@ -310,6 +362,14 @@ def _print_game_names(game: Game, *, seed: int) -> None:
     default="table",
     help="Output format: tables, JSON, or a one-line list of card names.",
 )
+@click.option(
+    "--config-file",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    is_eager=True,  # read before the options it sets the defaults of
+    expose_value=False,
+    callback=_read_config,
+    help="Config file with defaults for these options. [default: dominion-setup/config.toml in $XDG_CONFIG_HOME, or else in ~/.config]",
+)
 def generate(
     raw_sets_editions: tuple[str, ...],
     sort_order: str,
@@ -324,15 +384,36 @@ def generate(
     require_trashing: bool,
     include: tuple[str, ...],
     exclude: tuple[str, ...],
+    promos: tuple[str, ...],
     black_market_size: int,
     players: int | None,
     seed: int | None,
     output_format: str,
 ) -> None:
-    """Generate a random Dominion game setup."""
+    """Generate a random Dominion game setup.
+
+    Options default to the values in the config file (see --config-file), if
+    any.
+    """
     db = load_card_database()
     if seed is None:
         seed = random.randrange(1_000_000)
+
+    sets_editions = {SET_EDITION_CHOICES[choice] for choice in raw_sets_editions}
+    # draw from the given Promos only, by excluding the others
+    promo_names = {
+        card.name
+        for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
+        if card.set == CardSet.PROMO
+    }
+    for name in promos:
+        if name not in promo_names:
+            msg = f"{name!r} is not a Promo card"
+            raise click.UsageError(msg)
+    promo_set_edition = (CardSet.PROMO, CardSetEdition.FIRST_EDITION)
+    if promos and promo_set_edition not in sets_editions:
+        sets_editions.add(promo_set_edition)
+        exclude = (*exclude, *sorted(promo_names - {*promos, *include}))
 
     requirement_flags = {
         KingdomRequirement.ACTIONS: require_actions,
@@ -346,7 +427,7 @@ def generate(
     try:
         game = generate_game(
             db,
-            sets_editions={SET_EDITION_CHOICES[choice] for choice in raw_sets_editions},
+            sets_editions=sets_editions,
             sort_order=KingdomSortOrder(sort_order),
             use_colony=use_colony,
             use_shelters=use_shelters,

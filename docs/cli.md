@@ -62,6 +62,7 @@ $ dominion-setup generate --help
  Usage: dominion-setup generate [OPTIONS]
 
  Generate a random Dominion game setup.
+ Options default to the values in the config file (see --config-file), if any.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --set                    -s  [base_1e|base_2e|intri  Set(s) to include       │
@@ -105,6 +106,10 @@ $ dominion-setup generate --help
 │ --exclude                    CARD                    Kingdom card or         │
 │                                                      Landscape to exclude    │
 │                                                      (repeatable).           │
+│ --promo                      CARD                    Promo card to draw      │
+│                                                      from, without the rest  │
+│                                                      of the Promo set        │
+│                                                      (repeatable).           │
 │ --black-market-size          INTEGER RANGE [x>=1]    Number of cards in the  │
 │                                                      Black Market deck, if   │
 │                                                      Black Market is in use. │
@@ -119,6 +124,13 @@ $ dominion-setup generate --help
 │                                                      JSON, or a one-line     │
 │                                                      list of card names.     │
 │                                                      [default: table]        │
+│ --config-file                FILE                    Config file with        │
+│                                                      defaults for these      │
+│                                                      options. [default:      │
+│                                                      dominion-setup/config.t │
+│                                                      oml in                  │
+│                                                      $XDG_CONFIG_HOME, or    │
+│                                                      else in ~/.config]      │
 │ --help                   -h                          Show this message and   │
 │                                                      exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯

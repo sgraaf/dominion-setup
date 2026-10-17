@@ -300,6 +300,22 @@ Force Colony/Platinum on when playing with a Prosperity mix:
 dominion-setup generate --set base_2e --set prosperity_2e --colony
 ```
 
+Draw from the Promos you own, not the whole Promo set:
+
+```sh
+dominion-setup generate --set base_2e --promo Stash --promo "Walled Village"
+```
+
+Options default to the values in `~/.config/dominion-setup/config.toml` (or `$XDG_CONFIG_HOME/dominion-setup/config.toml`), if it exists, or in the file given with `--config-file FILE`. Its keys are the options' long names, so it can store your collection, bans and default requirements. Options given on the command line replace the config's values:
+
+```toml
+set = ["base_2e", "intrigue_2e", "seaside_2e"]
+promo = ["Stash", "Walled Village"]
+exclude = ["Masquerade"]
+require-buys = true
+players = 4
+```
+
 #### `dominion-setup list-cards` — browse the card database
 
 List all kingdom cards sorted by cost (default):
