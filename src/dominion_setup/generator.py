@@ -168,7 +168,10 @@ def generate_game(  # noqa: PLR0913
 
     # 8. Setup instructions
     setup_instructions = _setup_instructions(
-        [*cards_in_use, *landscapes, *basic_cards], heirlooms, sort_order
+        [*cards_in_use, *landscapes, *basic_cards],
+        heirlooms,
+        sort_order,
+        players=players,
     )
 
     # collect each pile's marks (Bane, Trait, Obelisk, …)
@@ -832,17 +835,36 @@ def _materials(cards: list[Card]) -> set[Material]:  # noqa: C901, PLR0912
 # ── 8. Setup instructions ────────────────────────────────────────────────────
 
 SETUP_PATTERN = re.compile(r"Setup: (.*)$")
+VP_PER_PLAYER_PATTERN = re.compile(r"Put (\d+) VP here per player\.")
 
 
 def _setup_instructions(
-    cards: list[Card], heirlooms: list[Card], sort_order: KingdomSortOrder
+    cards: list[Card],
+    heirlooms: list[Card],
+    sort_order: KingdomSortOrder,
+    *,
+    players: int | None = None,
 ) -> list[str]:
-    """Return the "Setup:" instructions of *cards*, plus how to deal out *heirlooms*."""
+    """Return the "Setup:" instructions of *cards*, plus how to deal out *heirlooms*.
+
+    With *players*, the VP to put on a Landmark "per player" (e.g. Arena) are
+    counted out.
+    """
     setup_instructions = [
         f"{card.name}: {setup_match.group(1)}"
         for card in sorted(cards, key=sort_order.sort_key)
         if (setup_match := SETUP_PATTERN.search(card.instructions))
     ]
+    if players is not None:
+
+        def count_out_vp(match: re.Match[str]) -> str:
+            vp_per_player = int(match.group(1))
+            return f"Put {vp_per_player * players} VP here ({vp_per_player} VP per player)."
+
+        setup_instructions = [
+            VP_PER_PLAYER_PATTERN.sub(count_out_vp, instruction)
+            for instruction in setup_instructions
+        ]
     if heirlooms:
         setup_instructions.append(
             f"Heirlooms: Each player replaces {len(heirlooms)} starting Coppers with {', '.join(heirloom.name for heirloom in heirlooms)}. The unused Coppers go in the Copper pile."

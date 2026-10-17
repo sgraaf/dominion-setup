@@ -1467,6 +1467,33 @@ def test_setup_instructions_follow_the_sort_order(
     assert [instruction.split(":")[0] for instruction in instructions] == card_order
 
 
+@pytest.mark.parametrize(
+    "card", ["Arena", "Basilica", "Baths", "Battlefield", "Colonnade", "Labyrinth"]
+)
+@pytest.mark.parametrize(("players", "vp"), [(2, 12), (3, 18), (6, 36)])
+def test_players_count_out_the_vp_per_player(
+    db: CardDatabase, card: str, players: int, vp: int
+) -> None:
+    [instruction] = _setup_instructions(
+        get_cards(db, card), [], KingdomSortOrder.COST, players=players
+    )
+    assert instruction == f"{card}: Put {vp} VP here (6 VP per player)."
+
+
+def test_vp_per_player_without_players(db: CardDatabase) -> None:
+    [instruction] = _setup_instructions(
+        get_cards(db, "Arena"), [], KingdomSortOrder.COST
+    )
+    assert instruction == "Arena: Put 6 VP here per player."
+
+
+def test_players_count_out_the_vp_in_a_game(
+    generate_with: Callable[..., Game],
+) -> None:
+    game = generate_with(["Village"], landscapes=["Arena"], players=4)
+    assert "Arena: Put 24 VP here (6 VP per player)." in game.setup_instructions
+
+
 def test_heirlooms_get_a_setup_instruction(db: CardDatabase) -> None:
     heirlooms = get_cards(db, "Haunted Mirror", "Lucky Coin")
     assert _setup_instructions([], heirlooms, KingdomSortOrder.COST) == [
