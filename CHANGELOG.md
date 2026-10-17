@@ -10,6 +10,10 @@ The **third number** is for emergencies when we need to start branches for older
 
 ## [Unreleased](https://github.com/sgraaf/dominion-setup/compare/2026.3.0...HEAD)
 
+### Added
+
+- `generate_game(promos=...)`, which draws from the given Promos only, like `--promo CARD` (also with every set, `sets_editions=None`), and raises `SetupGenerationError` for a name that isn't a Promo card.
+
 ## [2026.3.0](https://github.com/sgraaf/dominion-setup/compare/2026.2.0...2026.3.0) - 2026-10-17
 
 This release gives you more control over your Kingdom. You can now require certain effects (such as +Buy, Trashing or an Attack), force cards in or ban them with `--include` and `--exclude`, and draw only from the Promos you own. A config file can store your collection, bans and default requirements. Every setup now comes with a seed you can use to replay or share it, and `--format json` and `--format names` make the output easy to use in scripts, bots and chats. Setups are also more complete: give a player count and you get the size of each pile, Black Market comes with its own deck, and Shelters and Heirlooms come with a clear list of each player's starting cards.

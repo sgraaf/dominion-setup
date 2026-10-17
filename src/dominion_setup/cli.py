@@ -371,20 +371,6 @@ def generate(
         seed = random.randrange(1_000_000)
 
     sets_editions = {SET_EDITION_CHOICES[choice] for choice in raw_sets_editions}
-    # draw from the given Promos only, by excluding the others
-    promo_names = {
-        card.name
-        for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
-        if card.set == CardSet.PROMO
-    }
-    for name in promos:
-        if name not in promo_names:
-            msg = f"{name!r} is not a Promo card"
-            raise click.UsageError(msg)
-    promo_set_edition = (CardSet.PROMO, CardSetEdition.FIRST_EDITION)
-    if promos and promo_set_edition not in sets_editions:
-        sets_editions.add(promo_set_edition)
-        exclude = (*exclude, *sorted(promo_names - {*promos, *include}))
 
     requirement_flags = {
         KingdomRequirement.ACTIONS: require_actions,
@@ -410,6 +396,7 @@ def generate(
             ],
             include=include,
             exclude=exclude,
+            promos=promos,
             black_market_size=black_market_size,
             players=players,
             rng=random.Random(seed),

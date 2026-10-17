@@ -54,6 +54,7 @@ def generate_game(  # noqa: PLR0913
     requirements: Iterable[KingdomRequirement] = (),
     include: Iterable[str] = (),
     exclude: Iterable[str] = (),
+    promos: Iterable[str] = (),
     black_market_size: int = 15,
     players: int | None = None,
     rng: random.Random | None = None,
@@ -79,6 +80,10 @@ def generate_game(  # noqa: PLR0913
             game, from any set. Defaults to none.
         exclude: Names of Kingdom cards and Landscapes that must not be drawn.
             Defaults to none.
+        promos: Names of Promo cards to draw from, without the rest of the
+            Promo set, also when *sets_editions* is ``None``. Has no effect on
+            the draw if *sets_editions* includes the Promo set, but the names
+            are still checked. Defaults to none.
         black_market_size: How many unused Kingdom cards to deal into the
             Black Market deck, if Black Market is in use. Defaults to 15.
         players: The number of players (2 to 6), to work out how many cards
@@ -102,6 +107,15 @@ def generate_game(  # noqa: PLR0913
         raise SetupGenerationError(msg)
     if rng is None:
         rng = random.Random()
+
+    include = list(include)
+    sets_editions, exclude = _restrict_promos(
+        db,
+        promos,
+        sets_editions=sets_editions,
+        include=include,
+        exclude=exclude,
+    )
 
     # 1. Kingdom: 10 Kingdom piles that meet the *requirements*, and up to
     # *max_landscapes* Landscapes, with the *include*d cards and without the
@@ -230,6 +244,39 @@ PLUS_BUY_PATTERN = re.compile(r"\+\d+ Buys?\b")
 # your hand" (Raze) counts, "trash this" (Feast), "the trash" (Rogue) and "they
 # trash" (Saboteur) do not
 TRASHING_PATTERN = re.compile(r"(?<!the )(?<![Tt]hey )\b[Tt]rash (?!this\b(?! or\b))")
+
+
+def _restrict_promos(
+    db: CardDatabase,
+    promos: Iterable[str],
+    *,
+    sets_editions: set[tuple[CardSet, CardSetEdition]] | None,
+    include: Iterable[str],
+    exclude: Iterable[str],
+) -> tuple[set[tuple[CardSet, CardSetEdition]] | None, Iterable[str]]:
+    """Return *sets_editions* and *exclude* that draw from the given *promos* only.
+
+    The Promo set is added to *sets_editions*, and the other Promos (except the
+    *include*d ones) to *exclude*, unless *sets_editions* includes the Promo set.
+    """
+    promos = list(promos)
+    if not promos:
+        return sets_editions, exclude
+    promo_names = {
+        card.name
+        for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
+        if card.set == CardSet.PROMO
+    }
+    for name in promos:
+        if name not in promo_names:
+            msg = f"{name!r} is not a Promo card"
+            raise SetupGenerationError(msg)
+    promo_set_edition = (CardSet.PROMO, CardSetEdition.FIRST_EDITION)
+    if sets_editions is not None and promo_set_edition in sets_editions:
+        return sets_editions, exclude
+    if sets_editions is not None:  # None is every set, the Promo set included
+        sets_editions = {*sets_editions, promo_set_edition}
+    return sets_editions, [*exclude, *sorted(promo_names - {*promos, *include})]
 
 
 def _instructions_match(pattern: re.Pattern[str]) -> Callable[[Card], bool]:

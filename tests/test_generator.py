@@ -14,6 +14,7 @@ import subprocess
 import sys
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import replace
+from typing import Any
 
 import pytest
 
@@ -160,6 +161,104 @@ def test_includes_and_excludes_cards(db: CardDatabase, rng: random.Random) -> No
     )
     assert "Witch" in card_names(game.kingdom_cards)
     assert "Moat" not in card_names(game.kingdom_cards)
+
+
+@pytest.fixture
+def draw_kingdom_calls(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
+    """The keyword arguments of each call to ``_draw_kingdom``, which still draws."""
+    calls: list[dict[str, Any]] = []
+
+    def _spy(
+        *args: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> tuple[list[Card], list[Card], list[Card]]:
+        calls.append(kwargs)
+        return _draw_kingdom(*args, **kwargs)
+
+    monkeypatch.setattr(generator, "_draw_kingdom", _spy)
+    return calls
+
+
+def promo_names(db: CardDatabase) -> set[str]:
+    """Return the names of the Promo Kingdom cards and Landscapes in *db*."""
+    return {
+        card.name
+        for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
+        if card.set == CardSet.PROMO
+    }
+
+
+def test_draws_from_the_given_promos_only(
+    db: CardDatabase,
+    rng: random.Random,
+    draw_kingdom_calls: list[dict[str, Any]],
+) -> None:
+    sets_editions: set[tuple[CardSet, CardSetEdition]] = {BASE_2E}
+    generate_game(
+        db,
+        sets_editions=sets_editions,
+        promos=["Stash", "Summon"],
+        rng=rng,
+    )
+    (kwargs,) = draw_kingdom_calls
+    assert kwargs["sets_editions"] == {
+        BASE_2E,
+        (CardSet.PROMO, CardSetEdition.FIRST_EDITION),
+    }
+    assert sets_editions == {BASE_2E}  # not changed
+    other_promos = promo_names(db) - {"Stash", "Summon"}
+    assert "Walled Village" in other_promos
+    assert set(kwargs["exclude"]) == other_promos
+
+
+def test_includes_a_promo_that_is_not_given(
+    db: CardDatabase,
+    rng: random.Random,
+    draw_kingdom_calls: list[dict[str, Any]],
+) -> None:
+    game = generate_game(
+        db,
+        sets_editions={BASE_2E},
+        promos=["Stash"],
+        include=["Envoy"],
+        exclude=["Moat"],
+        rng=rng,
+    )
+    assert "Envoy" in card_names(game.kingdom_cards)
+    (kwargs,) = draw_kingdom_calls
+    assert "Envoy" not in kwargs["exclude"]
+    assert "Moat" in kwargs["exclude"]
+
+
+def test_promos_with_every_set_draws_from_the_given_promos_only(
+    db: CardDatabase,
+    rng: random.Random,
+    draw_kingdom_calls: list[dict[str, Any]],
+) -> None:
+    generate_game(db, promos=["Stash"], rng=rng)
+    (kwargs,) = draw_kingdom_calls
+    assert kwargs["sets_editions"] is None
+    assert set(kwargs["exclude"]) == promo_names(db) - {"Stash"}
+
+
+def test_promos_with_the_whole_promo_set_excludes_nothing(
+    db: CardDatabase,
+    rng: random.Random,
+    draw_kingdom_calls: list[dict[str, Any]],
+) -> None:
+    sets_editions: set[tuple[CardSet, CardSetEdition]] = {
+        (CardSet.PROMO, CardSetEdition.FIRST_EDITION),
+    }
+    generate_game(db, sets_editions=sets_editions, promos=["Stash"], rng=rng)
+    (kwargs,) = draw_kingdom_calls
+    assert kwargs["sets_editions"] == sets_editions
+    assert list(kwargs["exclude"]) == []
+
+
+@pytest.mark.parametrize("name", ["Smithy", "Smithee"])
+def test_promo_that_is_not_a_promo_raises(db: CardDatabase, name: str) -> None:
+    with pytest.raises(SetupGenerationError, match=f"{name!r} is not a Promo card"):
+        generate_game(db, sets_editions={BASE_2E}, promos=[name])
 
 
 @pytest.mark.parametrize("seed", range(10))

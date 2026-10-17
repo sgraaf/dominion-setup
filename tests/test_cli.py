@@ -546,46 +546,15 @@ def test_generate_unexpected_error_is_not_a_usage_error(
     assert isinstance(result.exception, ValueError)
 
 
-def test_generate_draws_from_the_given_promos_only(
+def test_generate_passes_the_given_promos(
     runner: CliRunner,
-    db: CardDatabase,
     generate_game_calls: list[dict[str, Any]],
 ) -> None:
     args = ["--set", "base_2e", "--promo", "Stash", "--promo", "Summon"]
     assert runner.invoke(cli, ["generate", *args]).exit_code == 0
     (kwargs,) = generate_game_calls
-    promo = (CardSet.PROMO, CardSetEdition.FIRST_EDITION)
-    assert kwargs["sets_editions"] == {
-        (CardSet.BASE, CardSetEdition.SECOND_EDITION),
-        promo,
-    }
-    other_promos = {
-        card.name
-        for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
-        if card.set == CardSet.PROMO
-    } - {"Stash", "Summon"}
-    assert "Walled Village" in other_promos
-    assert set(kwargs["exclude"]) == other_promos
-
-
-def test_generate_includes_a_promo_that_is_not_given(
-    runner: CliRunner,
-    generate_game_calls: list[dict[str, Any]],
-) -> None:
-    args = ["--promo", "Stash", "--include", "Envoy", "--exclude", "Moat"]
-    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
-    (kwargs,) = generate_game_calls
-    assert "Envoy" not in kwargs["exclude"]
-    assert "Moat" in kwargs["exclude"]
-
-
-def test_generate_promo_with_the_whole_promo_set_excludes_nothing(
-    runner: CliRunner,
-    generate_game_calls: list[dict[str, Any]],
-) -> None:
-    args = ["--set", "promo", "--promo", "Stash"]
-    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
-    assert generate_game_calls[0]["exclude"] == ()
+    assert kwargs["sets_editions"] == {(CardSet.BASE, CardSetEdition.SECOND_EDITION)}
+    assert kwargs["promos"] == ("Stash", "Summon")
 
 
 @pytest.mark.parametrize("name", ["Smithy", "Smithee"])
@@ -620,10 +589,9 @@ players = 3
     assert kwargs["sets_editions"] == {
         (CardSet.INTRIGUE, CardSetEdition.SECOND_EDITION),
         (CardSet.SEASIDE, CardSetEdition.SECOND_EDITION),
-        (CardSet.PROMO, CardSetEdition.FIRST_EDITION),
     }
-    assert "Masquerade" in kwargs["exclude"]
-    assert "Walled Village" in kwargs["exclude"]
+    assert kwargs["promos"] == ("Stash",)
+    assert kwargs["exclude"] == ("Masquerade",)
     assert kwargs["requirements"] == [KingdomRequirement.BUYS]
     assert kwargs["use_colony"] is False
     assert kwargs["max_landscapes"] == 1
