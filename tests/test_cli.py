@@ -434,6 +434,7 @@ def test_generate_formats_the_game_as_json(
             "name": card.name,
             "cost": card.cost.to_dict(),
             "types": list(card.types),
+            "purpose": str(card.purpose),
             "set": card.display_set,
             "marks": list(marks),
             "size": None,

@@ -466,6 +466,7 @@ class Pile:
             "name": self.card.name,
             "cost": self.card.cost.to_dict(),
             "types": list(self.card.types),
+            "purpose": str(self.card.purpose),
             "set": self.card.display_set,
             "marks": [str(mark) for mark in self.marks],
             "size": self.size,

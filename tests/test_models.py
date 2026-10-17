@@ -353,6 +353,7 @@ def test_pile_to_dict(smithy: Card) -> None:
         "name": "Smithy",
         "cost": {"coins": 4},
         "types": ["Action"],
+        "purpose": "Kingdom Pile",
         "set": "Base",
         "marks": ["Bane"],
         "size": 10,
