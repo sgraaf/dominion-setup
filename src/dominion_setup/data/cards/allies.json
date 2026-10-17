@@ -940,7 +940,7 @@
     ],
     "quantity": 10,
     "image": "Royal Galley.jpg",
-    "instructions": "+1 Card\nYou may play a non-Duration Action card from your hand. Set it aside; if you did, then at the start of your next turn, play it."
+    "instructions": "+1 Card\nYou may play a non-Duration Action card from your hand. Don't discard it in Clean-up until your next turn. At the start of your next turn, if it's still in play, replay it."
   },
   {
     "name": "Sentinel",
@@ -1054,8 +1054,8 @@
     "name": "Stronghold",
     "types": [
       "Action",
-      "Victory",
       "Duration",
+      "Victory",
       "Fort"
     ],
     "purpose": "Mixed Pile Card",

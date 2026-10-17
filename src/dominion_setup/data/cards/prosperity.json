@@ -92,8 +92,8 @@
     "name": "Clerk",
     "types": [
       "Action",
-      "Reaction",
-      "Attack"
+      "Attack",
+      "Reaction"
     ],
     "purpose": "Kingdom Pile",
     "cost": {

@@ -765,7 +765,7 @@ CARDS: dict[str, str] = {
     "Charlatan": "Kingdom Pile | Action, Attack | $5 | Prosperity, 2E | 10",
     "Bank": "Kingdom Pile | Treasure | $7 | Prosperity | 10",
     "Quarry": "Kingdom Pile | Treasure | $4 | Prosperity | 10",
-    "Clerk": "Kingdom Pile | Action, Reaction, Attack | $4 | Prosperity, 2E | 10",
+    "Clerk": "Kingdom Pile | Action, Attack, Reaction | $4 | Prosperity, 2E | 10",
     "Platinum": "Basic | Treasure | $9 | Prosperity | 12",
     "Colony": "Basic | Victory | $11 | Prosperity | 12",
     # Cornucopia & Guilds

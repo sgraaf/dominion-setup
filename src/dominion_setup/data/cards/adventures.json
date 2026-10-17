@@ -83,7 +83,7 @@
     ],
     "quantity": 1,
     "image": "Bonfire.jpg",
-    "instructions": "Trash up to 2 Coppers you have in play."
+    "instructions": "Trash up to two Coppers you have in play."
   },
   {
     "name": "Borrow",
@@ -394,7 +394,7 @@
     ],
     "quantity": 5,
     "image": "Hero.jpg",
-    "instructions": "+$2\nGain a Treasure."
+    "instructions": "+$2\nGain a Treasure.\n-----\nWhen you discard this from play, you may exchange it for a Champion.\n(This is not in the Supply.)"
   },
   {
     "name": "Hireling",
@@ -883,7 +883,7 @@
     ],
     "quantity": 5,
     "image": "Teacher.jpg",
-    "instructions": "Put this on your Tavern mat.\n-----\nAt the start of your turn, you may call this, to move your +1 Card, +1 Action, +1 Buy, or +$1 token to an Action Supply pile you have no tokens on. (When you play a card from that pile, you first get that bonus.)\n(This is not in the Supply.)"
+    "instructions": "Put this on your Tavern mat.\n-----\nAt the start of your turn, you may call this, to move your +1 Card, +1 Action, +1 Buy, or +$1 token to an Action Supply pile you have no tokens on (when you play a card from that pile, you first get that bonus.)\n(This is not in the Supply.)"
   },
   {
     "name": "Trade",

@@ -489,7 +489,7 @@
     ],
     "quantity": 10,
     "image": "Guardian.jpg",
-    "instructions": "At the start of your next turn, +$1.\n Until then, when another player plays an Attack card, it doesn't affect you.\n-----\nThis is gained to your hand (instead of your discard pile)."
+    "instructions": "At the start of your next turn, +$1. Until then, when another player plays an Attack card, it doesn't affect you.\n-----\nThis is gained to your hand (instead of your discard pile)."
   },
   {
     "name": "Haunted Mirror",
@@ -1201,7 +1201,7 @@
     ],
     "quantity": 10,
     "image": "Vampire.jpg",
-    "instructions": "Each other player receives the next Hex.\n Gain a card costing up to $5 other than a Vampire.\nExchange this for a Bat."
+    "instructions": "Each other player receives the next Hex.\nGain a card costing up to $5 other than a Vampire.\nExchange this for a Bat."
   },
   {
     "name": "War",

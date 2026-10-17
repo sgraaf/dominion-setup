@@ -486,8 +486,8 @@
     "name": "Enchantress",
     "types": [
       "Action",
-      "Attack",
-      "Duration"
+      "Duration",
+      "Attack"
     ],
     "purpose": "Kingdom Pile",
     "cost": {
