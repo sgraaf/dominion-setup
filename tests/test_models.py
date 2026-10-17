@@ -19,6 +19,7 @@ from dominion_setup.models import (
     CardType,
     Game,
     KingdomSortOrder,
+    Material,
     Pile,
     PileMark,
     PileMarkKind,
@@ -306,6 +307,20 @@ def test_pile_is_frozen(smithy: Card) -> None:
         pile.card = smithy  # type: ignore # noqa: PGH003
 
 
+def test_pile_to_dict(smithy: Card) -> None:
+    pile = Pile(card=smithy, marks=(PileMark(PileMarkKind.BANE),), size=10)
+    assert pile.to_dict() == {
+        "name": "Smithy",
+        "cost": {"coins": 4},
+        "types": ["Action"],
+        "set": "Base",
+        "marks": ["Bane"],
+        "size": 10,
+        "image": "Smithy.jpg",
+        "instructions": "+3 Cards",
+    }
+
+
 @pytest.mark.parametrize(
     ("sort_order", "expected_names"),
     [
@@ -383,3 +398,30 @@ def test_game_sets_used(smithy: Card) -> None:
         CardSet.ADVENTURES,
         CardSet.NOCTURNE,
     ]
+
+
+def test_game_to_dict(smithy: Card) -> None:
+    copper = replace(smithy, name="Copper", purpose=CardPurpose.BASIC)
+    alms = replace(smithy, name="Alms", set=CardSet.ADVENTURES)
+    game = Game(
+        basic_piles=[Pile(card=copper, size=46)],
+        kingdom_piles=[Pile(card=smithy, size=10)],
+        landscapes=[alms],
+        materials=[Material.COIN_TOKENS],
+        setup_instructions=["Starting decks: …"],
+        players=2,
+    )
+    assert game.to_dict() == {
+        "players": 2,
+        "sets": ["Base", "Adventures"],
+        "kingdom": [Pile(card=smithy, size=10).to_dict()],
+        "landscapes": [Pile(card=alms).to_dict()],
+        "ally": None,
+        "prophecy": None,
+        "druid_boons": [],
+        "non_supply": [],
+        "black_market": [],
+        "basic_supply": [Pile(card=copper, size=46).to_dict()],
+        "materials": ["Coin tokens"],
+        "setup": ["Starting decks: …"],
+    }

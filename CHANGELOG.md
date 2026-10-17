@@ -24,6 +24,7 @@ The **third number** is for emergencies when we need to start branches for older
 - Config file: `dominion-setup generate` reads the defaults of its options from `~/.config/dominion-setup/config.toml` (or `$XDG_CONFIG_HOME/dominion-setup/config.toml`), or from the file given with its `--config-file FILE` option, keyed by their long names (e.g. `set`, `exclude`, `require-buys`), to store your collection, bans and default requirements.
 - Promo cards: the repeatable `--promo CARD` option of `dominion-setup generate` draws from the given Promos only, as Promos are bought one by one, while `--set promo` draws from all of them.
 - Starting decks: when Shelters or Heirlooms are in use, a "Starting decks: …" setup instruction lists each player's starting cards, e.g. "Each player starts with 6 Coppers, Pouch, Hovel, Necropolis, Overgrown Estate."
+- `Game.to_dict` and `Pile.to_dict` convert a game to the JSON that `dominion-setup generate --format json` prints (without the seed), for front ends that use the library directly. Each card in it also has its `image` (the wiki's file name) and `instructions`.
 
 ### Changed
 

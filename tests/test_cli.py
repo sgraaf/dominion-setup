@@ -433,6 +433,8 @@ def test_generate_formats_the_game_as_json(
             "set": card.display_set,
             "marks": list(marks),
             "size": None,
+            "image": card.image,
+            "instructions": card.instructions,
         }
 
     assert json.loads(result.output) == {

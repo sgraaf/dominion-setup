@@ -8,7 +8,6 @@ import random
 import tomllib
 from importlib import metadata
 from pathlib import Path
-from typing import Any
 
 import rich_click as click
 from click_default_group import DefaultGroup
@@ -204,41 +203,9 @@ def _print_game(game: Game, *, seed: int) -> None:
             console.print(f"  • {instruction}")
 
 
-def _pile_to_dict(pile: Pile) -> dict[str, Any]:
-    """Convert a Pile to a JSON-serializable dict, with the columns of its table row."""
-    return {
-        "name": pile.card.name,
-        "cost": pile.card.cost.to_dict(),
-        "types": list(pile.card.types),
-        "set": pile.card.display_set,
-        "marks": [str(mark) for mark in pile.marks],
-        "size": pile.size,
-    }
-
-
-def _card_to_dict(card: Card | None) -> dict[str, Any] | None:
-    """Convert a card (e.g. a Landscape, Ally) to a JSON-serializable dict, if any."""
-    return None if card is None else _pile_to_dict(Pile(card))
-
-
 def _print_game_json(game: Game, *, seed: int) -> None:
     """Print a Game, generated with *seed*, as JSON."""
-    output = {
-        "seed": seed,
-        "players": game.players,
-        "sets": game.sets_used,
-        "kingdom": [_pile_to_dict(pile) for pile in game.kingdom_piles],
-        "landscapes": [_card_to_dict(card) for card in game.landscapes],
-        "ally": _card_to_dict(game.ally),
-        "prophecy": _card_to_dict(game.prophecy),
-        "druid_boons": [_card_to_dict(card) for card in game.druid_boons],
-        "non_supply": [_pile_to_dict(pile) for pile in game.non_supply_piles],
-        "black_market": [_card_to_dict(card) for card in game.black_market_deck],
-        "basic_supply": [_pile_to_dict(pile) for pile in game.basic_piles],
-        "materials": game.materials,
-        "setup": game.setup_instructions,
-    }
-    click.echo(json.dumps(output, indent=2))
+    click.echo(json.dumps({"seed": seed, **game.to_dict()}, indent=2))
 
 
 def _print_game_names(game: Game, *, seed: int) -> None:

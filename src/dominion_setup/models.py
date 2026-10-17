@@ -449,6 +449,19 @@ class Pile:
     marks: tuple[PileMark, ...] = ()
     size: int | None = None
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dictionary of the card and the pile's marks and size."""
+        return {
+            "name": self.card.name,
+            "cost": self.card.cost.to_dict(),
+            "types": list(self.card.types),
+            "set": self.card.display_set,
+            "marks": [str(mark) for mark in self.marks],
+            "size": self.size,
+            "image": self.card.image,
+            "instructions": self.card.instructions,
+        }
+
 
 class KingdomSortOrder(StrEnum):
     """Sort order for kingdom piles in the game output."""
@@ -520,3 +533,28 @@ class Game:
             {card.set for card in cards},
             key=CARD_SET_ORDER.__getitem__,
         )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dictionary, as ``dominion-setup generate --format json`` prints it.
+
+        Cards that are not in a pile (Landscapes, the Ally, …) take the form of
+        a pile without marks or size.
+        """
+
+        def card_to_dict(card: Card | None) -> dict[str, Any] | None:
+            return None if card is None else Pile(card).to_dict()
+
+        return {
+            "players": self.players,
+            "sets": self.sets_used,
+            "kingdom": [pile.to_dict() for pile in self.kingdom_piles],
+            "landscapes": [card_to_dict(card) for card in self.landscapes],
+            "ally": card_to_dict(self.ally),
+            "prophecy": card_to_dict(self.prophecy),
+            "druid_boons": [card_to_dict(card) for card in self.druid_boons],
+            "non_supply": [pile.to_dict() for pile in self.non_supply_piles],
+            "black_market": [card_to_dict(card) for card in self.black_market_deck],
+            "basic_supply": [pile.to_dict() for pile in self.basic_piles],
+            "materials": self.materials,
+            "setup": self.setup_instructions,
+        }
