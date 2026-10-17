@@ -43,7 +43,10 @@ def config_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def runner(config_dir: Path) -> CliRunner:
+def runner(config_dir: Path, monkeypatch: pytest.MonkeyPatch) -> CliRunner:
+    # rich-click forces terminal output (colors, padding) when $GITHUB_ACTIONS
+    # is set, which it reads once on import
+    monkeypatch.setattr("rich_click.rich_click.FORCE_TERMINAL", False)
     # wide enough that no table cell wraps onto a second line
     return CliRunner(env={"COLUMNS": "200", "XDG_CONFIG_HOME": str(config_dir)})
 
