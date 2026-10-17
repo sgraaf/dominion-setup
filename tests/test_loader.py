@@ -49,6 +49,7 @@ def test_reports_the_card_that_fails_to_parse(data_dir: Path) -> None:
     spell = {**SMITHY, "name": "Spell", "types": ["Spell"]}
     (data_dir / "cards" / "base.json").write_text(json.dumps([SMITHY, spell]))
     with pytest.raises(
-        ValueError, match=r"Error parsing card at index 1 in .*base\.json"
+        ValueError,
+        match=r"Error parsing card at index 1 in .*base\.json",
     ):
         load_card_database(data_dir)

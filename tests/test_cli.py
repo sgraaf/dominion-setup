@@ -110,7 +110,9 @@ def test_run_as_executable() -> None:
     # console scripts are installed next to the interpreter, which need not be on PATH
     executable = Path(sys.executable).parent / "dominion-setup"
     result = subprocess.run(  # noqa: S603
-        [executable, "--help"], capture_output=True, check=False
+        [executable, "--help"],
+        capture_output=True,
+        check=False,
     )
     assert result.returncode == 0
 
@@ -193,7 +195,8 @@ def test_generate_without_a_seed_prints_one_that_replays_the_game(
     ids="+".join,
 )
 def test_generate_draws_from_the_given_sets(
-    runner: CliRunner, choices: list[str]
+    runner: CliRunner,
+    choices: list[str],
 ) -> None:
     args = [arg for choice in choices for arg in ("--set", choice)]
     result = runner.invoke(cli, ["generate", *args])
@@ -208,7 +211,9 @@ def test_generate_draws_from_the_given_sets(
 
 @pytest.mark.parametrize("sort_order", KingdomSortOrder)
 def test_generate_sorts_the_kingdom(
-    runner: CliRunner, db: CardDatabase, sort_order: KingdomSortOrder
+    runner: CliRunner,
+    db: CardDatabase,
+    sort_order: KingdomSortOrder,
 ) -> None:
     result = runner.invoke(cli, ["generate", "--sort", sort_order.value])
     assert result.exit_code == 0
@@ -242,7 +247,8 @@ def test_generate_forces_basic_piles_on_or_off(
 
 def test_generate_without_landscapes(runner: CliRunner) -> None:
     result = runner.invoke(
-        cli, ["generate", "--set", "adventures", "--max-landscapes", "0"]
+        cli,
+        ["generate", "--set", "adventures", "--max-landscapes", "0"],
     )
     assert result.exit_code == 0
     assert "Landscapes" not in parse_tables(result.output)
@@ -284,7 +290,8 @@ def test_generate_requirement_without_a_provider_is_a_usage_error(
 
 
 def test_generate_includes_and_excludes_cards(
-    runner: CliRunner, generate_game_calls: list[dict[str, Any]]
+    runner: CliRunner,
+    generate_game_calls: list[dict[str, Any]],
 ) -> None:
     args = ["--include", "Witch", "--include", "Alms", "--exclude", "Moat"]
     assert runner.invoke(cli, ["generate", *args]).exit_code == 0
@@ -294,7 +301,8 @@ def test_generate_includes_and_excludes_cards(
 
 def test_generate_includes_a_card_from_another_set(runner: CliRunner) -> None:
     result = runner.invoke(
-        cli, ["generate", "--set", "base_2e", "--include", "Young Witch"]
+        cli,
+        ["generate", "--set", "base_2e", "--include", "Young Witch"],
     )
     assert result.exit_code == 0
     assert "Young Witch" in [row[1] for row in parse_tables(result.output)["Kingdom"]]
@@ -307,7 +315,9 @@ def test_generate_unknown_card_is_a_usage_error(runner: CliRunner) -> None:
 
 
 def test_generate_prints_every_part_of_the_game(
-    runner: CliRunner, db: CardDatabase, monkeypatch: pytest.MonkeyPatch
+    runner: CliRunner,
+    db: CardDatabase,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     game = Game(
         basic_piles=[Pile(db.get_card_by_name(name)) for name in BASIC_SUPPLY],
@@ -325,7 +335,8 @@ def test_generate_prints_every_part_of_the_game(
         setup_instructions=["Young Witch: Add an extra Kingdom card pile."],
     )
     monkeypatch.setattr(
-        "dominion_setup.cli.generate_game", lambda *_args, **_kwargs: game
+        "dominion_setup.cli.generate_game",
+        lambda *_args, **_kwargs: game,
     )
     result = runner.invoke(cli, ["generate"])
     assert result.exit_code == 0
@@ -387,7 +398,9 @@ def test_generate_formats_pile_sizes_as_json(runner: CliRunner) -> None:
 
 
 def test_generate_formats_the_game_as_json(
-    runner: CliRunner, db: CardDatabase, monkeypatch: pytest.MonkeyPatch
+    runner: CliRunner,
+    db: CardDatabase,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     game = Game(
         basic_piles=[Pile(db.get_card_by_name("Copper"))],
@@ -405,7 +418,8 @@ def test_generate_formats_the_game_as_json(
         setup_instructions=["Young Witch: Add an extra Kingdom card pile."],
     )
     monkeypatch.setattr(
-        "dominion_setup.cli.generate_game", lambda *_args, **_kwargs: game
+        "dominion_setup.cli.generate_game",
+        lambda *_args, **_kwargs: game,
     )
     result = runner.invoke(cli, ["generate", "--seed", "42", "--format", "json"])
     assert result.exit_code == 0
@@ -451,7 +465,8 @@ def test_generate_formats_a_game_without_ally_or_prophecy_as_json(
 
 @pytest.mark.parametrize("size", [1, 3])
 def test_generate_deals_a_black_market_deck_of_the_given_size(
-    runner: CliRunner, size: int
+    runner: CliRunner,
+    size: int,
 ) -> None:
     args = ["generate", "--include", "Black Market", "--format", "json"]
     result = runner.invoke(cli, [*args, "--black-market-size", str(size)])
@@ -465,7 +480,9 @@ def test_generate_black_market_size_must_be_positive(runner: CliRunner) -> None:
 
 
 def test_generate_formats_the_game_as_names(
-    runner: CliRunner, db: CardDatabase, monkeypatch: pytest.MonkeyPatch
+    runner: CliRunner,
+    db: CardDatabase,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     game = Game(
         basic_piles=[Pile(db.get_card_by_name("Copper"))],
@@ -478,7 +495,8 @@ def test_generate_formats_the_game_as_names(
         prophecy=db.get_card_by_name("Approaching Army"),
     )
     monkeypatch.setattr(
-        "dominion_setup.cli.generate_game", lambda *_args, **_kwargs: game
+        "dominion_setup.cli.generate_game",
+        lambda *_args, **_kwargs: game,
     )
     result = runner.invoke(cli, ["generate", "--format", "names", "--seed", "7"])
     assert result.exit_code == 0
@@ -496,7 +514,8 @@ def test_generate_same_seed_formats_the_same_names(runner: CliRunner) -> None:
 
 
 def test_generate_setup_error_is_a_usage_error(
-    runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _raise(*_args: Any, **_kwargs: Any) -> NoReturn:  # noqa: ANN401
         msg = "No eligible Bane card"
@@ -509,7 +528,8 @@ def test_generate_setup_error_is_a_usage_error(
 
 
 def test_generate_unexpected_error_is_not_a_usage_error(
-    runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _raise(*_args: Any, **_kwargs: Any) -> NoReturn:  # noqa: ANN401
         msg = "Card 'Madman' not found"
@@ -522,7 +542,9 @@ def test_generate_unexpected_error_is_not_a_usage_error(
 
 
 def test_generate_draws_from_the_given_promos_only(
-    runner: CliRunner, db: CardDatabase, generate_game_calls: list[dict[str, Any]]
+    runner: CliRunner,
+    db: CardDatabase,
+    generate_game_calls: list[dict[str, Any]],
 ) -> None:
     args = ["--set", "base_2e", "--promo", "Stash", "--promo", "Summon"]
     assert runner.invoke(cli, ["generate", *args]).exit_code == 0
@@ -542,7 +564,8 @@ def test_generate_draws_from_the_given_promos_only(
 
 
 def test_generate_includes_a_promo_that_is_not_given(
-    runner: CliRunner, generate_game_calls: list[dict[str, Any]]
+    runner: CliRunner,
+    generate_game_calls: list[dict[str, Any]],
 ) -> None:
     args = ["--promo", "Stash", "--include", "Envoy", "--exclude", "Moat"]
     assert runner.invoke(cli, ["generate", *args]).exit_code == 0
@@ -552,7 +575,8 @@ def test_generate_includes_a_promo_that_is_not_given(
 
 
 def test_generate_promo_with_the_whole_promo_set_excludes_nothing(
-    runner: CliRunner, generate_game_calls: list[dict[str, Any]]
+    runner: CliRunner,
+    generate_game_calls: list[dict[str, Any]],
 ) -> None:
     args = ["--set", "promo", "--promo", "Stash"]
     assert runner.invoke(cli, ["generate", *args]).exit_code == 0
@@ -561,7 +585,8 @@ def test_generate_promo_with_the_whole_promo_set_excludes_nothing(
 
 @pytest.mark.parametrize("name", ["Smithy", "Smithee"])
 def test_generate_promo_that_is_not_a_promo_is_a_usage_error(
-    runner: CliRunner, name: str
+    runner: CliRunner,
+    name: str,
 ) -> None:
     result = runner.invoke(cli, ["generate", "--promo", name])
     assert result.exit_code == 2
@@ -569,7 +594,9 @@ def test_generate_promo_that_is_not_a_promo_is_a_usage_error(
 
 
 def test_generate_reads_its_defaults_from_the_config_file(
-    runner: CliRunner, config_dir: Path, generate_game_calls: list[dict[str, Any]]
+    runner: CliRunner,
+    config_dir: Path,
+    generate_game_calls: list[dict[str, Any]],
 ) -> None:
     write_config(
         config_dir,
@@ -599,7 +626,9 @@ players = 3
 
 
 def test_generate_options_override_the_config_file(
-    runner: CliRunner, config_dir: Path, generate_game_calls: list[dict[str, Any]]
+    runner: CliRunner,
+    config_dir: Path,
+    generate_game_calls: list[dict[str, Any]],
 ) -> None:
     write_config(config_dir, 'set = ["intrigue_2e"]\nexclude = ["Masquerade"]\n')
     args = ["--set", "base_2e", "--exclude", "Moat"]
@@ -610,7 +639,8 @@ def test_generate_options_override_the_config_file(
 
 
 def test_generate_reads_the_config_file_in_the_home_directory(
-    tmp_path: Path, generate_game_calls: list[dict[str, Any]]
+    tmp_path: Path,
+    generate_game_calls: list[dict[str, Any]],
 ) -> None:
     write_config(tmp_path / ".config", "players = 5\n")
     runner = CliRunner(env={"HOME": str(tmp_path), "XDG_CONFIG_HOME": None})
@@ -635,7 +665,8 @@ def test_generate_reads_the_given_config_file(
 
 
 def test_generate_given_config_file_that_does_not_exist_is_a_usage_error(
-    runner: CliRunner, tmp_path: Path
+    runner: CliRunner,
+    tmp_path: Path,
 ) -> None:
     path = tmp_path / "missing.toml"
     result = runner.invoke(cli, ["generate", "--config-file", str(path)])
@@ -644,7 +675,8 @@ def test_generate_given_config_file_that_does_not_exist_is_a_usage_error(
 
 
 def test_generate_config_value_is_validated(
-    runner: CliRunner, config_dir: Path
+    runner: CliRunner,
+    config_dir: Path,
 ) -> None:
     write_config(config_dir, "players = 7\n")
     result = runner.invoke(cli, ["generate"])
@@ -660,7 +692,10 @@ def test_generate_config_value_is_validated(
     ],
 )
 def test_generate_invalid_config_file_is_an_error(
-    runner: CliRunner, config_dir: Path, text: str, message: str
+    runner: CliRunner,
+    config_dir: Path,
+    text: str,
+    message: str,
 ) -> None:
     write_config(config_dir, text)
     result = runner.invoke(cli, ["generate"])
@@ -687,7 +722,9 @@ def is_base_2e(card: Card) -> bool:
             id="sets",
         ),
         pytest.param(
-            ["--type", "attack"], lambda card: CardType.ATTACK in card.types, id="type"
+            ["--type", "attack"],
+            lambda card: CardType.ATTACK in card.types,
+            id="type",
         ),
         pytest.param(
             ["--type", "treasure", "--type", "victory"],
@@ -720,16 +757,19 @@ def test_list_cards_filters(
         key=KingdomSortOrder.COST.sort_key,
     )
     assert parse_tables(result.output) == {
-        f"Kingdom Cards ({len(cards)})": card_rows(cards)
+        f"Kingdom Cards ({len(cards)})": card_rows(cards),
     }
 
 
 @pytest.mark.parametrize("sort_order", KingdomSortOrder)
 def test_list_cards_sorts(
-    runner: CliRunner, db: CardDatabase, sort_order: KingdomSortOrder
+    runner: CliRunner,
+    db: CardDatabase,
+    sort_order: KingdomSortOrder,
 ) -> None:
     result = runner.invoke(
-        cli, ["list-cards", "--set", "base_2e", "--sort", sort_order.value]
+        cli,
+        ["list-cards", "--set", "base_2e", "--sort", sort_order.value],
     )
     assert result.exit_code == 0
     cards = sorted(

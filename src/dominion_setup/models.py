@@ -63,7 +63,7 @@ CARD_SETS_WITH_SECOND_EDITIONS: frozenset[CardSet] = frozenset(
         CardSet.PROSPERITY,
         CardSet.CORNUCOPIA_GUILDS,
         CardSet.HINTERLANDS,
-    }
+    },
 )
 
 
@@ -306,22 +306,22 @@ class CardDatabase:
     def __post_init__(self) -> None:
         self.card_name_to_card = self._create_index(self.cards)
         self.basic_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.BASIC)
+            self.get_cards_by_purpose(CardPurpose.BASIC),
         )
         self.kingdom_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.KINGDOM_PILE)
+            self.get_cards_by_purpose(CardPurpose.KINGDOM_PILE),
         )
         self.landscape_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.LANDSCAPE)
+            self.get_cards_by_purpose(CardPurpose.LANDSCAPE),
         )
         self.mixed_pile_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.MIXED_PILE_CARD)
+            self.get_cards_by_purpose(CardPurpose.MIXED_PILE_CARD),
         )
         self.non_supply_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.NON_SUPPLY)
+            self.get_cards_by_purpose(CardPurpose.NON_SUPPLY),
         )
         self.status_cards = self._create_index(
-            self.get_cards_by_purpose(CardPurpose.STATUS)
+            self.get_cards_by_purpose(CardPurpose.STATUS),
         )
 
     @staticmethod
@@ -342,7 +342,9 @@ class CardDatabase:
         return card
 
     def get_cards_by_set_edition(
-        self, set_: CardSet, edition: CardSetEdition
+        self,
+        set_: CardSet,
+        edition: CardSetEdition,
     ) -> list[Card]:
         """Return all kingdom cards belonging to the given set and edition."""
         return [

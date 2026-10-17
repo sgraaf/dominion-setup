@@ -66,7 +66,9 @@ def _config_path() -> Path:
 
 
 def _read_config(
-    ctx: click.Context, _param: click.Parameter, path: Path | None
+    ctx: click.Context,
+    _param: click.Parameter,
+    path: Path | None,
 ) -> None:
     """Set the defaults of the command's options to the config file's values.
 
@@ -178,7 +180,9 @@ def _print_game(game: Game, *, seed: int) -> None:
     if game.black_market_deck:
         console.print()
         _print_card_table(
-            game.black_market_deck, title="Black Market Deck", numbered=False
+            game.black_market_deck,
+            title="Black Market Deck",
+            numbered=False,
         )
 
     # basic supply

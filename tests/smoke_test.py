@@ -159,7 +159,8 @@ def test_generate_game_basic_cards_property(default_game: Game) -> None:
 
 @pytest.mark.parametrize("sort_order", list(KingdomSortOrder))
 def test_generate_game_all_sort_orders(
-    db: CardDatabase, sort_order: KingdomSortOrder
+    db: CardDatabase,
+    sort_order: KingdomSortOrder,
 ) -> None:
     """generate_game succeeds for every KingdomSortOrder without raising."""
     game = generate_game(db, sort_order=sort_order)

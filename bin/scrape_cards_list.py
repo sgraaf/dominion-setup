@@ -250,7 +250,8 @@ def parse_raw_card(raw_card: dict[str, Any]) -> Card:
     instructions = (
         fromstring(
             unicodedata.normalize(
-                "NFKD", html.unescape(html.unescape(raw_card["Instructions"]))
+                "NFKD",
+                html.unescape(html.unescape(raw_card["Instructions"])),
             )
             .replace("'''", "")  # bold
             .replace("''", "")  # italic
@@ -266,7 +267,7 @@ def parse_raw_card(raw_card: dict[str, Any]) -> Card:
                 "\n-----\n",
             )
             .replace("\u2013", "-")
-            .replace("\u2019", "'")
+            .replace("\u2019", "'"),
         )
         .text_content()
         .strip()
@@ -351,7 +352,7 @@ def main(*, headed: bool, dry_run: bool) -> None:
 
     if dry_run:
         console.print(
-            f"[yellow]dry-run[/yellow] Would write {total_cards} cards across {total_files} files."
+            f"[yellow]dry-run[/yellow] Would write {total_cards} cards across {total_files} files.",
         )
         return
 
@@ -366,7 +367,7 @@ def main(*, headed: bool, dry_run: bool) -> None:
         )
 
     console.print(
-        f"\n[green]Done[/green] — {total_cards} cards across {total_files} files."
+        f"\n[green]Done[/green] — {total_cards} cards across {total_files} files.",
     )
 
 

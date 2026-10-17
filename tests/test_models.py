@@ -125,7 +125,7 @@ def test_card_from_dict() -> None:
             "quantity": 10,
             "image": "Familiar.jpg",
             "instructions": "+1 Card\n+1 Action\nEach other player gains a Curse.",
-        }
+        },
     )
     assert card == Card(
         name="Familiar",
@@ -242,7 +242,9 @@ def test_card_database_get_card_by_name(smithy: Card) -> None:
 
 def test_card_database_get_cards_by_set_edition(smithy: Card) -> None:
     adventurer = replace(
-        smithy, name="Adventurer", editions=(CardSetEdition.FIRST_EDITION,)
+        smithy,
+        name="Adventurer",
+        editions=(CardSetEdition.FIRST_EDITION,),
     )
     db = CardDatabase([adventurer, smithy])
     assert db.get_cards_by_set_edition(CardSet.BASE, CardSetEdition.FIRST_EDITION) == [
@@ -250,7 +252,7 @@ def test_card_database_get_cards_by_set_edition(smithy: Card) -> None:
         smithy,
     ]
     assert db.get_cards_by_set_edition(CardSet.BASE, CardSetEdition.SECOND_EDITION) == [
-        smithy
+        smithy,
     ]
 
 
@@ -272,7 +274,8 @@ def test_card_database_get_cards_by_cost(smithy: Card) -> None:
 
 
 @pytest.mark.parametrize(
-    "kind", [kind for kind in PileMarkKind if kind != PileMarkKind.TRAIT]
+    "kind",
+    [kind for kind in PileMarkKind if kind != PileMarkKind.TRAIT],
 )
 def test_pile_mark_str(kind: PileMarkKind) -> None:
     assert str(PileMark(kind)) == kind.value
@@ -312,7 +315,9 @@ def test_pile_is_frozen(smithy: Card) -> None:
     ],
 )
 def test_kingdom_sort_order_sort_key(
-    smithy: Card, sort_order: KingdomSortOrder, expected_names: list[str]
+    smithy: Card,
+    sort_order: KingdomSortOrder,
+    expected_names: list[str],
 ) -> None:
     cards = [
         replace(smithy, name="Bazaar", cost=CardCost(coins=5), set=CardSet.SEASIDE),
@@ -358,7 +363,7 @@ def test_game_sets_used(smithy: Card) -> None:
     """The sets of the Kingdom, non-Supply, Black Market and Landscape cards, in set order."""
     game = Game(
         basic_piles=[
-            Pile(card=replace(smithy, name="Platinum", set=CardSet.PROSPERITY))
+            Pile(card=replace(smithy, name="Platinum", set=CardSet.PROSPERITY)),
         ],
         kingdom_piles=[
             Pile(card=replace(smithy, name="Hamlet", set=CardSet.CORNUCOPIA_GUILDS)),
@@ -366,7 +371,7 @@ def test_game_sets_used(smithy: Card) -> None:
             Pile(card=replace(smithy, name="Village")),
         ],
         non_supply_piles=[
-            Pile(card=replace(smithy, name="Madman", set=CardSet.DARK_AGES))
+            Pile(card=replace(smithy, name="Madman", set=CardSet.DARK_AGES)),
         ],
         landscapes=[replace(smithy, name="Alms", set=CardSet.ADVENTURES)],
         black_market_deck=[replace(smithy, name="Pooka", set=CardSet.NOCTURNE)],

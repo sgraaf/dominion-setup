@@ -69,10 +69,14 @@ KINGDOM_CARD_COUNTS: dict[str, int] = {
 
 
 @pytest.mark.parametrize(
-    ("choice", "count"), KINGDOM_CARD_COUNTS.items(), ids=KINGDOM_CARD_COUNTS
+    ("choice", "count"),
+    KINGDOM_CARD_COUNTS.items(),
+    ids=KINGDOM_CARD_COUNTS,
 )
 def test_kingdom_card_count_per_set_edition(
-    db: CardDatabase, choice: str, count: int
+    db: CardDatabase,
+    choice: str,
+    count: int,
 ) -> None:
     assert len(db.get_cards_by_set_edition(*SET_EDITION_CHOICES[choice])) == count
 
@@ -199,10 +203,14 @@ EDITION_EXCLUSIVE_CARDS: dict[str, set[str]] = {
 
 
 @pytest.mark.parametrize(
-    ("choice", "names"), EDITION_EXCLUSIVE_CARDS.items(), ids=EDITION_EXCLUSIVE_CARDS
+    ("choice", "names"),
+    EDITION_EXCLUSIVE_CARDS.items(),
+    ids=EDITION_EXCLUSIVE_CARDS,
 )
 def test_kingdom_cards_in_one_edition_only(
-    db: CardDatabase, choice: str, names: set[str]
+    db: CardDatabase,
+    choice: str,
+    names: set[str],
 ) -> None:
     set_, edition = SET_EDITION_CHOICES[choice]
     cards = db.get_cards_by_set_edition(set_, edition)
@@ -456,7 +464,9 @@ KINGDOM_CARDS_BY_TYPE: dict[CardType, set[str]] = {
     ids=[str(card_type) for card_type in KINGDOM_CARDS_BY_TYPE],
 )
 def test_kingdom_cards_by_type(
-    db: CardDatabase, card_type: CardType, names: set[str]
+    db: CardDatabase,
+    card_type: CardType,
+    names: set[str],
 ) -> None:
     assert {card.name for card in db.get_cards_by_type(card_type)} == names
 
@@ -604,7 +614,10 @@ def test_kingdom_piles_made_of_other_cards(db: CardDatabase) -> None:
     ],
 )
 def test_mixed_pile_cards(
-    db: CardDatabase, set_: CardSet, card_type: CardType | None, names: set[str]
+    db: CardDatabase,
+    set_: CardSet,
+    card_type: CardType | None,
+    names: set[str],
 ) -> None:
     assert {
         card.name
@@ -642,7 +655,10 @@ def test_artifacts(db: CardDatabase) -> None:
     ],
 )
 def test_landscape_count(
-    db: CardDatabase, set_: CardSet, card_type: CardType, count: int
+    db: CardDatabase,
+    set_: CardSet,
+    card_type: CardType,
+    count: int,
 ) -> None:
     landscapes = [
         card
@@ -724,7 +740,7 @@ def describe(card: Card) -> str:
             str(card.cost),
             card.display_set,
             str(card.quantity),
-        ]
+        ],
     )
 
 

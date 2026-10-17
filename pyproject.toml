@@ -73,7 +73,6 @@ dominion-setup = "dominion_setup.__main__:cli"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "COM812",  # missing-trailing-comma (flake8-commas), handled by the formatter
     "CPY001",  # missing-copyright-notice (flake8-copyright)
     "D102",  # undocumented-public-method (pydocstyle)
     "D105",  # undocumented-magic-method (pydocstyle)

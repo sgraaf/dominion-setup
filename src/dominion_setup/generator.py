@@ -163,7 +163,8 @@ def generate_game(  # noqa: PLR0913
 
     # 7. Materials (mats & tokens)
     materials = sorted(
-        _materials([*cards_in_use, *landscapes]), key=MATERIAL_ORDER.__getitem__
+        _materials([*cards_in_use, *landscapes]),
+        key=MATERIAL_ORDER.__getitem__,
     )
 
     # 8. Setup instructions
@@ -219,7 +220,7 @@ SELECTABLE_LANDSCAPE_TYPES: frozenset[CardType] = frozenset(
         CardType.PROJECT,
         CardType.WAY,
         CardType.TRAIT,
-    }
+    },
 )
 
 PLUS_ACTIONS_PATTERN = re.compile(r"\+\d+ Actions?\b")
@@ -343,7 +344,10 @@ def _draw_kingdom(  # noqa: PLR0913
     """
     # the included cards are drawn before the randomizer deck is shuffled
     kingdom_cards, landscapes, excluded_cards = _included_and_excluded_cards(
-        db, include, exclude, max_landscapes=max_landscapes
+        db,
+        include,
+        exclude,
+        max_landscapes=max_landscapes,
     )
 
     unavailable_cards = {*kingdom_cards, *landscapes, *excluded_cards}
@@ -521,7 +525,7 @@ def _choose_extra_piles(  # noqa: PLR0913
             CardType.OMEN in card.types for card in cards_in_use
         ):
             prophecy = rng.choice(
-                _cards_of_type(db.landscape_cards.values(), CardType.PROPHECY)
+                _cards_of_type(db.landscape_cards.values(), CardType.PROPHECY),
             )
 
         triggers = {card.name for card in (*cards_in_use, *landscapes)}
@@ -562,7 +566,10 @@ DRUID_BOON_COUNT = 3
 
 
 def _choose_druid_boons(
-    db: CardDatabase, cards_in_use: list[Card], *, rng: random.Random
+    db: CardDatabase,
+    cards_in_use: list[Card],
+    *,
+    rng: random.Random,
 ) -> list[Card]:
     """Return the Boons dealt face up for Druid, if Druid is in use."""
     # if Druid is being used, deal three Boon cards face up for use with it.
@@ -575,7 +582,10 @@ def _choose_druid_boons(
 
 
 def _choose_ally(
-    db: CardDatabase, cards_in_use: list[Card], *, rng: random.Random
+    db: CardDatabase,
+    cards_in_use: list[Card],
+    *,
+    rng: random.Random,
 ) -> Card | None:
     """Return the Ally, if any Liaison is in use."""
     # in any game using Liaisons, exactly one Ally is chosen, and it determines
@@ -586,7 +596,10 @@ def _choose_ally(
 
 
 def _choose_trait_piles(
-    kingdom_cards: list[Card], landscapes: list[Card], *, rng: random.Random
+    kingdom_cards: list[Card],
+    landscapes: list[Card],
+    *,
+    rng: random.Random,
 ) -> list[tuple[Card, PileMark]]:
     """Return the Kingdom pile each Trait applies to, with its mark."""
     # each Trait landscape applies to a different randomly chosen Action or
@@ -650,7 +663,9 @@ GAIN_HORSES_PATTERN = re.compile(r"[gG]ains? (?:a|that many|\d+) Horses?")
 
 
 def _companion_cards(
-    db: CardDatabase, cards_in_use: list[Card], landscapes: list[Card]
+    db: CardDatabase,
+    cards_in_use: list[Card],
+    landscapes: list[Card],
 ) -> list[Card]:
     """Return the non-Supply cards (Prizes, Spirits, Loot, …) required by the cards in use."""
     names_in_use = {card.name for card in cards_in_use}
@@ -762,7 +777,10 @@ def _heirlooms(db: CardDatabase, cards_in_use: list[Card]) -> list[Card]:
 
 
 def _choose_obelisk_pile(
-    kingdom_cards: list[Card], landscapes: list[Card], *, rng: random.Random
+    kingdom_cards: list[Card],
+    landscapes: list[Card],
+    *,
+    rng: random.Random,
 ) -> list[tuple[Card, PileMark]]:
     """Return the Kingdom pile Obelisk applies to, with its mark, if Obelisk is in use."""
     # in games using Obelisk, choose a random Action Supply pile whose cards
