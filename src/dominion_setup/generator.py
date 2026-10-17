@@ -10,7 +10,7 @@ from __future__ import annotations
 import random
 import re
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 from .models import (
@@ -28,6 +28,7 @@ from .models import (
     Pile,
     PileMark,
     PileMarkKind,
+    SetupInstruction,
 )
 
 if TYPE_CHECKING:
@@ -54,6 +55,7 @@ def generate_game(  # noqa: PLR0913
     requirements: Iterable[KingdomRequirement] = (),
     include: Iterable[str] = (),
     exclude: Iterable[str] = (),
+    promos: Iterable[str] = (),
     black_market_size: int = 15,
     players: int | None = None,
     rng: random.Random | None = None,
@@ -79,6 +81,10 @@ def generate_game(  # noqa: PLR0913
             game, from any set. Defaults to none.
         exclude: Names of Kingdom cards and Landscapes that must not be drawn.
             Defaults to none.
+        promos: Names of Promo cards to draw from, without the rest of the
+            Promo set, also when *sets_editions* is ``None``. Has no effect on
+            the draw if *sets_editions* includes the Promo set, but the names
+            are still checked. Defaults to none.
         black_market_size: How many unused Kingdom cards to deal into the
             Black Market deck, if Black Market is in use. Defaults to 15.
         players: The number of players (2 to 6), to work out how many cards
@@ -102,6 +108,15 @@ def generate_game(  # noqa: PLR0913
         raise SetupGenerationError(msg)
     if rng is None:
         rng = random.Random()
+
+    include = list(include)
+    sets_editions, exclude = _restrict_promos(
+        db,
+        promos,
+        sets_editions=sets_editions,
+        include=include,
+        exclude=exclude,
+    )
 
     # 1. Kingdom: 10 Kingdom piles that meet the *requirements*, and up to
     # *max_landscapes* Landscapes, with the *include*d cards and without the
@@ -232,6 +247,39 @@ PLUS_BUY_PATTERN = re.compile(r"\+\d+ Buys?\b")
 TRASHING_PATTERN = re.compile(r"(?<!the )(?<![Tt]hey )\b[Tt]rash (?!this\b(?! or\b))")
 
 
+def _restrict_promos(
+    db: CardDatabase,
+    promos: Iterable[str],
+    *,
+    sets_editions: set[tuple[CardSet, CardSetEdition]] | None,
+    include: Iterable[str],
+    exclude: Iterable[str],
+) -> tuple[set[tuple[CardSet, CardSetEdition]] | None, Iterable[str]]:
+    """Return *sets_editions* and *exclude* that draw from the given *promos* only.
+
+    The Promo set is added to *sets_editions*, and the other Promos (except the
+    *include*d ones) to *exclude*, unless *sets_editions* includes the Promo set.
+    """
+    promos = list(promos)
+    if not promos:
+        return sets_editions, exclude
+    promo_names = {
+        card.name
+        for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
+        if card.set == CardSet.PROMO
+    }
+    for name in promos:
+        if name not in promo_names:
+            msg = f"{name!r} is not a Promo card"
+            raise SetupGenerationError(msg)
+    promo_set_edition = (CardSet.PROMO, CardSetEdition.FIRST_EDITION)
+    if sets_editions is not None and promo_set_edition in sets_editions:
+        return sets_editions, exclude
+    if sets_editions is not None:  # None is every set, the Promo set included
+        sets_editions = {*sets_editions, promo_set_edition}
+    return sets_editions, [*exclude, *sorted(promo_names - {*promos, *include})]
+
+
 def _instructions_match(pattern: re.Pattern[str]) -> Callable[[Card], bool]:
     """Return a rule that is met by the cards whose instructions match *pattern*."""
     return lambda card: bool(pattern.search(card.instructions))
@@ -248,7 +296,7 @@ REQUIREMENT_RULES: dict[KingdomRequirement, Callable[[Card], bool]] = {
 }
 
 
-def _is_selectable(card: Card) -> bool:
+def is_selectable(card: Card) -> bool:
     """Return whether *card* is a Kingdom card or a selectable Landscape."""
     return card.is_kingdom or bool(SELECTABLE_LANDSCAPE_TYPES & set(card.types))
 
@@ -260,7 +308,7 @@ def _selectable_cards_by_name(db: CardDatabase, names: Iterable[str]) -> list[Ca
         if (card := db.card_name_to_card.get(name)) is None:
             msg = f"Card {name!r} not found"
             raise SetupGenerationError(msg)
-        if not _is_selectable(card):
+        if not is_selectable(card):
             msg = f"{name!r} is not a Kingdom card or Landscape"
             raise SetupGenerationError(msg)
         cards.append(card)
@@ -354,7 +402,7 @@ def _draw_kingdom(  # noqa: PLR0913
     candidates = [
         card
         for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
-        if _is_selectable(card)
+        if is_selectable(card)
         and card not in unavailable_cards
         and (
             sets_editions is None
@@ -867,7 +915,7 @@ def _setup_instructions(
     sort_order: KingdomSortOrder,
     *,
     players: int | None = None,
-) -> list[str]:
+) -> list[SetupInstruction]:
     """Return the "Setup:" instructions of *cards*, plus the starting decks.
 
     The starting decks are described if they differ from the usual 7 Coppers
@@ -878,7 +926,7 @@ def _setup_instructions(
     counted out.
     """
     setup_instructions = [
-        f"{card.name}: {setup_match.group(1)}"
+        SetupInstruction(card.name, setup_match.group(1))
         for card in sorted(cards, key=sort_order.sort_key)
         if card.name != "Shelters"
         and (setup_match := SETUP_PATTERN.search(card.instructions))
@@ -890,7 +938,10 @@ def _setup_instructions(
             return f"Put {vp_per_player * players} VP here ({vp_per_player} VP per player)."
 
         setup_instructions = [
-            VP_PER_PLAYER_PATTERN.sub(count_out_vp, instruction)
+            replace(
+                instruction,
+                text=VP_PER_PLAYER_PATTERN.sub(count_out_vp, instruction.text),
+            )
             for instruction in setup_instructions
         ]
     use_shelters = any(card.name == "Shelters" for card in cards)
@@ -904,12 +955,10 @@ def _setup_instructions(
             starting_cards += SHELTER_NAMES
         else:
             starting_cards.append(f"{STARTING_ESTATE_COUNT} Estates")
-        starting_decks = (
-            f"Starting decks: Each player starts with {', '.join(starting_cards)}."
-        )
+        starting_decks = f"Each player starts with {', '.join(starting_cards)}."
         if heirlooms:
             starting_decks += " The unused Coppers go in the Copper pile."
-        setup_instructions.append(starting_decks)
+        setup_instructions.append(SetupInstruction("Starting decks", starting_decks))
     return setup_instructions
 
 

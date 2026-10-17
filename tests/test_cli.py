@@ -15,10 +15,11 @@ from typing import Any, NoReturn
 import pytest
 from click.testing import CliRunner
 
-from dominion_setup.cli import SET_EDITION_CHOICES, cli
+from dominion_setup.cli import cli
 from dominion_setup.generator import SetupGenerationError
 from dominion_setup.models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
+    SET_EDITION_CHOICES,
     Card,
     CardDatabase,
     CardSet,
@@ -31,6 +32,7 @@ from dominion_setup.models import (
     Pile,
     PileMark,
     PileMarkKind,
+    SetupInstruction,
 )
 
 BASIC_SUPPLY = ["Copper", "Silver", "Gold", "Estate", "Duchy", "Province", "Curse"]
@@ -335,7 +337,9 @@ def test_generate_prints_every_part_of_the_game(
         druid_boons=[db.get_card_by_name("The Earth's Gift")],
         black_market_deck=[db.get_card_by_name("Smithy")],
         materials=[Material.COIN_TOKENS],
-        setup_instructions=["Young Witch: Add an extra Kingdom card pile."],
+        setup_instructions=[
+            SetupInstruction("Young Witch", "Add an extra Kingdom card pile."),
+        ],
     )
     monkeypatch.setattr(
         "dominion_setup.cli.generate_game",
@@ -418,7 +422,9 @@ def test_generate_formats_the_game_as_json(
         druid_boons=[db.get_card_by_name("The Earth's Gift")],
         black_market_deck=[db.get_card_by_name("Smithy")],
         materials=[Material.COIN_TOKENS],
-        setup_instructions=["Young Witch: Add an extra Kingdom card pile."],
+        setup_instructions=[
+            SetupInstruction("Young Witch", "Add an extra Kingdom card pile."),
+        ],
     )
     monkeypatch.setattr(
         "dominion_setup.cli.generate_game",
@@ -433,6 +439,7 @@ def test_generate_formats_the_game_as_json(
             "name": card.name,
             "cost": card.cost.to_dict(),
             "types": list(card.types),
+            "purpose": str(card.purpose),
             "set": card.display_set,
             "marks": list(marks),
             "size": None,
@@ -453,7 +460,9 @@ def test_generate_formats_the_game_as_json(
         "black_market": [card_dict("Smithy")],
         "basic_supply": [card_dict("Copper")],
         "materials": ["Coin tokens"],
-        "setup": ["Young Witch: Add an extra Kingdom card pile."],
+        "setup": [
+            {"label": "Young Witch", "text": "Add an extra Kingdom card pile."},
+        ],
     }
 
 
@@ -546,46 +555,15 @@ def test_generate_unexpected_error_is_not_a_usage_error(
     assert isinstance(result.exception, ValueError)
 
 
-def test_generate_draws_from_the_given_promos_only(
+def test_generate_passes_the_given_promos(
     runner: CliRunner,
-    db: CardDatabase,
     generate_game_calls: list[dict[str, Any]],
 ) -> None:
     args = ["--set", "base_2e", "--promo", "Stash", "--promo", "Summon"]
     assert runner.invoke(cli, ["generate", *args]).exit_code == 0
     (kwargs,) = generate_game_calls
-    promo = (CardSet.PROMO, CardSetEdition.FIRST_EDITION)
-    assert kwargs["sets_editions"] == {
-        (CardSet.BASE, CardSetEdition.SECOND_EDITION),
-        promo,
-    }
-    other_promos = {
-        card.name
-        for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
-        if card.set == CardSet.PROMO
-    } - {"Stash", "Summon"}
-    assert "Walled Village" in other_promos
-    assert set(kwargs["exclude"]) == other_promos
-
-
-def test_generate_includes_a_promo_that_is_not_given(
-    runner: CliRunner,
-    generate_game_calls: list[dict[str, Any]],
-) -> None:
-    args = ["--promo", "Stash", "--include", "Envoy", "--exclude", "Moat"]
-    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
-    (kwargs,) = generate_game_calls
-    assert "Envoy" not in kwargs["exclude"]
-    assert "Moat" in kwargs["exclude"]
-
-
-def test_generate_promo_with_the_whole_promo_set_excludes_nothing(
-    runner: CliRunner,
-    generate_game_calls: list[dict[str, Any]],
-) -> None:
-    args = ["--set", "promo", "--promo", "Stash"]
-    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
-    assert generate_game_calls[0]["exclude"] == ()
+    assert kwargs["sets_editions"] == {(CardSet.BASE, CardSetEdition.SECOND_EDITION)}
+    assert kwargs["promos"] == ("Stash", "Summon")
 
 
 @pytest.mark.parametrize("name", ["Smithy", "Smithee"])
@@ -620,10 +598,9 @@ players = 3
     assert kwargs["sets_editions"] == {
         (CardSet.INTRIGUE, CardSetEdition.SECOND_EDITION),
         (CardSet.SEASIDE, CardSetEdition.SECOND_EDITION),
-        (CardSet.PROMO, CardSetEdition.FIRST_EDITION),
     }
-    assert "Masquerade" in kwargs["exclude"]
-    assert "Walled Village" in kwargs["exclude"]
+    assert kwargs["promos"] == ("Stash",)
+    assert kwargs["exclude"] == ("Masquerade",)
     assert kwargs["requirements"] == [KingdomRequirement.BUYS]
     assert kwargs["use_colony"] is False
     assert kwargs["max_landscapes"] == 1

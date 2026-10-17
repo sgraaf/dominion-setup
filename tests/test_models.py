@@ -10,6 +10,8 @@ from typing import Any
 import pytest
 
 from dominion_setup.models import (
+    CARD_SETS_WITH_SECOND_EDITIONS,
+    SET_EDITION_CHOICES,
     Card,
     CardCost,
     CardDatabase,
@@ -23,7 +25,46 @@ from dominion_setup.models import (
     Pile,
     PileMark,
     PileMarkKind,
+    SetupInstruction,
 )
+
+# ── Sets & editions ──────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("choice", "set_edition"),
+    [
+        ("base_1e", (CardSet.BASE, CardSetEdition.FIRST_EDITION)),
+        ("base_2e", (CardSet.BASE, CardSetEdition.SECOND_EDITION)),
+        (
+            "cornucopia_guilds_2e",
+            (CardSet.CORNUCOPIA_GUILDS, CardSetEdition.SECOND_EDITION),
+        ),
+        ("nocturne", (CardSet.NOCTURNE, CardSetEdition.FIRST_EDITION)),
+        ("promo", (CardSet.PROMO, CardSetEdition.FIRST_EDITION)),
+    ],
+)
+def test_set_edition_choices(
+    choice: str,
+    set_edition: tuple[CardSet, CardSetEdition],
+) -> None:
+    assert SET_EDITION_CHOICES[choice] == set_edition
+
+
+def test_set_edition_choices_cover_every_set_and_edition() -> None:
+    assert set(SET_EDITION_CHOICES.values()) == {
+        *(
+            (set_, edition)
+            for set_ in CARD_SETS_WITH_SECOND_EDITIONS
+            for edition in CardSetEdition
+        ),
+        *(
+            (set_, CardSetEdition.FIRST_EDITION)
+            for set_ in CardSet
+            if set_ not in CARD_SETS_WITH_SECOND_EDITIONS
+        ),
+    }
+
 
 # ── Cards ────────────────────────────────────────────────────────────────────
 
@@ -313,11 +354,25 @@ def test_pile_to_dict(smithy: Card) -> None:
         "name": "Smithy",
         "cost": {"coins": 4},
         "types": ["Action"],
+        "purpose": "Kingdom Pile",
         "set": "Base",
         "marks": ["Bane"],
         "size": 10,
         "image": "Smithy.jpg",
         "instructions": "+3 Cards",
+    }
+
+
+def test_setup_instruction_str() -> None:
+    instruction = SetupInstruction("Baker", "Each player gets +1 Coffers.")
+    assert str(instruction) == "Baker: Each player gets +1 Coffers."
+
+
+def test_setup_instruction_to_dict() -> None:
+    instruction = SetupInstruction("Baker", "Each player gets +1 Coffers.")
+    assert instruction.to_dict() == {
+        "label": "Baker",
+        "text": "Each player gets +1 Coffers.",
     }
 
 
@@ -408,7 +463,7 @@ def test_game_to_dict(smithy: Card) -> None:
         kingdom_piles=[Pile(card=smithy, size=10)],
         landscapes=[alms],
         materials=[Material.COIN_TOKENS],
-        setup_instructions=["Starting decks: …"],
+        setup_instructions=[SetupInstruction("Starting decks", "…")],
         players=2,
     )
     assert game.to_dict() == {
@@ -423,5 +478,5 @@ def test_game_to_dict(smithy: Card) -> None:
         "black_market": [],
         "basic_supply": [Pile(card=copper, size=46).to_dict()],
         "materials": ["Coin tokens"],
-        "setup": ["Starting decks: …"],
+        "setup": [{"label": "Starting decks", "text": "…"}],
     }

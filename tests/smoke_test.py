@@ -36,6 +36,8 @@ def test_import() -> None:
 def test_public_api_exports() -> None:
     """All documented public names are importable from the top-level package."""
     expected = {
+        "CARD_SETS_WITH_SECOND_EDITIONS",
+        "SET_EDITION_CHOICES",
         "CardDatabase",
         "CardSet",
         "Game",
@@ -44,6 +46,7 @@ def test_public_api_exports() -> None:
         "PileMark",
         "PileMarkKind",
         "generate_game",
+        "is_selectable",
         "load_card_database",
     }
     assert expected <= set(dominion_setup.__all__)

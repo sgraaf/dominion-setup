@@ -18,6 +18,7 @@ from .generator import MAX_PLAYERS, MIN_PLAYERS, SetupGenerationError, generate_
 from .loader import load_card_database
 from .models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
+    SET_EDITION_CHOICES,
     Card,
     CardSet,
     CardSetEdition,
@@ -32,16 +33,6 @@ from .models import (
 class RichDefaultGroup(DefaultGroup, click.RichGroup):  # ty: ignore[invalid-method-override]
     """DefaultGroup with Rich-formatted help output."""
 
-
-# ``--set`` choices (e.g. "base_2e", "nocturne") and the set and edition each
-# one selects. Only sets with a second edition carry an edition suffix.
-SET_EDITION_CHOICES: dict[str, tuple[CardSet, CardSetEdition]] = {}
-for set_ in CardSet:
-    if set_ in CARD_SETS_WITH_SECOND_EDITIONS:
-        for edition in CardSetEdition:
-            SET_EDITION_CHOICES[f"{set_.name.lower()}_{edition}e"] = (set_, edition)
-    else:
-        SET_EDITION_CHOICES[set_.name.lower()] = (set_, CardSetEdition.FIRST_EDITION)
 
 # single shared console for all status output.
 console = Console()
@@ -371,20 +362,6 @@ def generate(
         seed = random.randrange(1_000_000)
 
     sets_editions = {SET_EDITION_CHOICES[choice] for choice in raw_sets_editions}
-    # draw from the given Promos only, by excluding the others
-    promo_names = {
-        card.name
-        for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
-        if card.set == CardSet.PROMO
-    }
-    for name in promos:
-        if name not in promo_names:
-            msg = f"{name!r} is not a Promo card"
-            raise click.UsageError(msg)
-    promo_set_edition = (CardSet.PROMO, CardSetEdition.FIRST_EDITION)
-    if promos and promo_set_edition not in sets_editions:
-        sets_editions.add(promo_set_edition)
-        exclude = (*exclude, *sorted(promo_names - {*promos, *include}))
 
     requirement_flags = {
         KingdomRequirement.ACTIONS: require_actions,
@@ -410,6 +387,7 @@ def generate(
             ],
             include=include,
             exclude=exclude,
+            promos=promos,
             black_market_size=black_market_size,
             players=players,
             rng=random.Random(seed),

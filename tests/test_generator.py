@@ -14,11 +14,11 @@ import subprocess
 import sys
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import replace
+from typing import Any
 
 import pytest
 
 from dominion_setup import generator
-from dominion_setup.cli import SET_EDITION_CHOICES
 from dominion_setup.generator import (
     REQUIREMENT_RULES,
     SetupGenerationError,
@@ -36,8 +36,10 @@ from dominion_setup.generator import (
     _pile_size,
     _setup_instructions,
     generate_game,
+    is_selectable,
 )
 from dominion_setup.models import (
+    SET_EDITION_CHOICES,
     Card,
     CardDatabase,
     CardSet,
@@ -48,6 +50,7 @@ from dominion_setup.models import (
     KingdomSortOrder,
     Material,
     Pile,
+    SetupInstruction,
 )
 
 BASIC_SUPPLY = ["Copper", "Silver", "Gold", "Estate", "Duchy", "Province", "Curse"]
@@ -162,6 +165,104 @@ def test_includes_and_excludes_cards(db: CardDatabase, rng: random.Random) -> No
     assert "Moat" not in card_names(game.kingdom_cards)
 
 
+@pytest.fixture
+def draw_kingdom_calls(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
+    """The keyword arguments of each call to ``_draw_kingdom``, which still draws."""
+    calls: list[dict[str, Any]] = []
+
+    def _spy(
+        *args: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> tuple[list[Card], list[Card], list[Card]]:
+        calls.append(kwargs)
+        return _draw_kingdom(*args, **kwargs)
+
+    monkeypatch.setattr(generator, "_draw_kingdom", _spy)
+    return calls
+
+
+def promo_names(db: CardDatabase) -> set[str]:
+    """Return the names of the Promo Kingdom cards and Landscapes in *db*."""
+    return {
+        card.name
+        for card in (*db.kingdom_cards.values(), *db.landscape_cards.values())
+        if card.set == CardSet.PROMO
+    }
+
+
+def test_draws_from_the_given_promos_only(
+    db: CardDatabase,
+    rng: random.Random,
+    draw_kingdom_calls: list[dict[str, Any]],
+) -> None:
+    sets_editions: set[tuple[CardSet, CardSetEdition]] = {BASE_2E}
+    generate_game(
+        db,
+        sets_editions=sets_editions,
+        promos=["Stash", "Summon"],
+        rng=rng,
+    )
+    (kwargs,) = draw_kingdom_calls
+    assert kwargs["sets_editions"] == {
+        BASE_2E,
+        (CardSet.PROMO, CardSetEdition.FIRST_EDITION),
+    }
+    assert sets_editions == {BASE_2E}  # not changed
+    other_promos = promo_names(db) - {"Stash", "Summon"}
+    assert "Walled Village" in other_promos
+    assert set(kwargs["exclude"]) == other_promos
+
+
+def test_includes_a_promo_that_is_not_given(
+    db: CardDatabase,
+    rng: random.Random,
+    draw_kingdom_calls: list[dict[str, Any]],
+) -> None:
+    game = generate_game(
+        db,
+        sets_editions={BASE_2E},
+        promos=["Stash"],
+        include=["Envoy"],
+        exclude=["Moat"],
+        rng=rng,
+    )
+    assert "Envoy" in card_names(game.kingdom_cards)
+    (kwargs,) = draw_kingdom_calls
+    assert "Envoy" not in kwargs["exclude"]
+    assert "Moat" in kwargs["exclude"]
+
+
+def test_promos_with_every_set_draws_from_the_given_promos_only(
+    db: CardDatabase,
+    rng: random.Random,
+    draw_kingdom_calls: list[dict[str, Any]],
+) -> None:
+    generate_game(db, promos=["Stash"], rng=rng)
+    (kwargs,) = draw_kingdom_calls
+    assert kwargs["sets_editions"] is None
+    assert set(kwargs["exclude"]) == promo_names(db) - {"Stash"}
+
+
+def test_promos_with_the_whole_promo_set_excludes_nothing(
+    db: CardDatabase,
+    rng: random.Random,
+    draw_kingdom_calls: list[dict[str, Any]],
+) -> None:
+    sets_editions: set[tuple[CardSet, CardSetEdition]] = {
+        (CardSet.PROMO, CardSetEdition.FIRST_EDITION),
+    }
+    generate_game(db, sets_editions=sets_editions, promos=["Stash"], rng=rng)
+    (kwargs,) = draw_kingdom_calls
+    assert kwargs["sets_editions"] == sets_editions
+    assert list(kwargs["exclude"]) == []
+
+
+@pytest.mark.parametrize("name", ["Smithy", "Smithee"])
+def test_promo_that_is_not_a_promo_raises(db: CardDatabase, name: str) -> None:
+    with pytest.raises(SetupGenerationError, match=f"{name!r} is not a Promo card"):
+        generate_game(db, sets_editions={BASE_2E}, promos=[name])
+
+
 @pytest.mark.parametrize("seed", range(10))
 def test_including_a_whole_kingdom_sets_up_that_kingdom(
     db: CardDatabase,
@@ -201,7 +302,9 @@ def test_including_a_whole_kingdom_sets_up_that_kingdom(
     assert len(game.black_market_deck) == 5
     base_cards = set(card_names(db.get_cards_by_set_edition(*BASE_2E)))
     assert {bane, *card_names(game.black_market_deck)} <= base_cards - set(kingdom)
-    assert any(line.startswith("Black Market: ") for line in game.setup_instructions)
+    assert "Black Market" in [
+        instruction.label for instruction in game.setup_instructions
+    ]
 
 
 def test_same_seed_generates_the_same_game(db: CardDatabase) -> None:
@@ -330,7 +433,7 @@ def test_black_market_deck_brings_its_own_setup(
     assert card_names(game.black_market_deck) == ["Pooka", "Tormentor"]
     assert card_names(game.non_supply_cards) == ["Hexes", "Deluded", "Miserable", "Imp"]
     assert card_names(game.basic_cards) == [*BASIC_SUPPLY, "Cursed Gold"]
-    assert game.setup_instructions[-1].startswith("Starting decks: ")
+    assert game.setup_instructions[-1].label == "Starting decks"
 
 
 def test_no_black_market_deck_without_black_market(
@@ -350,8 +453,8 @@ def test_heirlooms_join_the_basic_supply_in_sort_order(
 ) -> None:
     game = generate_with(kingdom=["Pooka", "Tracker"])
     assert card_names(game.basic_cards) == [*BASIC_SUPPLY, "Pouch", "Cursed Gold"]
-    assert game.setup_instructions[-1].startswith(
-        "Starting decks: Each player starts with 5 Coppers, Pouch, Cursed Gold",
+    assert game.setup_instructions[-1].text.startswith(
+        "Each player starts with 5 Coppers, Pouch, Cursed Gold",
     )
 
 
@@ -428,6 +531,25 @@ def test_no_dealt_cards_without_their_triggers(
 
 
 # ── 1. Kingdom ───────────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("name", "selectable"),
+    [
+        ("Village", True),  # Kingdom card
+        ("Alms", True),  # Event
+        ("Aqueduct", True),  # Landmark
+        ("Academy", True),  # Project
+        ("Way of the Mole", True),  # Way
+        ("Cheap", True),  # Trait
+        ("Architects' Guild", False),  # Ally
+        ("Approaching Army", False),  # Prophecy
+        ("Copper", False),  # basic card
+        ("Spoils", False),  # non-Supply card
+    ],
+)
+def test_is_selectable(db: CardDatabase, name: str, *, selectable: bool) -> None:
+    assert is_selectable(db.get_card_by_name(name)) is selectable
 
 
 def test_draw_kingdom_draws_ten_cards_and_leaves_the_rest_unused(
@@ -1466,13 +1588,13 @@ def test_materials_from_instructions(
 # ── 8. Setup instructions ────────────────────────────────────────────────────
 
 
-def test_setup_instruction_is_prefixed_with_the_card_name(db: CardDatabase) -> None:
+def test_setup_instruction_is_labelled_with_the_card_name(db: CardDatabase) -> None:
     instructions = _setup_instructions(
         get_cards(db, "Baker"),
         [],
         KingdomSortOrder.COST,
     )
-    assert instructions == ["Baker: Each player gets +1 Coffers."]
+    assert instructions == [SetupInstruction("Baker", "Each player gets +1 Coffers.")]
 
 
 @pytest.mark.parametrize(
@@ -1500,7 +1622,7 @@ def test_setup_instruction_is_prefixed_with_the_card_name(db: CardDatabase) -> N
 )
 def test_card_with_a_setup_instruction(db: CardDatabase, card: str) -> None:
     [instruction] = _setup_instructions(get_cards(db, card), [], KingdomSortOrder.COST)
-    assert instruction.startswith(f"{card}: ")
+    assert instruction.label == card
 
 
 def test_no_setup_instructions_without_setup(db: CardDatabase) -> None:
@@ -1522,7 +1644,7 @@ def test_setup_instructions_follow_the_sort_order(
 ) -> None:
     cards = get_cards(db, "Baker", "Necromancer")
     instructions = _setup_instructions(cards, [], sort_order)
-    assert [instruction.split(":")[0] for instruction in instructions] == card_order
+    assert [instruction.label for instruction in instructions] == card_order
 
 
 @pytest.mark.parametrize(
@@ -1542,7 +1664,7 @@ def test_players_count_out_the_vp_per_player(
         KingdomSortOrder.COST,
         players=players,
     )
-    assert instruction == f"{card}: Put {vp} VP here (6 VP per player)."
+    assert instruction == SetupInstruction(card, f"Put {vp} VP here (6 VP per player).")
 
 
 def test_vp_per_player_without_players(db: CardDatabase) -> None:
@@ -1551,22 +1673,26 @@ def test_vp_per_player_without_players(db: CardDatabase) -> None:
         [],
         KingdomSortOrder.COST,
     )
-    assert instruction == "Arena: Put 6 VP here per player."
+    assert instruction == SetupInstruction("Arena", "Put 6 VP here per player.")
 
 
 def test_players_count_out_the_vp_in_a_game(
     generate_with: Callable[..., Game],
 ) -> None:
     game = generate_with(["Village"], landscapes=["Arena"], players=4)
-    assert "Arena: Put 24 VP here (6 VP per player)." in game.setup_instructions
+    assert (
+        SetupInstruction("Arena", "Put 24 VP here (6 VP per player).")
+        in game.setup_instructions
+    )
 
 
 def test_heirlooms_get_a_starting_decks_instruction(db: CardDatabase) -> None:
     heirlooms = get_cards(db, "Haunted Mirror", "Lucky Coin")
     assert _setup_instructions([], heirlooms, KingdomSortOrder.COST) == [
-        (
-            "Starting decks: Each player starts with 5 Coppers, Haunted Mirror, "
-            "Lucky Coin, 3 Estates. The unused Coppers go in the Copper pile."
+        SetupInstruction(
+            "Starting decks",
+            "Each player starts with 5 Coppers, Haunted Mirror, Lucky Coin, "
+            "3 Estates. The unused Coppers go in the Copper pile.",
         ),
     ]
 
@@ -1579,9 +1705,9 @@ def test_shelters_get_a_starting_decks_instruction(db: CardDatabase) -> None:
         KingdomSortOrder.COST,
     )
     assert instructions == [
-        (
-            "Starting decks: Each player starts with 7 Coppers, Hovel, Necropolis, "
-            "Overgrown Estate."
+        SetupInstruction(
+            "Starting decks",
+            "Each player starts with 7 Coppers, Hovel, Necropolis, Overgrown Estate.",
         ),
     ]
 
@@ -1595,9 +1721,10 @@ def test_shelters_and_heirlooms_share_a_starting_decks_instruction(
         KingdomSortOrder.COST,
     )
     assert instructions == [
-        (
-            "Starting decks: Each player starts with 6 Coppers, Pouch, Hovel, "
-            "Necropolis, Overgrown Estate. The unused Coppers go in the Copper pile."
+        SetupInstruction(
+            "Starting decks",
+            "Each player starts with 6 Coppers, Pouch, Hovel, Necropolis, "
+            "Overgrown Estate. The unused Coppers go in the Copper pile.",
         ),
     ]
 
