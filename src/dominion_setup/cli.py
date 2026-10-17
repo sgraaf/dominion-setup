@@ -12,7 +12,7 @@ from click_default_group import DefaultGroup
 from rich.console import Console
 from rich.table import Table
 
-from .generator import SetupGenerationError, generate_game
+from .generator import MAX_PLAYERS, MIN_PLAYERS, SetupGenerationError, generate_game
 from .loader import load_card_database
 from .models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
@@ -57,8 +57,9 @@ def cli() -> None:
 
 
 def _print_pile_table(piles: list[Pile], *, title: str, numbered: bool) -> None:
-    """Print a table of Piles, with a Marks column when any pile carries marks."""
+    """Print a table of Piles, with Marks and Size columns when any pile has them."""
     has_marks = any(pile.marks for pile in piles)
+    has_sizes = any(pile.size is not None for pile in piles)
     table = Table(title=title)
     if numbered:
         table.add_column("#", justify="right", style="dim")
@@ -68,6 +69,8 @@ def _print_pile_table(piles: list[Pile], *, title: str, numbered: bool) -> None:
     table.add_column("Set")
     if has_marks:
         table.add_column("Marks", style="cyan")
+    if has_sizes:
+        table.add_column("Size", justify="right")
     for i, pile in enumerate(piles, start=1):
         row = [
             pile.card.name,
@@ -79,6 +82,8 @@ def _print_pile_table(piles: list[Pile], *, title: str, numbered: bool) -> None:
             row.insert(0, str(i))
         if has_marks:
             row.append(", ".join(str(mark) for mark in pile.marks))
+        if has_sizes:
+            row.append("" if pile.size is None else str(pile.size))
         table.add_row(*row)
     console.print(table)
 
@@ -94,6 +99,8 @@ def _print_game(game: Game, *, seed: int) -> None:
     console.print("[bold]Dominion Setup:[/bold]")
     console.print(f"Sets: {', '.join(game.sets_used)}")
     console.print(f"Seed: {seed}")
+    if game.players is not None:
+        console.print(f"Players: {game.players}")
 
     # kingdom piles (includes Bane, Obelisk and Trait marks if present)
     console.print()
@@ -156,6 +163,7 @@ def _pile_to_dict(pile: Pile) -> dict[str, Any]:
         "types": list(pile.card.types),
         "set": pile.card.display_set,
         "marks": [str(mark) for mark in pile.marks],
+        "size": pile.size,
     }
 
 
@@ -168,6 +176,7 @@ def _print_game_json(game: Game, *, seed: int) -> None:
     """Print a Game, generated with *seed*, as JSON."""
     output = {
         "seed": seed,
+        "players": game.players,
         "sets": game.sets_used,
         "kingdom": [_pile_to_dict(pile) for pile in game.kingdom_piles],
         "landscapes": [_card_to_dict(card) for card in game.landscapes],
@@ -283,6 +292,12 @@ def _print_game_names(game: Game, *, seed: int) -> None:
     help="Number of cards in the Black Market deck, if Black Market is in use.",
 )
 @click.option(
+    "--players",
+    type=click.IntRange(MIN_PLAYERS, MAX_PLAYERS),
+    default=None,
+    help="Number of players, to work out how many cards go in each pile.",
+)
+@click.option(
     "--seed",
     type=int,
     default=None,
@@ -310,6 +325,7 @@ def generate(
     include: tuple[str, ...],
     exclude: tuple[str, ...],
     black_market_size: int,
+    players: int | None,
     seed: int | None,
     output_format: str,
 ) -> None:
@@ -343,6 +359,7 @@ def generate(
             include=include,
             exclude=exclude,
             black_market_size=black_market_size,
+            players=players,
             rng=random.Random(seed),
         )
     except SetupGenerationError as exc:

@@ -28,6 +28,7 @@
   - Randomly determining Colony/Platinum and Shelters based on Prosperity/Dark Ages representation, or allowing you to force them on or off.
   - Deriving the correct Potion, Ruins, and Heirloom basic piles.
   - Collecting all required materials (mats, tokens, cubes) and per-card setup instructions.
+  - Working out how many cards go in each pile for 2 to 6 players.
 - **Flexible sorting** — kingdom piles can be sorted by cost, name, or set.
 - **Rich terminal output** — the CLI renders colour-coded tables with [Rich](https://github.com/Textualize/rich).
 - **Fully typed** — ships with a `py.typed` marker and complete type annotations.
@@ -75,6 +76,7 @@ Every card in every set is stored in a small JSON file under `dominion_setup/dat
 1. **Obelisk** — the Action Supply pile Obelisk applies to.
 1. **Materials** — scan instruction text and card types to determine which mats and tokens are needed.
 1. **Setup instructions** — extract `Setup:` sentences from card instructions and synthesise Heirloom setup text.
+1. **Pile sizes** — if `players` is given, how many cards go in each pile (e.g. 8 Provinces for two players, 10 Curses per player after the first).
 
 Finally, the piles are sorted and returned in a `Game` object.
 

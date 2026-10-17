@@ -436,10 +436,16 @@ class PileMark:
 
 @dataclass(frozen=True, slots=True)
 class Pile:
-    """A pile of a single card, optionally decorated with marks (Bane, Obelisk, Trait, …)."""
+    """A pile of a single card, optionally decorated with marks (Bane, Obelisk, Trait, …).
+
+    ``size`` is how many cards go in the pile, or ``None`` if the number of
+    players is unknown, or if the cards go into the starting decks instead
+    (Shelters, Heirlooms).
+    """
 
     card: Card
     marks: tuple[PileMark, ...] = ()
+    size: int | None = None
 
 
 class KingdomSortOrder(StrEnum):
@@ -483,6 +489,7 @@ class Game:
     black_market_deck: list[Card] = field(default_factory=list)
     materials: list[Material] = field(default_factory=list)
     setup_instructions: list[str] = field(default_factory=list)
+    players: int | None = None
 
     @property
     def basic_cards(self) -> list[Card]:

@@ -336,6 +336,44 @@ def test_generate_prints_every_part_of_the_game(
     assert "Setup:\n  • Young Witch: Add an extra Kingdom card pile." in result.output
 
 
+def test_generate_prints_pile_sizes_for_the_players(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["generate", "--players", "2", "--include", "Gardens"])
+    assert result.exit_code == 0
+    assert "Players: 2" in result.output
+    tables = parse_tables(result.output)
+    assert ["Gardens", "$4", "Victory", "Base", "8"] in [
+        row[1:] for row in tables["Kingdom"]
+    ]
+    assert tables["Basic Supply"][0] == ["Copper", "$0", "Treasure", "Base", "46"]
+
+
+def test_generate_prints_no_pile_sizes_without_players(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["generate"])
+    assert result.exit_code == 0
+    assert "Players:" not in result.output
+    assert parse_tables(result.output)["Basic Supply"][0] == [
+        "Copper",
+        "$0",
+        "Treasure",
+        "Base",
+    ]
+
+
+@pytest.mark.parametrize("players", ["1", "7"])
+def test_generate_players_must_be_two_to_six(runner: CliRunner, players: str) -> None:
+    result = runner.invoke(cli, ["generate", "--players", players])
+    assert result.exit_code == 2
+
+
+def test_generate_formats_pile_sizes_as_json(runner: CliRunner) -> None:
+    args = ["generate", "--players", "3", "--include", "Gardens", "--format", "json"]
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 0
+    game = json.loads(result.output)
+    assert game["players"] == 3
+    assert {pile["name"]: pile["size"] for pile in game["kingdom"]}["Gardens"] == 12
+
+
 def test_generate_formats_the_game_as_json(
     runner: CliRunner, db: CardDatabase, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -368,10 +406,12 @@ def test_generate_formats_the_game_as_json(
             "types": list(card.types),
             "set": card.display_set,
             "marks": list(marks),
+            "size": None,
         }
 
     assert json.loads(result.output) == {
         "seed": 42,
+        "players": None,
         "sets": [str(set_) for set_ in game.sets_used],
         "kingdom": [card_dict("Hamlet", "Bane"), card_dict("Young Witch")],
         "landscapes": [card_dict("Alms")],

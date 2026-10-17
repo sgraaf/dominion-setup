@@ -20,6 +20,7 @@ The **third number** is for emergencies when we need to start branches for older
 - Included and excluded cards: `generate_game(include=..., exclude=...)` and the repeatable `--include CARD` and `--exclude CARD` options of `dominion-setup generate`. Included Kingdom cards and Landscapes (from any set) are always used; excluded ones are never drawn.
 - Output formats: `dominion-setup generate --format json` prints the game (and its seed) as JSON, for scripts, bots and front ends; `--format names` prints the Kingdom cards, Landscapes, Ally and Prophecy on one comma-separated line, to paste into a chat or a client like dominion.games.
 - Black Market deck: when Black Market is in use, `generate_game` deals out a Black Market deck of different unused Kingdom cards into the new `Game.black_market_deck`, and runs the setup they need (e.g. a Bane for Young Witch, Heirlooms, materials). Its size is set by `generate_game(black_market_size=...)` and `dominion-setup generate --black-market-size` (default 15).
+- Pile sizes: `generate_game(players=...)` and `dominion-setup generate --players` (2 to 6) work out how many cards go in each pile, into the new `Pile.size` (and `Game.players`): 8 or 12 of each Victory pile (15 or 18 Provinces for 5 or 6 players), 10 Curses and Ruins per player after the first, and the Coppers not in starting decks. The CLI prints them in a Size column, and `--format json` as `players` and each pile's `size`. Without a player count, sizes are `None`.
 
 ### Changed
 

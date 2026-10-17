@@ -109,6 +109,9 @@ $ dominion-setup generate --help
 │                                                      Black Market deck, if   │
 │                                                      Black Market is in use. │
 │                                                      [default: 15]           │
+│ --players                    INTEGER RANGE           Number of players, to   │
+│                              [2<=x<=6]               work out how many cards │
+│                                                      go in each pile.        │
 │ --seed                       INTEGER                 Seed that reproduces a  │
 │                                                      game. Defaults to a     │
 │                                                      random one.             │

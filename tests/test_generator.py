@@ -33,6 +33,7 @@ from dominion_setup.generator import (
     _draw_kingdom,
     _heirlooms,
     _materials,
+    _pile_size,
     _setup_instructions,
     generate_game,
 )
@@ -64,6 +65,11 @@ def card_names(cards: Iterable[Card]) -> list[str]:
 def pile_marks(piles: Iterable[Pile]) -> dict[str, list[str]]:
     """Map each pile's card name to its marks, as displayed (e.g. "Bane")."""
     return {pile.card.name: [str(mark) for mark in pile.marks] for pile in piles}
+
+
+def pile_sizes(piles: Iterable[Pile]) -> dict[str, int | None]:
+    """Map each pile's card name to its size."""
+    return {pile.card.name: pile.size for pile in piles}
 
 
 # ── generate_game ────────────────────────────────────────────────────────────
@@ -250,6 +256,7 @@ def generate_with(
         landscapes: Sequence[str] = (),
         unused: Sequence[str] = (),
         black_market_size: int = 15,
+        players: int | None = None,
     ) -> Game:
         monkeypatch.setattr(
             generator,
@@ -265,6 +272,7 @@ def generate_with(
             use_colony=False,
             use_shelters=False,
             black_market_size=black_market_size,
+            players=players,
         )
 
     return _generate_with
@@ -346,6 +354,62 @@ def test_dealt_cards_get_their_own_fields(generate_with: Callable[..., Game]) ->
     assert len(game.druid_boons) == 3
     assert game.ally is not None
     assert game.prophecy is not None
+
+
+def test_players_size_every_pile(generate_with: Callable[..., Game]) -> None:
+    game = generate_with(kingdom=["Pooka", "Gardens", "Hermit"], players=2)
+    assert game.players == 2
+    assert pile_sizes(game.kingdom_piles) == {"Gardens": 8, "Hermit": 10, "Pooka": 10}
+    assert pile_sizes(game.non_supply_piles) == {"Madman": 10}
+    # each player starts with Cursed Gold instead of a Copper
+    assert pile_sizes(game.basic_piles) == {
+        "Copper": 48,
+        "Silver": 40,
+        "Gold": 30,
+        "Estate": 8,
+        "Duchy": 8,
+        "Province": 8,
+        "Curse": 10,
+        "Cursed Gold": None,
+    }
+
+
+@pytest.mark.parametrize(
+    ("kingdom", "landscapes", "unused", "size"),
+    [
+        pytest.param(["Ferryman"], [], ["Smithy"], 10, id="Ferryman: a whole pile"),
+        pytest.param(["Riverboat"], [], ["Market"], 1, id="Riverboat: one card"),
+        pytest.param(
+            ["Village"],
+            ["Way of the Mouse"],
+            ["Hamlet"],
+            1,
+            id="Way of the Mouse: one card",
+        ),
+    ],
+)
+def test_set_aside_pile_size(
+    generate_with: Callable[..., Game],
+    kingdom: list[str],
+    landscapes: list[str],
+    unused: list[str],
+    size: int,
+) -> None:
+    game = generate_with(kingdom, landscapes, unused, players=3)
+    assert pile_sizes(game.non_supply_piles) == {unused[0]: size}
+
+
+def test_no_pile_sizes_without_players(generate_with: Callable[..., Game]) -> None:
+    game = generate_with(kingdom=["Gardens", "Hermit"])
+    assert game.players is None
+    piles = [*game.kingdom_piles, *game.non_supply_piles, *game.basic_piles]
+    assert {pile.size for pile in piles} == {None}
+
+
+@pytest.mark.parametrize("players", [0, 1, 7])
+def test_players_outside_two_to_six_raise(db: CardDatabase, players: int) -> None:
+    with pytest.raises(SetupGenerationError, match="2 to 6 players"):
+        generate_game(db, players=players)
 
 
 def test_no_dealt_cards_without_their_triggers(
@@ -1411,3 +1475,82 @@ def test_heirlooms_get_a_setup_instruction(db: CardDatabase) -> None:
             "Lucky Coin. The unused Coppers go in the Copper pile."
         )
     ]
+
+
+# ── 9. Pile sizes ────────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("card", "players", "size"),
+    [
+        # Victory piles: 8 for two players, 12 otherwise
+        ("Estate", 2, 8),
+        ("Estate", 6, 12),
+        ("Duchy", 2, 8),
+        ("Duchy", 4, 12),
+        ("Colony", 2, 8),
+        ("Colony", 6, 12),
+        ("Gardens", 2, 8),
+        ("Gardens", 3, 12),
+        ("Castles", 2, 8),
+        ("Castles", 4, 12),
+        # ... except Provinces for five or six players
+        ("Province", 2, 8),
+        ("Province", 4, 12),
+        ("Province", 5, 15),
+        ("Province", 6, 18),
+        # 10 per player after the first
+        ("Curse", 2, 10),
+        ("Curse", 6, 50),
+        ("Ruins", 3, 20),
+        # the Coppers not in starting decks
+        ("Copper", 2, 46),
+        ("Copper", 4, 32),
+        # as many as there are cards
+        ("Silver", 4, 40),
+        ("Gold", 4, 30),
+        ("Platinum", 4, 12),
+        ("Potion", 4, 16),
+        ("Smithy", 2, 10),
+        ("Rats", 4, 20),
+        ("Spoils", 4, 15),
+        ("Lost in the Woods", 4, 1),
+        # piles with several different cards
+        ("Knights", 4, 10),
+        ("Encampment/Plunder", 4, 10),
+        ("Augurs", 4, 16),
+        ("Boons", 4, 12),
+        ("Hexes", 4, 12),
+        ("Loot", 4, 30),
+    ],
+)
+def test_pile_size(db: CardDatabase, card: str, players: int, size: int) -> None:
+    assert (
+        _pile_size(db.get_card_by_name(card), players=players, heirloom_count=0) == size
+    )
+
+
+def test_heirlooms_return_their_coppers_to_the_pile(db: CardDatabase) -> None:
+    copper = db.get_card_by_name("Copper")
+    assert _pile_size(copper, players=2, heirloom_count=1) == 48
+
+
+@pytest.mark.parametrize("card", ["Shelters", "Pouch"])
+def test_starting_deck_cards_have_no_pile_size(db: CardDatabase, card: str) -> None:
+    assert _pile_size(db.get_card_by_name(card), players=4, heirloom_count=0) is None
+
+
+def test_every_pile_has_a_size(db: CardDatabase) -> None:
+    companion_names = {name for _, names in generator.COMPANION_CARDS for name in names}
+    cards = [
+        *db.basic_cards.values(),
+        *db.kingdom_cards.values(),
+        *db.non_supply_cards.values(),
+        *get_cards(db, *companion_names),
+    ]
+    sizes = {
+        card.name: _pile_size(card, players=4, heirloom_count=0)
+        for card in cards
+        if card.name != "Shelters" and CardType.HEIRLOOM not in card.types
+    }
+    assert {name: size for name, size in sizes.items() if not size} == {}

@@ -55,6 +55,7 @@ def generate_game(  # noqa: PLR0913
     include: Iterable[str] = (),
     exclude: Iterable[str] = (),
     black_market_size: int = 15,
+    players: int | None = None,
     rng: random.Random | None = None,
 ) -> Game:
     """Generate a complete, rules-accurate Dominion game setup.
@@ -80,6 +81,9 @@ def generate_game(  # noqa: PLR0913
             Defaults to none.
         black_market_size: How many unused Kingdom cards to deal into the
             Black Market deck, if Black Market is in use. Defaults to 15.
+        players: The number of players (2 to 6), to work out how many cards
+            go in each pile. Defaults to ``None``, which leaves the pile sizes
+            unknown.
         rng: The random number generator to draw with, e.g.
             ``random.Random(42)`` to reproduce a game. Defaults to a new,
             unseeded one, so the global ``random`` state is never changed.
@@ -93,6 +97,9 @@ def generate_game(  # noqa: PLR0913
     """
     # NOTE: the steps below consume *rng* in a fixed order, so reordering them
     # changes which game a given seed produces.
+    if players is not None and not MIN_PLAYERS <= players <= MAX_PLAYERS:
+        msg = f"Dominion is for {MIN_PLAYERS} to {MAX_PLAYERS} players, not {players}"
+        raise SetupGenerationError(msg)
     if rng is None:
         rng = random.Random()
 
@@ -121,6 +128,7 @@ def generate_game(  # noqa: PLR0913
     )
     kingdom_cards += [card for rule, card in extra_piles if rule.in_supply]
     set_aside_cards = [card for rule, card in extra_piles if not rule.in_supply]
+    single_set_aside_cards = {card for rule, card in extra_piles if rule.is_single_card}
 
     # cards set aside for Ferryman, Way of the Mouse and Riverboat, and those in
     # the Black Market deck, can still be gained or played, so they trigger
@@ -169,15 +177,22 @@ def generate_game(  # noqa: PLR0913
     for card, mark in [*extra_pile_marks, *trait_marks, *obelisk_marks]:
         marks[card].append(mark)
 
+    def pile(card: Card) -> Pile:
+        """Return the Pile of *card*, with its marks and (9.) its size."""
+        if players is None:
+            size = None
+        elif card in single_set_aside_cards:
+            size = 1
+        else:
+            size = _pile_size(card, players=players, heirloom_count=len(heirlooms))
+        return Pile(card=card, marks=tuple(marks[card]), size=size)
+
     return Game(
-        basic_piles=[Pile(card=card) for card in basic_cards],
+        basic_piles=[pile(card) for card in basic_cards],
         kingdom_piles=[
-            Pile(card=card, marks=tuple(marks[card]))
-            for card in sorted(kingdom_cards, key=sort_order.sort_key)
+            pile(card) for card in sorted(kingdom_cards, key=sort_order.sort_key)
         ],
-        non_supply_piles=[
-            Pile(card=card, marks=tuple(marks[card])) for card in non_supply_cards
-        ],
+        non_supply_piles=[pile(card) for card in non_supply_cards],
         landscapes=sorted(landscapes, key=sort_order.sort_key),
         ally=ally,
         prophecy=prophecy,
@@ -185,6 +200,7 @@ def generate_game(  # noqa: PLR0913
         black_market_deck=sorted(black_market_deck, key=sort_order.sort_key),
         materials=materials,
         setup_instructions=setup_instructions,
+        players=players,
     )
 
 
@@ -399,6 +415,8 @@ class ExtraPileRule:
     in_supply: bool
     requirement: str
     is_eligible: Callable[[Card], bool]
+    # whether a single card is set aside, instead of a whole pile
+    is_single_card: bool = False
 
 
 EXTRA_PILE_RULES: tuple[ExtraPileRule, ...] = (
@@ -433,6 +451,7 @@ EXTRA_PILE_RULES: tuple[ExtraPileRule, ...] = (
             and CardType.ACTION in card.types
             and CardType.DURATION not in card.types
         ),
+        is_single_card=True,
     ),
     # in games using Riverboat, set aside an unused non-Duration Action costing
     # $5
@@ -446,6 +465,7 @@ EXTRA_PILE_RULES: tuple[ExtraPileRule, ...] = (
             and CardType.ACTION in card.types
             and CardType.DURATION not in card.types
         ),
+        is_single_card=True,
     ),
     # in games using Approaching Army, add an Attack Kingdom card to the Supply
     ExtraPileRule(
@@ -828,6 +848,61 @@ def _setup_instructions(
             f"Heirlooms: Each player replaces {len(heirlooms)} starting Coppers with {', '.join(heirloom.name for heirloom in heirlooms)}. The unused Coppers go in the Copper pile."
         )
     return setup_instructions
+
+
+# ── 9. Pile sizes ────────────────────────────────────────────────────────────
+
+MIN_PLAYERS = 2
+MAX_PLAYERS = 6
+STARTING_COPPER_COUNT = 7
+
+# Sizes of the piles made of several different cards, whose own card has no
+# quantity.
+MIXED_PILE_SIZES: dict[str, int] = {
+    "Knights": 10,
+    "Catapult/Rocks": 10,
+    "Encampment/Plunder": 10,
+    "Gladiator/Fortune": 10,
+    "Patrician/Emporium": 10,
+    "Settlers/Bustling Village": 10,
+    "Sauna/Avanto": 10,
+    "Augurs": 16,
+    "Clashes": 16,
+    "Forts": 16,
+    "Odysseys": 16,
+    "Townsfolk": 16,
+    "Wizards": 16,
+    "Boons": 12,
+    "Hexes": 12,
+    "Loot": 30,
+}
+
+# with five or six players, use 15 or 18 Provinces
+PROVINCE_COUNTS: dict[int, int] = {5: 15, 6: 18}
+
+
+def _pile_size(card: Card, *, players: int, heirloom_count: int) -> int | None:
+    """Return how many cards go in the pile of *card* in a game with *players* players.
+
+    Returns ``None`` for Shelters and Heirlooms, which go into the starting
+    decks instead. Each of the *heirloom_count* Heirlooms replaces a starting
+    Copper, which stays in the Copper pile.
+    """
+    if card.name == "Shelters" or CardType.HEIRLOOM in card.types:
+        return None
+    # use 10 Curses (and Ruins) per player after the first
+    if card.name in {"Curse", "Ruins"}:
+        return 10 * (players - 1)
+    # each player starts with 7 Coppers; the rest form the Copper pile
+    if card.name == "Copper":
+        return card.quantity - (STARTING_COPPER_COUNT - heirloom_count) * players
+    if card.name == "Province" and players in PROVINCE_COUNTS:
+        return PROVINCE_COUNTS[players]
+    # use 8 of each Victory pile (e.g. Estate, Gardens, Castles) for two
+    # players, and 12 otherwise
+    if CardType.VICTORY in card.types and (card.is_basic or card.is_kingdom):
+        return 8 if players == 2 else 12  # noqa: PLR2004
+    return MIXED_PILE_SIZES.get(card.name, card.quantity)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
