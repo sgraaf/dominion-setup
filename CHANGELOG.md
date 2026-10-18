@@ -8,7 +8,9 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is for emergencies when we need to start branches for older releases.
 
-## [Unreleased](https://github.com/sgraaf/dominion-setup/compare/2026.3.0...HEAD)
+## [2026.4.0](https://github.com/sgraaf/dominion-setup/compare/2026.3.0...2026.4.0) - 2026-10-18
+
+This release lets you swap out cards you don't like: `--swap CARD` (or `--swap CARD=REPLACEMENT`) replaces a Kingdom card, extra pile or Landscape and keeps the rest of the game the same. It also makes the library easier to build front ends on. Each card in the JSON output now says what it's for (e.g. Kingdom Pile or Landscape), setup instructions keep their label and text apart, and `generate_game` takes a list of Promos, like `--promo`. Helpers such as `is_selectable` and `SET_EDITION_CHOICES` are now exported from `dominion_setup`.
 
 ### Added
 
