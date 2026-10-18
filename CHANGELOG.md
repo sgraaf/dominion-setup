@@ -12,6 +12,7 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Added
 
+- Swaps: `generate_game(swaps=...)` takes `(card, replacement)` pairs, and the repeatable `--swap CARD[=REPLACEMENT]` option swaps a Kingdom card, extra pile (e.g. the Bane) or Landscape of the game for a random card, or for the replacement. Everything that doesn't depend on the swapped card stays the same: the rest of the Kingdom and the Landscapes, the extra piles, the Black Market deck, the Prophecy, the Ally, the Druid Boons, the Traits, the Obelisk pile, Colony and Shelters. A game with swaps is replayed by its seed and swaps, e.g. `--seed 42 --swap Smithy --swap Moat=Village`.
 - Each card in `Pile.to_dict` and `Game.to_dict` (and so in `--format json`) now includes its `purpose` (e.g. "Kingdom Pile" or "Landscape"), so front ends can tell Landscapes from Kingdom cards without keeping their own list of Landscape types.
 - `generate_game(promos=...)`, which draws from the given Promos only, like `--promo CARD`. It also works with every set (`sets_editions=None`), and raises `SetupGenerationError` for a name that isn't a Promo card.
 - `is_selectable(card)`, which returns whether a card can be drawn, included or excluded: a Kingdom card, or an Event, Landmark, Project, Way or Trait. It used to be private, as `generator._is_selectable`.

@@ -120,6 +120,12 @@ $ dominion-setup generate --help
 │ --seed                       INTEGER                 Seed that reproduces a  │
 │                                                      game. Defaults to a     │
 │                                                      random one.             │
+│ --swap                       CARD[=REPLACEMENT]      Kingdom card, extra     │
+│                                                      pile (e.g. the Bane) or │
+│                                                      Landscape of the game   │
+│                                                      to swap for a random    │
+│                                                      one, or for REPLACEMENT │
+│                                                      (repeatable, in order). │
 │ --format                     [table|json|names]      Output format: tables,  │
 │                                                      JSON, or a one-line     │
 │                                                      list of card names.     │

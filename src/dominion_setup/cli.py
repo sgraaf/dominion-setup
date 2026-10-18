@@ -93,6 +93,22 @@ def _read_config(
     ctx.default_map = defaults
 
 
+def _parse_swaps(
+    _ctx: click.Context,
+    _param: click.Parameter,
+    values: tuple[str, ...],
+) -> list[tuple[str, str | None]]:
+    """Return the ``CARD[=REPLACEMENT]`` values of ``--swap`` as ``(card, replacement)`` pairs."""
+    swaps: list[tuple[str, str | None]] = []
+    for value in values:
+        card, separator, replacement = value.partition("=")
+        if not card or (separator and not replacement):
+            msg = f"{value!r} is not of the form CARD or CARD=REPLACEMENT"
+            raise click.BadParameter(msg)
+        swaps.append((card, replacement or None))
+    return swaps
+
+
 def _print_pile_table(piles: list[Pile], *, title: str, numbered: bool) -> None:
     """Print a table of Piles, with Marks and Size columns when any pile has them."""
     has_marks = any(pile.marks for pile in piles)
@@ -318,6 +334,14 @@ def _print_game_names(game: Game, *, seed: int) -> None:
     help="Seed that reproduces a game. Defaults to a random one.",
 )
 @click.option(
+    "swaps",
+    "--swap",
+    metavar="CARD[=REPLACEMENT]",
+    multiple=True,
+    callback=_parse_swaps,
+    help="Kingdom card, extra pile (e.g. the Bane) or Landscape of the game to swap for a random one, or for REPLACEMENT (repeatable, in order).",
+)
+@click.option(
     "output_format",
     "--format",
     type=click.Choice(["table", "json", "names"]),
@@ -350,6 +374,7 @@ def generate(
     black_market_size: int,
     players: int | None,
     seed: int | None,
+    swaps: list[tuple[str, str | None]],
     output_format: str,
 ) -> None:
     """Generate a random Dominion game setup.
@@ -389,6 +414,7 @@ def generate(
             exclude=exclude,
             promos=promos,
             black_market_size=black_market_size,
+            swaps=swaps,
             players=players,
             rng=random.Random(seed),
         )

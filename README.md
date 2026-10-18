@@ -29,6 +29,7 @@
   - Deriving the correct Potion, Ruins, and Heirloom basic piles.
   - Collecting all required materials (mats, tokens, cubes) and per-card setup instructions.
   - Working out how many cards go in each pile for 2 to 6 players.
+- **Swaps** — swap any Kingdom card, extra pile or Landscape of a game for a random one or one you pick, keeping everything that doesn't depend on it.
 - **Flexible sorting** — kingdom piles can be sorted by cost, name, or set.
 - **Rich terminal output** — the CLI renders colour-coded tables with [Rich](https://github.com/Textualize/rich).
 - **Fully typed** — ships with a `py.typed` marker and complete type annotations.
@@ -79,6 +80,8 @@ Every card in every set is stored in a small JSON file under `dominion_setup/dat
 1. **Pile sizes** — if `players` is given, how many cards go in each pile (e.g. 8 Provinces for two players, 10 Curses per player after the first).
 
 Finally, the piles are sorted and returned in a `Game` object.
+
+If `swaps` are given, each one then opens up the place of a Kingdom card, extra pile or Landscape (or puts its replacement there) and sets the game up again. The game's other choices (its Kingdom, Landscapes, extra piles, Black Market deck, Prophecy, Ally, Druid Boons, Traits, Obelisk pile, Colony and Shelters) are kept where they still apply, and the rest is drawn again. The swapped card is not drawn again (nor are the game's extra piles and Black Market cards), and the game keeps its number of Landscapes. A replacement is included like the `include`d cards: it must not be `exclude`d, and the Kingdom must still meet the `requirements`.
 
 ## Installation
 
@@ -152,6 +155,19 @@ game = generate_game(
     requirements=[KingdomRequirement.BUYS],  # at least 1 kingdom card with +Buy(s)
     include=["Witch"],  # always use Witch
     exclude=["Chapel"],  # never use Chapel
+)
+```
+
+To swap cards of a game, generate it again with the same seed and `swaps`. Everything that doesn't depend on the swapped cards stays the same:
+
+```python
+import random
+
+game = generate_game(db, rng=random.Random(42))
+game = generate_game(
+    db,
+    swaps=[("Smithy", None), ("Moat", "Village")],  # redraw Smithy, Moat → Village
+    rng=random.Random(42),
 )
 ```
 
@@ -285,6 +301,13 @@ Always use Witch (and the Alms Event), never Chapel:
 
 ```sh
 dominion-setup generate --set base_2e --include Witch --include Alms --exclude Chapel
+```
+
+Replay a game with its seed (printed with every setup), and swap Smithy for a random card and Moat for Village:
+
+```sh
+dominion-setup generate --seed 42
+dominion-setup generate --seed 42 --swap Smithy --swap Moat=Village
 ```
 
 Print the setup as JSON, or as one line of card names to paste elsewhere:

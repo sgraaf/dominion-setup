@@ -20,7 +20,9 @@ import pytest
 
 from dominion_setup import generator
 from dominion_setup.generator import (
+    NO_CHOICES,
     REQUIREMENT_RULES,
+    Choices,
     SetupGenerationError,
     _basic_cards,
     _cards_of_type,
@@ -50,6 +52,7 @@ from dominion_setup.models import (
     KingdomSortOrder,
     Material,
     Pile,
+    PileMarkKind,
     SetupInstruction,
 )
 
@@ -305,6 +308,432 @@ def test_including_a_whole_kingdom_sets_up_that_kingdom(
     assert "Black Market" in [
         instruction.label for instruction in game.setup_instructions
     ]
+
+
+# a Kingdom of Base 2E cards, and Base 2E cards that are not in it
+BASE_KINGDOM = [
+    "Cellar",
+    "Chapel",
+    "Moat",
+    "Village",
+    "Smithy",
+    "Militia",
+    "Market",
+    "Mine",
+    "Witch",
+    "Artisan",
+]
+NOT_IN_BASE_KINGDOM = ["Festival", "Laboratory"]
+
+
+def marked_piles(game: Game) -> dict[str, list[str]]:
+    """Map the Kingdom piles and the marked non-Supply piles to their marks."""
+    set_aside_marks = {
+        name: marks
+        for name, marks in pile_marks(game.non_supply_piles).items()
+        if marks
+    }
+    return pile_marks(game.kingdom_piles) | set_aside_marks
+
+
+@pytest.mark.parametrize("seed", range(20))
+def test_swap_redraws_only_the_swapped_card(db: CardDatabase, seed: int) -> None:
+    """A swapped card is redrawn, and the rest of the game stays the same.
+
+    Some of these games have fewer Landscapes than they could, so the redraw
+    must not add one.
+    """
+    special = ["Young Witch", "Black Market", "Druid", "Sycophant", "Kitsune"]
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E, (CardSet.ADVENTURES, CardSetEdition.FIRST_EDITION)},
+        "include": [*special, "Cheap", "Obelisk"],
+        "max_landscapes": 3,
+        "black_market_size": 5,
+    }
+    game = generate_game(db, rng=random.Random(seed), **options)
+    marks = marked_piles(game)
+    # a drawn card without marks, so no Trait or Obelisk moves
+    [swapped, *_] = [
+        name
+        for name, card_marks in marks.items()
+        if not card_marks and name not in special
+    ]
+
+    swapped_game = generate_game(
+        db,
+        swaps=[(swapped, None)],
+        rng=random.Random(seed),
+        **options,
+    )
+
+    swapped_marks = marked_piles(swapped_game)
+    [new_card] = set(swapped_marks) - set(marks)
+    assert set(marks) - set(swapped_marks) == {swapped}
+    assert swapped_marks.pop(new_card) == []
+    del marks[swapped]
+    assert swapped_marks == marks
+    assert swapped_game.landscapes == game.landscapes
+    assert swapped_game.ally == game.ally
+    assert swapped_game.prophecy == game.prophecy
+    assert swapped_game.druid_boons == game.druid_boons
+    assert swapped_game.black_market_deck == game.black_market_deck
+    assert swapped_game.basic_piles == game.basic_piles
+
+
+def test_swap_puts_the_replacement_in_the_place_of_the_card(db: CardDatabase) -> None:
+    game = generate_game(
+        db,
+        sets_editions={BASE_2E},
+        include=BASE_KINGDOM,
+        swaps=[("Cellar", "Festival")],
+    )
+    assert sorted(card_names(game.kingdom_cards)) == sorted(
+        [*BASE_KINGDOM[1:], "Festival"],
+    )
+
+
+def test_swapped_in_card_brings_its_own_setup(db: CardDatabase) -> None:
+    game = generate_game(
+        db,
+        sets_editions={BASE_2E},
+        include=BASE_KINGDOM,
+        swaps=[("Village", "Young Witch")],
+    )
+    marks = pile_marks(game.kingdom_piles)
+    assert marks["Young Witch"] == []
+    assert list(marks.values()).count(["Bane"]) == 1
+
+
+def test_swap_redraws_or_replaces_a_landscape(db: CardDatabase) -> None:
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E, (CardSet.ADVENTURES, CardSetEdition.FIRST_EDITION)},
+        "include": [*BASE_KINGDOM, "Alms", "Ball"],
+    }
+
+    game = generate_game(db, swaps=[("Ball", None)], **options)
+    assert sorted(card_names(game.kingdom_cards)) == sorted(BASE_KINGDOM)
+    assert len(game.landscapes) == 2
+    assert "Alms" in card_names(game.landscapes)
+    assert "Ball" not in card_names(game.landscapes)
+
+    game = generate_game(db, swaps=[("Ball", "Bonfire")], **options)
+    assert card_names(game.landscapes) == ["Alms", "Bonfire"]
+
+
+# the $4 cards of Base 2E, so the Bane ($2-$3) is not one of them
+YOUNG_WITCH_KINGDOM = [
+    "Young Witch",
+    "Bureaucrat",
+    "Gardens",
+    "Militia",
+    "Moneylender",
+    "Poacher",
+    "Remodel",
+    "Smithy",
+    "Throne Room",
+    "Village",
+]
+
+
+def bane(game: Game) -> str:
+    [name] = [
+        name
+        for name, marks in pile_marks(game.kingdom_piles).items()
+        if "Bane" in marks
+    ]
+    return name
+
+
+@pytest.mark.parametrize("seed", range(5))
+def test_swap_redraws_the_bane(db: CardDatabase, seed: int) -> None:
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E},
+        "include": YOUNG_WITCH_KINGDOM,
+    }
+    old_bane = bane(generate_game(db, rng=random.Random(seed), **options))
+    game = generate_game(
+        db,
+        swaps=[(old_bane, None)],
+        rng=random.Random(seed),
+        **options,
+    )
+    new_bane = db.get_card_by_name(bane(game))
+    assert new_bane.name != old_bane
+    assert new_bane.cost.coins in {2, 3}
+    assert set(card_names(game.kingdom_cards)) == {*YOUNG_WITCH_KINGDOM, new_bane.name}
+
+
+def test_swap_replaces_the_bane(db: CardDatabase) -> None:
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E},
+        "include": YOUNG_WITCH_KINGDOM,
+    }
+    old_bane = bane(generate_game(db, rng=random.Random(0), **options))
+    new_bane = "Moat" if old_bane == "Cellar" else "Cellar"
+    game = generate_game(
+        db,
+        swaps=[(old_bane, new_bane)],
+        rng=random.Random(0),
+        **options,
+    )
+    assert bane(game) == new_bane
+
+
+@pytest.mark.parametrize(
+    ("kingdom", "drawable", "black_market_size"),
+    [
+        pytest.param(YOUNG_WITCH_KINGDOM, ["Cellar", "Chapel"], 15, id="Bane"),
+        pytest.param(
+            ["Black Market", *BASE_KINGDOM[1:]],
+            ["Festival", "Laboratory", "Library"],
+            2,
+            id="Black Market",
+        ),
+    ],
+)
+@pytest.mark.parametrize("seed", range(5))
+def test_swap_never_draws_the_bane_or_a_black_market_card(
+    db: CardDatabase,
+    seed: int,
+    kingdom: list[str],
+    drawable: list[str],
+    black_market_size: int,
+) -> None:
+    """With the Bane or the Black Market deck taking all but one of the cards
+    left to draw, the redraw takes that one.
+    """
+    base_cards = card_names(db.get_cards_by_set_edition(*BASE_2E))
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E},
+        "include": kingdom,
+        "exclude": [name for name in base_cards if name not in {*kingdom, *drawable}],
+        "black_market_size": black_market_size,
+    }
+    game = generate_game(db, rng=random.Random(seed), **options)
+    set_aside = {
+        *(name for name, marks in pile_marks(game.kingdom_piles).items() if marks),
+        *card_names(game.black_market_deck),
+    }
+    [left_over] = set(drawable) - set_aside
+
+    swapped_game = generate_game(
+        db,
+        swaps=[(kingdom[-1], None)],
+        rng=random.Random(seed),
+        **options,
+    )
+    assert left_over in card_names(swapped_game.kingdom_cards)
+
+
+def test_swapping_in_a_black_market_card_takes_it_out_of_the_deck(
+    db: CardDatabase,
+) -> None:
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E},
+        "include": ["Black Market", *BASE_KINGDOM[1:]],
+        "black_market_size": 5,
+    }
+    deck = card_names(
+        generate_game(db, rng=random.Random(0), **options).black_market_deck,
+    )
+    replacement = deck[0]
+    game = generate_game(
+        db,
+        swaps=[("Chapel", replacement)],
+        rng=random.Random(0),
+        **options,
+    )
+    assert replacement in card_names(game.kingdom_cards)
+    new_deck = card_names(game.black_market_deck)
+    assert len(new_deck) == 5
+    assert replacement not in new_deck
+    assert set(deck[1:]) <= set(new_deck)
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_swapping_the_pile_of_a_trait_or_obelisk_moves_its_mark(
+    db: CardDatabase,
+    seed: int,
+) -> None:
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E},
+        "include": [*BASE_KINGDOM, "Cheap", "Obelisk"],
+    }
+    marks = pile_marks(
+        generate_game(db, rng=random.Random(seed), **options).kingdom_piles,
+    )
+    [cheap_pile] = [
+        name for name, card_marks in marks.items() if "Cheap (Trait)" in card_marks
+    ]
+    [obelisk_pile] = [
+        name for name, card_marks in marks.items() if "Obelisk" in card_marks
+    ]
+
+    game = generate_game(
+        db,
+        swaps=[(cheap_pile, None)],
+        rng=random.Random(seed),
+        **options,
+    )
+    new_marks = pile_marks(game.kingdom_piles)
+    assert (
+        sum(card_marks.count("Cheap (Trait)") for card_marks in new_marks.values()) == 1
+    )
+    assert sum(card_marks.count("Obelisk") for card_marks in new_marks.values()) == 1
+    if obelisk_pile != cheap_pile:
+        assert "Obelisk" in new_marks[obelisk_pile]
+
+
+def test_swapped_out_card_is_not_drawn_again_but_can_be_picked_back(
+    db: CardDatabase,
+) -> None:
+    base_cards = card_names(db.get_cards_by_set_edition(*BASE_2E))
+    left_out = [name for name in base_cards if name not in BASE_KINGDOM]
+    # only Festival is left to draw
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E},
+        "include": BASE_KINGDOM,
+        "exclude": [name for name in left_out if name != "Festival"],
+    }
+
+    game = generate_game(db, swaps=[("Cellar", None)], **options)
+    assert sorted(card_names(game.kingdom_cards)) == sorted(
+        [*BASE_KINGDOM[1:], "Festival"],
+    )
+
+    with pytest.raises(SetupGenerationError, match="need 1, found 0"):
+        generate_game(db, swaps=[("Cellar", None), ("Festival", None)], **options)
+
+    game = generate_game(
+        db,
+        swaps=[("Cellar", None), ("Festival", "Cellar")],
+        **options,
+    )
+    assert sorted(card_names(game.kingdom_cards)) == sorted(BASE_KINGDOM)
+
+
+def test_same_seed_and_swaps_generate_the_same_game(db: CardDatabase) -> None:
+    swaps = [("Cellar", None), ("Moat", "Festival")]
+    options: dict[str, Any] = {"include": BASE_KINGDOM, "swaps": swaps}
+    game = generate_game(db, rng=random.Random(42), **options)
+    assert generate_game(db, rng=random.Random(42), **options) == game
+
+
+@pytest.mark.parametrize(
+    ("swap", "message"),
+    [
+        (("Copper", None), "'Copper' is not a Kingdom card or Landscape"),
+        (
+            ("Festival", None),
+            "'Festival' is not a Kingdom card, extra pile or Landscape of the game",
+        ),
+        (("Cellar", "Smithee"), "Card 'Smithee' not found"),
+        (("Cellar", "Moat"), "'Moat' is already in the game"),
+        (("Cellar", "Bonfire"), "'Bonfire' is not a Kingdom card"),
+        (("Alms", "Festival"), "'Festival' is not a Landscape"),
+        (("Alms", "Alms"), "'Alms' is already in the game"),
+    ],
+)
+def test_invalid_swap_raises(
+    db: CardDatabase,
+    swap: tuple[str, str | None],
+    message: str,
+) -> None:
+    with pytest.raises(SetupGenerationError, match=re.escape(message)):
+        generate_game(
+            db,
+            sets_editions={BASE_2E},
+            include=[*BASE_KINGDOM, "Alms"],
+            swaps=[swap],
+        )
+
+
+def test_replacement_bane_must_be_eligible(db: CardDatabase) -> None:
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E},
+        "include": YOUNG_WITCH_KINGDOM,
+    }
+    old_bane = bane(generate_game(db, rng=random.Random(0), **options))
+    with pytest.raises(
+        SetupGenerationError,
+        match=r"'Market' is not eligible for Bane",
+    ):
+        generate_game(db, swaps=[(old_bane, "Market")], rng=random.Random(0), **options)
+
+
+def test_replacement_must_not_be_excluded(db: CardDatabase) -> None:
+    """For a Kingdom card and for an extra pile alike."""
+    with pytest.raises(SetupGenerationError, match="'Festival' is excluded"):
+        generate_game(
+            db,
+            sets_editions={BASE_2E},
+            include=BASE_KINGDOM,
+            exclude=["Festival"],
+            swaps=[("Village", "Festival")],
+        )
+
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E},
+        "include": YOUNG_WITCH_KINGDOM,
+        "exclude": ["Moat"],
+    }
+    old_bane = bane(generate_game(db, rng=random.Random(0), **options))
+    with pytest.raises(SetupGenerationError, match="'Moat' is excluded"):
+        generate_game(db, swaps=[(old_bane, "Moat")], rng=random.Random(0), **options)
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_swap_meets_the_requirements_given_as_an_iterator(
+    db: CardDatabase,
+    seed: int,
+) -> None:
+    """The redraw for the only +Buy card must give +Buy, also if the
+    *requirements* can be iterated over only once.
+    """
+    game = generate_game(
+        db,
+        sets_editions={BASE_2E},
+        include=BASE_KINGDOM,  # Market is the only +Buy card
+        requirements=iter([KingdomRequirement.BUYS]),
+        swaps=[("Market", None)],
+        rng=random.Random(seed),
+    )
+    assert any(
+        REQUIREMENT_RULES[KingdomRequirement.BUYS](card) for card in game.kingdom_cards
+    )
+
+
+def test_swap_draws_from_the_given_promos_given_as_an_iterator(
+    db: CardDatabase,
+    rng: random.Random,
+    draw_kingdom_calls: list[dict[str, Any]],
+) -> None:
+    generate_game(
+        db,
+        include=BASE_KINGDOM,
+        promos=iter(["Stash"]),
+        swaps=[("Cellar", None)],
+        rng=rng,
+    )
+    other_promos = promo_names(db) - {"Stash"}
+    assert len(draw_kingdom_calls) == 2
+    for kwargs in draw_kingdom_calls:
+        assert other_promos <= set(kwargs["exclude"])
+
+
+def test_replacement_must_keep_the_requirements_met(db: CardDatabase) -> None:
+    """A replacement is included like the *include*d cards, so the Kingdom must
+    still meet the requirements.
+    """
+    options: dict[str, Any] = {
+        "sets_editions": {BASE_2E},
+        "include": BASE_KINGDOM,  # Market is the only +Buy card
+        "requirements": [KingdomRequirement.BUYS],
+    }
+    game = generate_game(db, swaps=[("Market", "Festival")], **options)
+    assert "Festival" in card_names(game.kingdom_cards)
+    with pytest.raises(SetupGenerationError, match="requirement"):
+        generate_game(db, swaps=[("Market", "Laboratory")], **options)
 
 
 def test_same_seed_generates_the_same_game(db: CardDatabase) -> None:
@@ -588,6 +1017,67 @@ def test_draw_kingdom_draws_at_most_max_landscapes(
     }
     for landscape in landscapes:
         assert selectable_types & set(landscape.types)
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_draw_kingdom_draws_at_least_min_landscapes(
+    db: CardDatabase,
+    seed: int,
+) -> None:
+    """Landscapes are drawn on past the 10th Kingdom card, which stay unused."""
+    kingdom = card_names(db.get_cards_by_set_edition(*BASE_2E))[:10]
+    kingdom_cards, landscapes, unused = _draw_kingdom(
+        db,
+        sets_editions=None,
+        max_landscapes=3,
+        min_landscapes=2,
+        include=[*kingdom, "Alms"],
+        rng=random.Random(seed),
+    )
+    assert card_names(kingdom_cards) == kingdom
+    assert len(landscapes) == 2
+    assert landscapes[0].name == "Alms"
+    assert sorted(card_names([*kingdom_cards, *unused])) == sorted(db.kingdom_cards)
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_min_landscapes_does_not_change_the_rest_of_the_draw(
+    db: CardDatabase,
+    seed: int,
+) -> None:
+    kingdom_cards, landscapes, unused = _draw_kingdom(
+        db,
+        sets_editions=None,
+        max_landscapes=3,
+        rng=random.Random(seed),
+    )
+    kingdom_cards_2, landscapes_2, unused_2 = _draw_kingdom(
+        db,
+        sets_editions=None,
+        max_landscapes=3,
+        min_landscapes=3,
+        rng=random.Random(seed),
+    )
+    assert kingdom_cards_2 == kingdom_cards
+    assert unused_2 == unused
+    assert landscapes_2[: len(landscapes)] == landscapes
+    assert len(landscapes_2) == 3
+
+
+def test_draw_kingdom_without_min_landscapes_raises(
+    db: CardDatabase,
+    smithy: Card,
+    rng: random.Random,
+) -> None:
+    kingdom_cards = [replace(smithy, name=f"Card {i}") for i in range(10)]
+    with pytest.raises(SetupGenerationError, match="need 2, found 1"):
+        _draw_kingdom(
+            CardDatabase([*kingdom_cards, *get_cards(db, "Alms")]),
+            sets_editions=None,
+            max_landscapes=2,
+            min_landscapes=2,
+            rng=rng,
+        )
 
 
 def test_draw_kingdom_never_draws_allies_or_prophecies(
@@ -963,7 +1453,8 @@ def choose_extra_piles(
 
     Extra piles are returned as ``(mark, card name)`` pairs in the order they
     were chosen, along with the Prophecy and the Black Market deck. Approaching
-    Army is the only Prophecy on offer, so any Omen deals it.
+    Army is the only Prophecy on offer, so any Omen deals it, unless the
+    *given* choices have another.
     """
     prophecies = CardDatabase(get_cards(db, "Approaching Army"))
 
@@ -972,6 +1463,7 @@ def choose_extra_piles(
         landscapes: Sequence[str] = (),
         unused: Sequence[str] = (),
         black_market_size: int = 15,
+        given: Choices = NO_CHOICES,
     ) -> ExtraPiles:
         extra_piles, prophecy, black_market_deck = _choose_extra_piles(
             prophecies,
@@ -979,6 +1471,7 @@ def choose_extra_piles(
             get_cards(db, *landscapes),
             get_cards(db, *unused),
             black_market_size=black_market_size,
+            given=given,
             rng=rng,
         )
         return (
@@ -1204,6 +1697,50 @@ def test_omens_deal_one_prophecy(db: CardDatabase, rng: random.Random) -> None:
     assert CardType.PROPHECY in prophecy.types
 
 
+def test_given_extra_piles_and_prophecy_are_used(
+    db: CardDatabase,
+    choose_extra_piles: Callable[..., ExtraPiles],
+) -> None:
+    given = Choices(
+        extra_piles={PileMarkKind.BANE: db.get_card_by_name("Moat")},
+        prophecy=db.get_card_by_name("Bureaucracy"),
+    )
+    assert choose_extra_piles(
+        ["Young Witch", "Ferryman", "Kitsune"],
+        unused=["Hamlet", "Smithy", "Militia"],
+        given=given,
+    ) == ([("Bane", "Moat"), ("Ferryman", "Smithy")], "Bureaucracy", [])
+
+
+def test_given_black_market_deck_is_topped_up(
+    db: CardDatabase,
+    choose_extra_piles: Callable[..., ExtraPiles],
+) -> None:
+    given = Choices(black_market=tuple(get_cards(db, "Market")))
+    assert choose_extra_piles(
+        ["Black Market"],
+        unused=["Smithy", "Hamlet", "Village"],
+        black_market_size=2,
+        given=given,
+    ) == ([], None, ["Market", "Smithy"])
+
+
+def test_given_choices_without_their_triggers_are_ignored(
+    db: CardDatabase,
+    choose_extra_piles: Callable[..., ExtraPiles],
+) -> None:
+    given = Choices(
+        extra_piles={PileMarkKind.BANE: db.get_card_by_name("Moat")},
+        black_market=tuple(get_cards(db, "Market")),
+        prophecy=db.get_card_by_name("Bureaucracy"),
+    )
+    assert choose_extra_piles(["Village"], unused=["Hamlet"], given=given) == (
+        [],
+        None,
+        [],
+    )
+
+
 # ── 3. Cards dealt out for specific cards in use ─────────────────────────────
 
 
@@ -1241,6 +1778,44 @@ def test_each_trait_marks_a_different_action_or_treasure_pile(
     assert sorted(str(mark) for _card, mark in trait_marks) == [
         "Cheap (Trait)",
         "Cursed (Trait)",
+    ]
+
+
+def test_given_druid_boons_and_ally_are_dealt(
+    db: CardDatabase,
+    rng: random.Random,
+) -> None:
+    boons = get_cards(db, "The Sun's Gift", "The Earth's Gift", "The Moon's Gift")
+    given = Choices(
+        druid_boons=tuple(boons),
+        ally=db.get_card_by_name("Band of Nomads"),
+    )
+    cards_in_use = get_cards(db, "Druid", "Sycophant")
+    assert _choose_druid_boons(db, cards_in_use, given=given, rng=rng) == boons
+    assert _choose_ally(db, cards_in_use, given=given, rng=rng) == given.ally
+
+
+def test_trait_goes_on_its_given_pile_if_it_is_in_the_kingdom(
+    db: CardDatabase,
+    rng: random.Random,
+) -> None:
+    """A Trait whose given pile is gone goes on another pile, but not on a given one."""
+    cheap, cursed = get_cards(db, "Cheap", "Cursed")
+    given = Choices(
+        traits={
+            cheap: db.get_card_by_name("Militia"),
+            cursed: db.get_card_by_name("Village"),
+        },
+    )
+    trait_marks = _choose_trait_piles(
+        get_cards(db, "Village", "Smithy", "Duke"),
+        [cheap, cursed],
+        given=given,
+        rng=rng,
+    )
+    assert [(card.name, str(mark)) for card, mark in trait_marks] == [
+        ("Smithy", "Cheap (Trait)"),
+        ("Village", "Cursed (Trait)"),
     ]
 
 
@@ -1477,6 +2052,26 @@ def test_obelisk_marks_an_action_pile(db: CardDatabase, rng: random.Random) -> N
     assert [(card.name, str(mark)) for card, mark in obelisk_marks] == [
         ("Village", "Obelisk"),
     ]
+
+
+@pytest.mark.parametrize(
+    ("kingdom", "pile"),
+    [(["Duke", "Village", "Smithy"], "Smithy"), (["Duke", "Village"], "Village")],
+    ids=["in the Kingdom", "not in the Kingdom"],
+)
+def test_obelisk_goes_on_its_given_pile_if_it_is_in_the_kingdom(
+    db: CardDatabase,
+    rng: random.Random,
+    kingdom: list[str],
+    pile: str,
+) -> None:
+    obelisk_marks = _choose_obelisk_pile(
+        get_cards(db, *kingdom),
+        get_cards(db, "Obelisk"),
+        given=Choices(obelisk=db.get_card_by_name("Smithy")),
+        rng=rng,
+    )
+    assert [card.name for card, _mark in obelisk_marks] == [pile]
 
 
 def test_no_obelisk_pile_without_obelisk(db: CardDatabase, rng: random.Random) -> None:

@@ -313,6 +313,47 @@ def test_generate_includes_a_card_from_another_set(runner: CliRunner) -> None:
     assert "Young Witch" in [row[1] for row in parse_tables(result.output)["Kingdom"]]
 
 
+def test_generate_passes_the_swaps_in_order(
+    runner: CliRunner,
+    generate_game_calls: list[dict[str, Any]],
+) -> None:
+    args = ["--swap", "Smithy", "--swap", "Moat=Village"]
+    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
+    assert runner.invoke(cli, ["generate"]).exit_code == 0
+    assert [kwargs["swaps"] for kwargs in generate_game_calls] == [
+        [("Smithy", None), ("Moat", "Village")],
+        [],
+    ]
+
+
+def test_generate_swaps_a_card_of_the_game(runner: CliRunner) -> None:
+    args = ["generate", "--seed", "1", "--format", "names"]
+    names = runner.invoke(cli, args).stdout.strip().split(", ")
+    swapped_names = (
+        runner.invoke(cli, [*args, "--swap", names[0]]).stdout.strip().split(", ")
+    )
+    assert set(names) - set(swapped_names) == {names[0]}
+    assert len(set(swapped_names) - set(names)) == 1
+
+
+@pytest.mark.parametrize("value", ["=Village", "Smithy="])
+def test_generate_swap_must_name_a_card_and_any_replacement(
+    runner: CliRunner,
+    value: str,
+) -> None:
+    result = runner.invoke(cli, ["generate", "--swap", value])
+    assert result.exit_code == 2
+    assert f"{value!r} is not of the form CARD or CARD=REPLACEMENT" in result.output
+
+
+def test_generate_swap_of_a_card_not_in_the_game_is_a_usage_error(
+    runner: CliRunner,
+) -> None:
+    result = runner.invoke(cli, ["generate", "--include", "Smithy", "--swap", "Copper"])
+    assert result.exit_code == 2
+    assert "'Copper' is not a Kingdom card or Landscape" in result.output
+
+
 def test_generate_unknown_card_is_a_usage_error(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["generate", "--exclude", "Smithee"])
     assert result.exit_code == 2

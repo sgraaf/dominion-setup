@@ -10,7 +10,7 @@ from __future__ import annotations
 import random
 import re
 from collections import defaultdict
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 from .models import (
@@ -32,7 +32,7 @@ from .models import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Mapping
 
 
 class SetupGenerationError(ValueError):
@@ -57,12 +57,14 @@ def generate_game(  # noqa: PLR0913
     exclude: Iterable[str] = (),
     promos: Iterable[str] = (),
     black_market_size: int = 15,
+    swaps: Iterable[tuple[str, str | None]] = (),
     players: int | None = None,
     rng: random.Random | None = None,
 ) -> Game:
     """Generate a complete, rules-accurate Dominion game setup.
 
-    For a given *rng* seed, the result is the same in every process.
+    For a given *rng* seed (and *swaps*), the result is the same in every
+    process.
 
     Args:
         db: The loaded card database.
@@ -87,6 +89,16 @@ def generate_game(  # noqa: PLR0913
             are still checked. Defaults to none.
         black_market_size: How many unused Kingdom cards to deal into the
             Black Market deck, if Black Market is in use. Defaults to 15.
+        swaps: ``(card, replacement)`` pairs, each swapping a Kingdom card,
+            extra pile (e.g. the Bane) or Landscape of the game, in order. The
+            replacement (from any set) takes the card's place, or if it is
+            ``None``, a card is drawn in its place. Everything that does not
+            depend on the swapped card stays the same, and the swapped card is
+            not drawn again. Nor are the extra piles and Black Market cards of
+            the game before the swap, even if they are no longer in use. A
+            replacement is included like the *include*d cards, so it must not
+            be *exclude*d, and the Kingdom must still meet the
+            *requirements*. Defaults to none.
         players: The number of players (2 to 6), to work out how many cards
             go in each pile. Defaults to ``None``, which leaves the pile sizes
             unknown.
@@ -99,17 +111,105 @@ def generate_game(  # noqa: PLR0913
 
     Raises:
         SetupGenerationError: If the selected sets cannot produce a valid
-            setup.
+            setup, or a swap is not possible.
     """
-    # NOTE: the steps below consume *rng* in a fixed order, so reordering them
-    # changes which game a given seed produces.
     if players is not None and not MIN_PLAYERS <= players <= MAX_PLAYERS:
         msg = f"Dominion is for {MIN_PLAYERS} to {MAX_PLAYERS} players, not {players}"
         raise SetupGenerationError(msg)
     if rng is None:
         rng = random.Random()
+    # lists, as each swap sets the game up again with them
+    requirements = list(requirements)
+    exclude = list(exclude)
+    promos = list(promos)
 
+    def set_up(
+        given: Choices,
+        *,
+        include: Iterable[str],
+        exclude: Iterable[str],
+        max_landscapes: int,
+        min_landscapes: int = 0,
+    ) -> tuple[Game, Choices]:
+        return _set_up(
+            db,
+            given,
+            sets_editions=sets_editions,
+            sort_order=sort_order,
+            max_landscapes=max_landscapes,
+            min_landscapes=min_landscapes,
+            requirements=requirements,
+            include=include,
+            exclude=exclude,
+            promos=promos,
+            black_market_size=black_market_size,
+            players=players,
+            rng=rng,
+        )
+
+    game, choices = set_up(
+        Choices(use_colony=use_colony, use_shelters=use_shelters),
+        include=include,
+        exclude=exclude,
+        max_landscapes=max_landscapes,
+    )
+
+    # swap each card, and set the game up again with the choices that do not
+    # depend on it. The swapped-out cards are not drawn again, unless picked.
+    swapped_out: list[str] = []
+    for card_name, replacement_name in swaps:
+        card = _selectable_card_by_name(db, card_name)
+        replacement = None
+        if replacement_name is not None:
+            replacement = _selectable_card_by_name(db, replacement_name)
+            if replacement_name in exclude:
+                msg = f"{replacement_name!r} is excluded"
+                raise SetupGenerationError(msg)
+        # the number of Landscapes stays the same
+        landscape_count = len(choices.landscapes)
+        choices = _swap(choices, card, replacement)
+        swapped_out = [name for name in swapped_out if name != replacement_name]
+        swapped_out.append(card_name)
+        game, choices = set_up(
+            choices,
+            include=[
+                chosen.name for chosen in (*choices.kingdom_cards, *choices.landscapes)
+            ],
+            exclude=[*exclude, *swapped_out],
+            max_landscapes=landscape_count,
+            min_landscapes=landscape_count,
+        )
+    return game
+
+
+def _set_up(  # noqa: PLR0913
+    db: CardDatabase,
+    given: Choices,
+    *,
+    sets_editions: set[tuple[CardSet, CardSetEdition]] | None,
+    sort_order: KingdomSortOrder,
+    max_landscapes: int,
+    min_landscapes: int,
+    requirements: Iterable[KingdomRequirement],
+    include: Iterable[str],
+    exclude: Iterable[str],
+    promos: Iterable[str],
+    black_market_size: int,
+    players: int | None,
+    rng: random.Random,
+) -> tuple[Game, Choices]:
+    """Set up a game, with the *given* choices where they still apply.
+
+    Returns the game and the choices it was set up with. The given extra piles
+    and Black Market cards are never drawn into the Kingdom.
+    """
+    # NOTE: the steps below consume *rng* in a fixed order, so reordering them
+    # changes which game a given seed produces.
     include = list(include)
+    exclude = [
+        *exclude,
+        *(card.name for card in (*given.extra_piles.values(), *given.black_market)),
+    ]
     sets_editions, exclude = _restrict_promos(
         db,
         promos,
@@ -118,13 +218,14 @@ def generate_game(  # noqa: PLR0913
         exclude=exclude,
     )
 
-    # 1. Kingdom: 10 Kingdom piles that meet the *requirements*, and up to
-    # *max_landscapes* Landscapes, with the *include*d cards and without the
-    # *exclude*d ones
+    # 1. Kingdom: 10 Kingdom piles that meet the *requirements*, and
+    # *min_landscapes* to *max_landscapes* Landscapes, with the *include*d cards
+    # and without the *exclude*d ones
     kingdom_cards, landscapes, unused_kingdom_cards = _draw_kingdom(
         db,
         sets_editions=sets_editions,
         max_landscapes=max_landscapes,
+        min_landscapes=min_landscapes,
         requirements=requirements,
         include=include,
         exclude=exclude,
@@ -133,17 +234,21 @@ def generate_game(  # noqa: PLR0913
 
     # 2. Extra Kingdom piles (Bane, Ferryman, …), the Prophecy and the Black
     # Market deck
-    extra_piles, prophecy, black_market_deck = _choose_extra_piles(
+    chosen_extra_piles, dealt_prophecy, black_market_deck = _choose_extra_piles(
         db,
         kingdom_cards,
         landscapes,
         unused_kingdom_cards,
         black_market_size=black_market_size,
+        given=given,
         rng=rng,
     )
-    kingdom_cards += [card for rule, card in extra_piles if rule.in_supply]
-    set_aside_cards = [card for rule, card in extra_piles if not rule.in_supply]
-    single_set_aside_cards = {card for rule, card in extra_piles if rule.is_single_card}
+    drawn_kingdom_cards = tuple(kingdom_cards)
+    kingdom_cards += [card for rule, card in chosen_extra_piles if rule.in_supply]
+    set_aside_cards = [card for rule, card in chosen_extra_piles if not rule.in_supply]
+    single_set_aside_cards = {
+        card for rule, card in chosen_extra_piles if rule.is_single_card
+    }
 
     # cards set aside for Ferryman, Way of the Mouse and Riverboat, and those in
     # the Black Market deck, can still be gained or played, so they trigger
@@ -151,9 +256,9 @@ def generate_game(  # noqa: PLR0913
     cards_in_use = [*kingdom_cards, *set_aside_cards, *black_market_deck]
 
     # 3. Cards dealt out for specific cards in use
-    druid_boons = _choose_druid_boons(db, cards_in_use, rng=rng)
-    ally = _choose_ally(db, cards_in_use, rng=rng)
-    trait_marks = _choose_trait_piles(kingdom_cards, landscapes, rng=rng)
+    dealt_boons = _choose_druid_boons(db, cards_in_use, given=given, rng=rng)
+    dealt_ally = _choose_ally(db, cards_in_use, given=given, rng=rng)
+    trait_marks = _choose_trait_piles(kingdom_cards, landscapes, given=given, rng=rng)
 
     # 4. Non-Supply piles
     non_supply_cards = [
@@ -166,15 +271,20 @@ def generate_game(  # noqa: PLR0913
         db,
         kingdom_cards,
         cards_in_use,
-        use_colony=use_colony,
-        use_shelters=use_shelters,
+        use_colony=given.use_colony,
+        use_shelters=given.use_shelters,
         rng=rng,
     )
     heirlooms = sorted(_heirlooms(db, cards_in_use), key=sort_order.sort_key)
     basic_cards += heirlooms
 
     # 6. Obelisk
-    obelisk_marks = _choose_obelisk_pile(kingdom_cards, landscapes, rng=rng)
+    obelisk_marks = _choose_obelisk_pile(
+        kingdom_cards,
+        landscapes,
+        given=given,
+        rng=rng,
+    )
 
     # 7. Materials (mats & tokens)
     materials = sorted(
@@ -191,7 +301,9 @@ def generate_game(  # noqa: PLR0913
     )
 
     # collect each pile's marks (Bane, Trait, Obelisk, …)
-    extra_pile_marks = [(card, PileMark(rule.mark)) for rule, card in extra_piles]
+    extra_pile_marks = [
+        (card, PileMark(rule.mark)) for rule, card in chosen_extra_piles
+    ]
     marks: dict[Card, list[PileMark]] = defaultdict(list)
     for card, mark in [*extra_pile_marks, *trait_marks, *obelisk_marks]:
         marks[card].append(mark)
@@ -206,21 +318,137 @@ def generate_game(  # noqa: PLR0913
             size = _pile_size(card, players=players, heirloom_count=len(heirlooms))
         return Pile(card=card, marks=tuple(marks[card]), size=size)
 
-    return Game(
+    game = Game(
         basic_piles=[pile(card) for card in basic_cards],
         kingdom_piles=[
             pile(card) for card in sorted(kingdom_cards, key=sort_order.sort_key)
         ],
         non_supply_piles=[pile(card) for card in non_supply_cards],
         landscapes=sorted(landscapes, key=sort_order.sort_key),
-        ally=ally,
-        prophecy=prophecy,
-        druid_boons=druid_boons,
+        ally=dealt_ally,
+        prophecy=dealt_prophecy,
+        druid_boons=dealt_boons,
         black_market_deck=sorted(black_market_deck, key=sort_order.sort_key),
         materials=materials,
         setup_instructions=setup_instructions,
         players=players,
     )
+
+    trait_piles: dict[Card, Card] = {}
+    for card, mark in trait_marks:
+        assert mark.trait is not None  # guaranteed by PileMark
+        trait_piles[mark.trait] = card
+    basic_card_names = {card.name for card in basic_cards}
+    choices = Choices(
+        kingdom_cards=drawn_kingdom_cards,
+        landscapes=tuple(landscapes),
+        extra_piles={rule.mark: card for rule, card in chosen_extra_piles},
+        black_market=tuple(black_market_deck),
+        prophecy=dealt_prophecy,
+        ally=dealt_ally,
+        druid_boons=tuple(dealt_boons),
+        traits=trait_piles,
+        obelisk=next((card for card, _mark in obelisk_marks), None),
+        use_colony="Colony" in basic_card_names,
+        use_shelters="Shelters" in basic_card_names,
+    )
+    return game, choices
+
+
+# ── Choices & swaps ──────────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class Choices:
+    """The choices made in setting up a game, to set it up again after a swap.
+
+    Given to ``_set_up``, each one is used if it still applies (e.g. the Bane
+    if Young Witch is in use), and drawn otherwise.
+    """
+
+    # the Kingdom cards drawn in step 1, without the extra piles
+    kingdom_cards: tuple[Card, ...] = ()
+    landscapes: tuple[Card, ...] = ()
+    extra_piles: Mapping[PileMarkKind, Card] = field(default_factory=dict)
+    black_market: tuple[Card, ...] = ()
+    prophecy: Card | None = None
+    ally: Card | None = None
+    druid_boons: tuple[Card, ...] = ()
+    # the Kingdom pile of each Trait
+    traits: Mapping[Card, Card] = field(default_factory=dict)
+    obelisk: Card | None = None
+    use_colony: bool | None = None
+    use_shelters: bool | None = None
+
+    @property
+    def swappable_cards(self) -> tuple[Card, ...]:
+        """The Kingdom cards, extra piles and Landscapes, which a swap can swap."""
+        return (*self.kingdom_cards, *self.extra_piles.values(), *self.landscapes)
+
+
+NO_CHOICES = Choices()
+
+
+def _swap(choices: Choices, card: Card, replacement: Card | None) -> Choices:
+    """Return the *choices* with *card* swapped for *replacement*, or left to draw.
+
+    *card* is a Kingdom card, extra pile or Landscape of the *choices*, and a
+    *replacement* from the Black Market deck leaves it. (A Trait or Obelisk on
+    the pile of *card* is drawn again, as ``_set_up`` only uses given piles that
+    are in the Kingdom.)
+    """
+    if card not in choices.swappable_cards:
+        msg = (
+            f"{card.name!r} is not a Kingdom card, extra pile or Landscape of the game"
+        )
+        raise SetupGenerationError(msg)
+    if replacement is not None:
+        _check_replacement(choices, card, replacement)
+
+    extra_piles = dict(choices.extra_piles)
+    for mark, pile in choices.extra_piles.items():
+        if pile == card:
+            del extra_piles[mark]
+            if replacement is not None:
+                extra_piles[mark] = replacement
+    return replace(
+        choices,
+        kingdom_cards=_replaced(choices.kingdom_cards, card, replacement),
+        landscapes=_replaced(choices.landscapes, card, replacement),
+        extra_piles=extra_piles,
+        black_market=tuple(
+            bm_card for bm_card in choices.black_market if bm_card != replacement
+        ),
+    )
+
+
+def _check_replacement(choices: Choices, card: Card, replacement: Card) -> None:
+    """Raise ``SetupGenerationError`` if *replacement* cannot take the place of *card*."""
+    if replacement in choices.swappable_cards:
+        msg = f"{replacement.name!r} is already in the game"
+        raise SetupGenerationError(msg)
+    if card in choices.landscapes and replacement.is_kingdom:
+        msg = f"{replacement.name!r} is not a Landscape"
+        raise SetupGenerationError(msg)
+    if card not in choices.landscapes and not replacement.is_kingdom:
+        msg = f"{replacement.name!r} is not a Kingdom card"
+        raise SetupGenerationError(msg)
+    for rule in EXTRA_PILE_RULES:
+        is_pile_of_rule = choices.extra_piles.get(rule.mark) == card
+        if is_pile_of_rule and not rule.is_eligible(replacement):
+            msg = f"{replacement.name!r} is not eligible for {rule.mark} ({rule.requirement})"
+            raise SetupGenerationError(msg)
+
+
+def _replaced(
+    cards: tuple[Card, ...],
+    card: Card,
+    replacement: Card | None,
+) -> tuple[Card, ...]:
+    """Return *cards* with *replacement* in the place of *card*, or without *card*."""
+    if replacement is None:
+        return tuple(other for other in cards if other != card)
+    return tuple(replacement if other == card else other for other in cards)
 
 
 # ── 1. Kingdom ───────────────────────────────────────────────────────────────
@@ -301,18 +529,21 @@ def is_selectable(card: Card) -> bool:
     return card.is_kingdom or bool(SELECTABLE_LANDSCAPE_TYPES & set(card.types))
 
 
+def _selectable_card_by_name(db: CardDatabase, name: str) -> Card:
+    """Look up the Kingdom card or selectable Landscape called *name*."""
+    if (card := db.card_name_to_card.get(name)) is None:
+        msg = f"Card {name!r} not found"
+        raise SetupGenerationError(msg)
+    if not is_selectable(card):
+        msg = f"{name!r} is not a Kingdom card or Landscape"
+        raise SetupGenerationError(msg)
+    return card
+
+
 def _selectable_cards_by_name(db: CardDatabase, names: Iterable[str]) -> list[Card]:
     """Look up the Kingdom cards and selectable Landscapes called *names*."""
-    cards = []
-    for name in dict.fromkeys(names):  # each name once, in order
-        if (card := db.card_name_to_card.get(name)) is None:
-            msg = f"Card {name!r} not found"
-            raise SetupGenerationError(msg)
-        if not is_selectable(card):
-            msg = f"{name!r} is not a Kingdom card or Landscape"
-            raise SetupGenerationError(msg)
-        cards.append(card)
-    return cards
+    # each name once, in order
+    return [_selectable_card_by_name(db, name) for name in dict.fromkeys(names)]
 
 
 def _included_and_excluded_cards(
@@ -376,12 +607,13 @@ def _draw_kingdom(  # noqa: PLR0913
     *,
     sets_editions: set[tuple[CardSet, CardSetEdition]] | None,
     max_landscapes: int,
+    min_landscapes: int = 0,
     requirements: Iterable[KingdomRequirement] = (),
     include: Iterable[str] = (),
     exclude: Iterable[str] = (),
     rng: random.Random,
 ) -> tuple[list[Card], list[Card], list[Card]]:
-    """Draw 10 Kingdom cards and at most *max_landscapes* Landscapes.
+    """Draw 10 Kingdom cards and *min_landscapes* to *max_landscapes* Landscapes.
 
     Each of the *requirements* is met by at least one of the Kingdom cards. The
     cards named in *include* (from any set) are always used, and the cards
@@ -414,6 +646,11 @@ def _draw_kingdom(  # noqa: PLR0913
     kingdom_candidate_count = sum(card.is_kingdom for card in candidates)
     if kingdom_candidate_count < free_slot_count:
         msg = f"Not enough kingdom cards: need {free_slot_count}, found {kingdom_candidate_count}"
+        raise SetupGenerationError(msg)
+    missing_landscape_count = min_landscapes - len(landscapes)
+    landscape_candidate_count = len(candidates) - kingdom_candidate_count
+    if landscape_candidate_count < missing_landscape_count:
+        msg = f"Not enough Landscapes: need {missing_landscape_count}, found {landscape_candidate_count}"
         raise SetupGenerationError(msg)
 
     unmet_requirements = _unmet_requirements(requirements, kingdom_cards, candidates)
@@ -453,6 +690,13 @@ def _draw_kingdom(  # noqa: PLR0913
                 skipped_cards.append(card)
         elif len(landscapes) < max_landscapes:
             landscapes.append(card)
+
+    # draw on past the 10th Kingdom card until there are *min_landscapes*
+    # Landscapes. The Kingdom cards drawn past stay unused.
+    missing_landscape_count = min_landscapes - len(landscapes)
+    if missing_landscape_count > 0:
+        landscapes_left = [card for card in reversed(deck) if not card.is_kingdom]
+        landscapes += landscapes_left[:missing_landscape_count]
 
     unused_kingdom_cards = [card for card in deck if card.is_kingdom]
     return kingdom_cards, landscapes, [*unused_kingdom_cards, *skipped_cards]
@@ -540,6 +784,7 @@ def _choose_extra_piles(  # noqa: PLR0913
     unused_kingdom_cards: list[Card],
     *,
     black_market_size: int,
+    given: Choices = NO_CHOICES,
     rng: random.Random,
 ) -> tuple[list[tuple[ExtraPileRule, Card]], Card | None, list[Card]]:
     """Choose the extra Kingdom piles, the Prophecy and the Black Market deck.
@@ -548,9 +793,12 @@ def _choose_extra_piles(  # noqa: PLR0913
     are chosen from *unused_kingdom_cards*, which must be in random order.
     Returns each extra pile along with the rule that required it, in the order
     they were chosen, the Prophecy, and the (at most *black_market_size*) cards
-    of the Black Market deck.
+    of the Black Market deck. The *given* extra piles, Prophecy and Black Market
+    deck are used instead of drawn ones.
     """
-    candidates = list(unused_kingdom_cards)  # copy, as chosen cards are removed
+    # a copy, as chosen cards are removed. The given cards are not among them,
+    # as ``generate_game`` excludes them from the draw.
+    candidates = list(unused_kingdom_cards)
     extra_piles: list[tuple[ExtraPileRule, Card]] = []
     prophecy: Card | None = None
     black_market_deck: list[Card] = []
@@ -572,7 +820,7 @@ def _choose_extra_piles(  # noqa: PLR0913
         if prophecy is None and any(
             CardType.OMEN in card.types for card in cards_in_use
         ):
-            prophecy = rng.choice(
+            prophecy = given.prophecy or rng.choice(
                 _cards_of_type(db.landscape_cards.values(), CardType.PROPHECY),
             )
 
@@ -584,8 +832,10 @@ def _choose_extra_piles(  # noqa: PLR0913
         # are in random order, so the first ones are a uniformly random choice.
         if "Black Market" in triggers and "Black Market" not in resolved_triggers:
             resolved_triggers.add("Black Market")
-            black_market_deck = candidates[:black_market_size]
-            del candidates[:black_market_size]
+            # a given deck is topped up, if a card left it
+            drawn_count = black_market_size - len(given.black_market)
+            black_market_deck = [*given.black_market, *candidates[:drawn_count]]
+            del candidates[:drawn_count]
             continue
 
         pending_rules = [
@@ -598,13 +848,14 @@ def _choose_extra_piles(  # noqa: PLR0913
 
         for rule in pending_rules:
             resolved_triggers.add(rule.trigger)
-            # the unused cards are in random order, so the first eligible one
-            # is a uniformly random choice
-            card = next(filter(rule.is_eligible, candidates), None)
-            if card is None:
-                msg = f"No eligible {rule.mark} card ({rule.requirement}) available for {rule.trigger}"
-                raise SetupGenerationError(msg)
-            candidates.remove(card)
+            if (card := given.extra_piles.get(rule.mark)) is None:
+                # the unused cards are in random order, so the first eligible
+                # one is a uniformly random choice
+                card = next(filter(rule.is_eligible, candidates), None)
+                if card is None:
+                    msg = f"No eligible {rule.mark} card ({rule.requirement}) available for {rule.trigger}"
+                    raise SetupGenerationError(msg)
+                candidates.remove(card)
             extra_piles.append((rule, card))
 
 
@@ -617,12 +868,15 @@ def _choose_druid_boons(
     db: CardDatabase,
     cards_in_use: list[Card],
     *,
+    given: Choices = NO_CHOICES,
     rng: random.Random,
 ) -> list[Card]:
-    """Return the Boons dealt face up for Druid, if Druid is in use."""
+    """Return the Boons dealt face up for Druid (or the *given* ones), if Druid is in use."""
     # if Druid is being used, deal three Boon cards face up for use with it.
     if not any(card.name == "Druid" for card in cards_in_use):
         return []
+    if given.druid_boons:
+        return list(given.druid_boons)
     return rng.sample(
         _cards_of_type(db.mixed_pile_cards.values(), CardType.BOON),
         DRUID_BOON_COUNT,
@@ -633,23 +887,30 @@ def _choose_ally(
     db: CardDatabase,
     cards_in_use: list[Card],
     *,
+    given: Choices = NO_CHOICES,
     rng: random.Random,
 ) -> Card | None:
-    """Return the Ally, if any Liaison is in use."""
+    """Return the Ally (or the *given* one), if any Liaison is in use."""
     # in any game using Liaisons, exactly one Ally is chosen, and it determines
     # what effect Favor tokens have in that game.
     if not any(CardType.LIAISON in card.types for card in cards_in_use):
         return None
-    return rng.choice(_cards_of_type(db.landscape_cards.values(), CardType.ALLY))
+    return given.ally or rng.choice(
+        _cards_of_type(db.landscape_cards.values(), CardType.ALLY),
+    )
 
 
 def _choose_trait_piles(
     kingdom_cards: list[Card],
     landscapes: list[Card],
     *,
+    given: Choices = NO_CHOICES,
     rng: random.Random,
 ) -> list[tuple[Card, PileMark]]:
-    """Return the Kingdom pile each Trait applies to, with its mark."""
+    """Return the Kingdom pile each Trait applies to, with its mark.
+
+    A Trait's *given* pile is used if it is in the Kingdom.
+    """
     # each Trait landscape applies to a different randomly chosen Action or
     # Treasure Supply pile.
     trait_landscapes = _cards_of_type(landscapes, CardType.TRAIT)
@@ -660,13 +921,24 @@ def _choose_trait_piles(
         for card in kingdom_cards
         if {CardType.ACTION, CardType.TREASURE} & set(card.types)
     ]
-    if len(trait_eligible_cards) < len(trait_landscapes):
-        msg = f"Not enough Action/Treasure kingdom piles ({len(trait_eligible_cards)}) for {len(trait_landscapes)} Trait landscape(s)"
+    trait_targets = {
+        trait: target
+        for trait, target in given.traits.items()
+        if trait in trait_landscapes and target in trait_eligible_cards
+    }
+    # the other Traits go on the other piles
+    drawn_traits = [trait for trait in trait_landscapes if trait not in trait_targets]
+    drawn_eligible_cards = [
+        card for card in trait_eligible_cards if card not in trait_targets.values()
+    ]
+    if len(drawn_eligible_cards) < len(drawn_traits):
+        msg = f"Not enough Action/Treasure kingdom piles ({len(drawn_eligible_cards)}) for {len(drawn_traits)} Trait landscape(s)"
         raise SetupGenerationError(msg)
-    trait_targets = rng.sample(trait_eligible_cards, len(trait_landscapes))
+    drawn_targets = rng.sample(drawn_eligible_cards, len(drawn_traits))
+    trait_targets.update(zip(drawn_traits, drawn_targets, strict=True))
     return [
-        (target, PileMark(PileMarkKind.TRAIT, trait=trait))
-        for target, trait in zip(trait_targets, trait_landscapes, strict=True)
+        (trait_targets[trait], PileMark(PileMarkKind.TRAIT, trait=trait))
+        for trait in trait_landscapes
     ]
 
 
@@ -828,9 +1100,13 @@ def _choose_obelisk_pile(
     kingdom_cards: list[Card],
     landscapes: list[Card],
     *,
+    given: Choices = NO_CHOICES,
     rng: random.Random,
 ) -> list[tuple[Card, PileMark]]:
-    """Return the Kingdom pile Obelisk applies to, with its mark, if Obelisk is in use."""
+    """Return the Kingdom pile Obelisk applies to, with its mark, if Obelisk is in use.
+
+    The *given* pile is used if it is in the Kingdom.
+    """
     # in games using Obelisk, choose a random Action Supply pile whose cards
     # will be worth 2VP each when scoring. This includes the extra Supply piles
     # (e.g. Bane).
@@ -840,7 +1116,11 @@ def _choose_obelisk_pile(
     if not obelisk_candidate_cards:
         msg = "No eligible card (Action Supply pile) available for Obelisk"
         raise SetupGenerationError(msg)
-    return [(rng.choice(obelisk_candidate_cards), PileMark(PileMarkKind.OBELISK))]
+    if given.obelisk in obelisk_candidate_cards:
+        pile = given.obelisk
+    else:
+        pile = rng.choice(obelisk_candidate_cards)
+    return [(pile, PileMark(PileMarkKind.OBELISK))]
 
 
 # ── 7. Materials ─────────────────────────────────────────────────────────────
