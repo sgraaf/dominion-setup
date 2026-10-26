@@ -21,6 +21,7 @@ import pytest
 from dominion_setup import generator
 from dominion_setup.generator import (
     EMPTY_BOARD,
+    EXTRA_PILE_RULES,
     REQUIREMENT_RULES,
     SetupGenerationError,
     _basic_cards,
@@ -38,6 +39,7 @@ from dominion_setup.generator import (
     _setup_instructions,
     generate_game,
     is_selectable,
+    read_board_code,
 )
 from dominion_setup.models import (
     SET_EDITION_CHOICES,
@@ -1095,6 +1097,145 @@ def test_invalid_board_raises(
 ) -> None:
     with pytest.raises(SetupGenerationError, match=re.escape(message)):
         generate_game(db, board=make_board(db.get_card_by_name))
+
+
+def test_read_board_code(db: CardDatabase) -> None:
+    code = (
+        "players=4"
+        "&kingdom=bridge,clerk,young-witch"
+        "&landscapes=baths,cheap,way-of-the-mouse"
+        "&bane=moat"
+        "&ferryman=moneylender"
+        "&way-of-the-mouse=village"
+        "&approaching-army=militia"
+        "&riverboat=laboratory"
+        "&traits=cheap:bridge"
+        "&obelisk=clerk"
+        "&ally=architects-guild"
+        "&prophecy=approaching-army"
+        "&boons=the-earths-gift,the-skys-gift,the-suns-gift"
+        "&black-market=catapult-rocks,smithy"
+        "&colony=on"
+        "&shelters=on"
+    )
+    card = db.get_card_by_name
+    board, players = read_board_code(db, code)
+    assert board == Board(
+        kingdom_cards=tuple(get_cards(db, "Bridge", "Clerk", "Young Witch")),
+        landscapes=tuple(get_cards(db, "Baths", "Cheap", "Way of the Mouse")),
+        extra_piles={
+            PileMarkKind.BANE: card("Moat"),
+            PileMarkKind.FERRYMAN: card("Moneylender"),
+            PileMarkKind.WAY_OF_THE_MOUSE: card("Village"),
+            PileMarkKind.APPROACHING_ARMY: card("Militia"),
+            PileMarkKind.RIVERBOAT: card("Laboratory"),
+        },
+        traits={card("Cheap"): card("Bridge")},
+        obelisk=card("Clerk"),
+        ally=card("Architects' Guild"),
+        prophecy=card("Approaching Army"),
+        druid_boons=tuple(
+            get_cards(db, "The Earth's Gift", "The Sky's Gift", "The Sun's Gift"),
+        ),
+        black_market_deck=tuple(get_cards(db, "Catapult/Rocks", "Smithy")),
+        use_colony=True,
+        use_shelters=True,
+    )
+    assert players == 4
+    assert board.to_code(players=players) == code
+
+
+def test_read_board_code_reads_full_names_in_any_case(db: CardDatabase) -> None:
+    """Also escaped, as in a link."""
+    board, _ = read_board_code(
+        db,
+        "kingdom=Devil%27s+Workshop,FARMERS' MARKET,smithy&traits=Cheap:Smithy",
+    )
+    assert board.kingdom_cards == tuple(
+        get_cards(db, "Devil's Workshop", "Farmers' Market", "Smithy"),
+    )
+    assert board.traits == {db.get_card_by_name("Cheap"): db.get_card_by_name("Smithy")}
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "https://example.com/dominion/?players=2&kingdom=smithy#top",
+        "?players=2&kingdom=smithy",
+        # unknown keys and blank cards
+        "seed=42&players=2&kingdom=smithy,,+&v=2026.4.0",
+    ],
+)
+def test_read_board_code_reads_a_link_leniently(db: CardDatabase, code: str) -> None:
+    assert read_board_code(db, code) == (
+        Board(
+            kingdom_cards=(db.get_card_by_name("Smithy"),),
+            use_colony=False,
+            use_shelters=False,
+        ),
+        2,
+    )
+
+
+@pytest.mark.parametrize("code", ["", "colony=off&shelters=OFF"])
+def test_read_board_code_colony_and_shelters_are_off_unless_on(
+    db: CardDatabase,
+    code: str,
+) -> None:
+    assert read_board_code(db, code) == (
+        Board(use_colony=False, use_shelters=False),
+        None,
+    )
+
+
+@pytest.mark.parametrize(
+    ("code", "message"),
+    [
+        ("kingdom=smithy,witchcraft", "Card 'witchcraft' not found"),
+        ("bane=nope", "Card 'nope' not found"),
+        ("traits=cheap:nope", "Card 'nope' not found"),
+        ("players=many", "'many' is not a number of players"),
+        ("traits=cheap", "'cheap' is not a Trait and its pile, like 'cheap:village'"),
+        ("colony=maybe", "'colony' must be 'on' or 'off', not 'maybe'"),
+    ],
+)
+def test_read_invalid_board_code_raises(
+    db: CardDatabase,
+    code: str,
+    message: str,
+) -> None:
+    with pytest.raises(SetupGenerationError, match=re.escape(message)):
+        read_board_code(db, code)
+
+
+def test_extra_pile_rules_match_the_extra_pile_marks() -> None:
+    """Each extra pile rule has an extra-pile mark, and no other kind is one.
+
+    ``Board.to_code`` writes only extra piles from ``extra_piles``, and
+    ``read_board_code`` reads only the rules' keys, so the two must agree.
+    """
+    assert {rule.mark for rule in EXTRA_PILE_RULES} == {
+        mark for mark in PileMarkKind if mark.is_extra_pile
+    }
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_board_code_sets_up_the_same_game(db: CardDatabase, seed: int) -> None:
+    game = generate_game(db, players=4, rng=random.Random(seed), **BOARD_OPTIONS)
+    code = game.to_dict()["code"]
+    board, players = read_board_code(db, code)
+    assert board.to_code(players=players) == code
+
+    game_of_code = generate_game(
+        db,
+        board=board,
+        players=players,
+        rng=random.Random(seed + 1),
+    )
+    # the Druid Boons are in the order of the Board
+    assert set(game_of_code.druid_boons) == set(game.druid_boons)
+    game_of_code = replace(game_of_code, druid_boons=game.druid_boons)
+    assert game_of_code.to_dict() == game.to_dict()
 
 
 def test_same_seed_generates_the_same_game(db: CardDatabase) -> None:

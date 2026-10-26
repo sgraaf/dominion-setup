@@ -13,12 +13,13 @@ The module is organised in four sections:
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import IntEnum, StrEnum
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterable, Iterator, Mapping
 
 
 # ── Sets & editions ──────────────────────────────────────────────────────────
@@ -231,6 +232,21 @@ class CardCost:
         return data
 
 
+# Runs of characters other than (lowercase) letters and digits, which a slug
+# writes as "-".
+SLUG_SEPARATOR_PATTERN = re.compile(r"[^a-z0-9]+")
+
+
+def slugify(name: str) -> str:
+    """Return *name* as a slug, e.g. "devils-workshop" for "Devil's Workshop".
+
+    A slug is lowercase, without apostrophes, and has a "-" for each other run
+    of characters that are not letters or digits. A name in any case, or a
+    slug, gives the same slug.
+    """
+    return SLUG_SEPARATOR_PATTERN.sub("-", name.lower().replace("'", "")).strip("-")
+
+
 @dataclass(frozen=True, slots=True)
 class Card:
     """A single card definition loaded from JSON."""
@@ -259,6 +275,11 @@ class Card:
             image=data["image"],
             instructions=data["instructions"],
         )
+
+    @property
+    def slug(self) -> str:
+        """The name as a slug (e.g. "devils-workshop"), as in Board codes."""
+        return slugify(self.name)
 
     @property
     def display_set(self) -> str:
@@ -428,6 +449,22 @@ class PileMarkKind(StrEnum):
     APPROACHING_ARMY = "Approaching Army"
     RIVERBOAT = "Riverboat"
 
+    @property
+    def is_extra_pile(self) -> bool:
+        """Whether a pile of this kind is an extra Kingdom pile (the Bane, …).
+
+        Extra piles are keyed in ``Board.extra_piles`` (they are the piles
+        required by ``generator.EXTRA_PILE_RULES``); the other kinds (Obelisk,
+        a Trait) mark a Kingdom pile.
+        """
+        return self in {
+            PileMarkKind.BANE,
+            PileMarkKind.FERRYMAN,
+            PileMarkKind.WAY_OF_THE_MOUSE,
+            PileMarkKind.APPROACHING_ARMY,
+            PileMarkKind.RIVERBOAT,
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class PileMark:
@@ -502,13 +539,16 @@ class KingdomSortOrder(StrEnum):
     COST = "cost"
     SET = "set"
 
-    def sort_key(self, card: Card) -> tuple[int | CardCost | str, ...]:
+    def sort_key(self, card: Card) -> tuple[int | str, ...]:
         """Return the key that puts *card* in this sort order."""
         if self == KingdomSortOrder.NAME:
             return (card.name,)
+        # the cost as it orders, so that costs that order the same (e.g. $0 and
+        # none) are sorted by name
+        cost = card.cost._sort_key()
         if self == KingdomSortOrder.SET:
-            return (CARD_SET_ORDER[card.set], card.cost, card.name)
-        return (card.cost, card.name)
+            return (CARD_SET_ORDER[card.set], *cost, card.name)
+        return (*cost, card.name)
 
 
 class KingdomRequirement(StrEnum):
@@ -547,6 +587,49 @@ class Board:
     black_market_deck: tuple[Card, ...] = ()
     use_colony: bool | None = None
     use_shelters: bool | None = None
+
+    def to_code(self, *, players: int | None = None) -> str:
+        """Return the Board (and the number of *players*) as a code.
+
+        The code is the query string of a web app link, e.g.
+        "players=4&kingdom=bridge,clerk,…&landscapes=baths,way-of-the-mouse&bane=moat&colony=on".
+        Cards are written as slugs, the keys in a fixed order and the lists
+        sorted, so there is one code per Board. Choices left empty are left
+        out, and so are Colony and Shelters unless they are on. Of
+        ``extra_piles``, only extra piles are written; an Obelisk or a Trait
+        has its own key.
+        """
+
+        def slug(card: Card | None) -> str:
+            return "" if card is None else card.slug
+
+        def slugs(cards: Iterable[Card]) -> str:
+            return ",".join(sorted(card.slug for card in cards))
+
+        # e.g. "cheap:village"
+        trait_piles = (
+            f"{trait.slug}:{pile.slug}" for trait, pile in self.traits.items()
+        )
+        params = {
+            "players": "" if players is None else str(players),
+            "kingdom": slugs(self.kingdom_cards),
+            "landscapes": slugs(self.landscapes),
+            # e.g. "bane=moat"
+            **{
+                slugify(mark): self.extra_piles[mark].slug
+                for mark in PileMarkKind
+                if mark.is_extra_pile and mark in self.extra_piles
+            },
+            "traits": ",".join(sorted(trait_piles)),
+            "obelisk": slug(self.obelisk),
+            "ally": slug(self.ally),
+            "prophecy": slug(self.prophecy),
+            "boons": slugs(self.druid_boons),
+            "black-market": slugs(self.black_market_deck),
+            "colony": "on" if self.use_colony else "",
+            "shelters": "on" if self.use_shelters else "",
+        }
+        return "&".join(f"{key}={value}" for key, value in params.items() if value)
 
 
 @dataclass(slots=True)
@@ -598,6 +681,7 @@ class Game:
     def to_dict(self) -> dict[str, Any]:
         """Convert to a JSON-serializable dictionary, as ``dominion-setup generate --format json`` prints it.
 
+        The ``code`` is the Board code of the game (see ``Board.to_code``).
         Cards that are not in a pile (Landscapes, the Ally, …) take the form of
         a pile without marks or size.
         """
@@ -606,6 +690,7 @@ class Game:
             return None if card is None else Pile(card).to_dict()
 
         return {
+            "code": self.board.to_code(players=self.players),
             "players": self.players,
             "sets": self.sets_used,
             "kingdom": [pile.to_dict() for pile in self.kingdom_piles],

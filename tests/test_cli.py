@@ -490,6 +490,7 @@ def test_generate_formats_the_game_as_json(
 
     assert json.loads(result.output) == {
         "seed": 42,
+        "code": "",
         "players": None,
         "sets": [str(set_) for set_ in game.sets_used],
         "kingdom": [card_dict("Hamlet", "Bane"), card_dict("Young Witch")],

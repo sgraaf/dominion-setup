@@ -184,6 +184,18 @@ board = Board(kingdom_cards=(db.get_card_by_name("Witch"),))
 game = generate_game(db, board=board)  # Witch and 9 random Kingdom cards
 ```
 
+A Board (and the number of players) can be written as a code, the query string of a link with the cards as slugs, and read back. Like a Board, a code with gaps is filled up:
+
+```python
+from dominion_setup import read_board_code
+
+code = game.board.to_code(players=game.players)  # also game.to_dict()["code"]
+# e.g. "players=4&kingdom=bridge,clerk,…&landscapes=baths,way-of-the-mouse&bane=moat&way-of-the-mouse=village&colony=on"
+
+board, players = read_board_code(db, code)  # or a whole link, or full card names
+game = generate_game(db, board=board, players=players)
+```
+
 #### Exploring the `Game` object
 
 ```python

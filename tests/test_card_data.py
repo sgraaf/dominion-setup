@@ -724,6 +724,11 @@ def test_ways_cost_nothing(db: CardDatabase) -> None:
             assert card.cost == CardCost()
 
 
+def test_card_slugs_are_unique(db: CardDatabase) -> None:
+    """So a Board code can name every card by its slug."""
+    assert len({card.slug for card in db}) == len(db)
+
+
 # ── Individual cards ─────────────────────────────────────────────────────────
 
 

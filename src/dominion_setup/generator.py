@@ -12,6 +12,7 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
+from urllib.parse import parse_qsl
 
 from .models import (
     MATERIAL_ORDER,
@@ -30,6 +31,7 @@ from .models import (
     PileMark,
     PileMarkKind,
     SetupInstruction,
+    slugify,
 )
 
 if TYPE_CHECKING:
@@ -455,6 +457,82 @@ def _check_board(board: Board) -> None:  # noqa: C901, PLR0912
     if board.druid_boons and len(board.druid_boons) != DRUID_BOON_COUNT:
         msg = f"Druid needs {DRUID_BOON_COUNT} Boons, not {len(board.druid_boons)}"
         raise SetupGenerationError(msg)
+
+
+def read_board_code(db: CardDatabase, code: str) -> tuple[Board, int | None]:  # noqa: C901
+    """Read a Board code (see ``Board.to_code``), and the number of players in it.
+
+    The *code* can also be a whole link, whose query string is read. Its cards
+    can be written as slugs or as full names in any case, and unknown keys are
+    ignored. Colony and Shelters are off unless the code turns them on.
+    Whether the Board can be set up is checked by ``generate_game``.
+
+    Raises:
+        SetupGenerationError: If the *code* names an unknown card, or has a
+            value that cannot be read (e.g. ``players=many``).
+    """
+    # the query string of a link, or the code itself
+    query = code.rpartition("?")[2].partition("#")[0]
+    params = dict(parse_qsl(query))
+    cards_by_slug = {card.slug: card for card in db}
+
+    def card(name: str) -> Card:
+        if (found := cards_by_slug.get(slugify(name))) is None:
+            msg = f"Card {name!r} not found"
+            raise SetupGenerationError(msg)
+        return found
+
+    def names(key: str) -> list[str]:
+        """Return the names in the list of *key*, without blanks."""
+        return [name for name in params.get(key, "").split(",") if name.strip()]
+
+    def cards(key: str) -> tuple[Card, ...]:
+        return tuple(map(card, names(key)))
+
+    def optional_card(key: str) -> Card | None:
+        return card(params[key]) if key in params else None
+
+    def is_on(key: str) -> bool:
+        value = params.get(key, "off")
+        if value.lower() not in {"on", "off"}:
+            msg = f"{key!r} must be 'on' or 'off', not {value!r}"
+            raise SetupGenerationError(msg)
+        return value.lower() == "on"
+
+    players = None
+    if "players" in params:
+        try:
+            players = int(params["players"])
+        except ValueError:
+            msg = f"{params['players']!r} is not a number of players"
+            raise SetupGenerationError(msg) from None
+
+    traits: dict[Card, Card] = {}
+    for item in names("traits"):
+        trait_name, separator, pile_name = item.partition(":")
+        if not separator:
+            msg = f"{item!r} is not a Trait and its pile, like 'cheap:village'"
+            raise SetupGenerationError(msg)
+        traits[card(trait_name)] = card(pile_name)
+
+    board = Board(
+        kingdom_cards=cards("kingdom"),
+        landscapes=cards("landscapes"),
+        extra_piles={
+            rule.mark: card(params[key])
+            for rule in EXTRA_PILE_RULES
+            if (key := slugify(rule.mark)) in params
+        },
+        traits=traits,
+        obelisk=optional_card("obelisk"),
+        ally=optional_card("ally"),
+        prophecy=optional_card("prophecy"),
+        druid_boons=cards("boons"),
+        black_market_deck=cards("black-market"),
+        use_colony=is_on("colony"),
+        use_shelters=is_on("shelters"),
+    )
+    return board, players
 
 
 def _swappable_cards(board: Board) -> tuple[Card, ...]:

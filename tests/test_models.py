@@ -12,6 +12,7 @@ import pytest
 from dominion_setup.models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
     SET_EDITION_CHOICES,
+    Board,
     Card,
     CardCost,
     CardDatabase,
@@ -26,6 +27,7 @@ from dominion_setup.models import (
     PileMark,
     PileMarkKind,
     SetupInstruction,
+    slugify,
 )
 
 # ── Sets & editions ──────────────────────────────────────────────────────────
@@ -246,6 +248,30 @@ def test_card_purpose_properties(smithy: Card, purpose: CardPurpose) -> None:
         assert getattr(card, prop_name) is (other_purpose == purpose)
 
 
+@pytest.mark.parametrize(
+    ("name", "slug"),
+    [
+        ("Smithy", "smithy"),
+        ("Way of the Mouse", "way-of-the-mouse"),
+        ("Devil's Workshop", "devils-workshop"),
+        ("Farmers' Market", "farmers-market"),
+        ("Catapult/Rocks", "catapult-rocks"),
+        ("Will-o'-Wisp", "will-o-wisp"),
+        ("City-state", "city-state"),
+        # a name in any case, or a slug, gives the same slug
+        ("DEVIL'S WORKSHOP", "devils-workshop"),
+        ("devils-workshop", "devils-workshop"),
+        (" Village ", "village"),
+    ],
+)
+def test_slugify(name: str, slug: str) -> None:
+    assert slugify(name) == slug
+
+
+def test_card_slug(smithy: Card) -> None:
+    assert replace(smithy, name="Devil's Workshop").slug == "devils-workshop"
+
+
 # ── Card database ────────────────────────────────────────────────────────────
 
 PURPOSE_INDEXES: dict[CardPurpose, str] = {
@@ -338,6 +364,17 @@ def test_other_pile_marks_must_not_have_a_trait(smithy: Card) -> None:
         PileMark(PileMarkKind.BANE, trait=smithy)
 
 
+def test_pile_mark_kind_is_extra_pile() -> None:
+    """Extra piles are keyed in ``Board.extra_piles``; Obelisk and Trait are not."""
+    assert {mark for mark in PileMarkKind if mark.is_extra_pile} == {
+        PileMarkKind.BANE,
+        PileMarkKind.FERRYMAN,
+        PileMarkKind.WAY_OF_THE_MOUSE,
+        PileMarkKind.APPROACHING_ARMY,
+        PileMarkKind.RIVERBOAT,
+    }
+
+
 def test_pile_has_no_marks_by_default(smithy: Card) -> None:
     assert Pile(card=smithy).marks == ()
 
@@ -398,6 +435,103 @@ def test_kingdom_sort_order_sort_key(
     ]
     sorted_names = [card.name for card in sorted(cards, key=sort_order.sort_key)]
     assert sorted_names == expected_names
+
+
+@pytest.mark.parametrize("sort_order", [KingdomSortOrder.COST, KingdomSortOrder.SET])
+def test_kingdom_sort_order_sorts_by_name_after_a_cost_without_coins_or_zero(
+    smithy: Card,
+    sort_order: KingdomSortOrder,
+) -> None:
+    """A cost without coins sorts like $0, so the cards are sorted by name."""
+    cards = [
+        replace(smithy, name="Cheap", cost=CardCost()),
+        replace(smithy, name="Alms", cost=CardCost(coins=0)),
+        replace(smithy, name="Obelisk", cost=CardCost()),
+    ]
+    for order in (cards, cards[::-1]):
+        sorted_names = [card.name for card in sorted(order, key=sort_order.sort_key)]
+        assert sorted_names == ["Alms", "Cheap", "Obelisk"]
+
+
+def test_board_to_code(smithy: Card) -> None:
+    """Cards as slugs, with the keys in a fixed order and each list sorted."""
+
+    def card(name: str) -> Card:
+        return replace(smithy, name=name)
+
+    board = Board(
+        kingdom_cards=(card("Young Witch"), card("Devil's Workshop"), card("Bridge")),
+        landscapes=(card("Way of the Mouse"), card("Cheap"), card("Fated")),
+        extra_piles={
+            PileMarkKind.RIVERBOAT: card("Cellar"),
+            PileMarkKind.APPROACHING_ARMY: card("Militia"),
+            PileMarkKind.WAY_OF_THE_MOUSE: card("Village"),
+            PileMarkKind.FERRYMAN: card("Moneylender"),
+            PileMarkKind.BANE: card("Moat"),
+        },
+        traits={card("Fated"): card("Young Witch"), card("Cheap"): card("Bridge")},
+        obelisk=card("Young Witch"),
+        ally=card("Architects' Guild"),
+        prophecy=card("Approaching Army"),
+        druid_boons=(
+            card("The Sun's Gift"),
+            card("The Earth's Gift"),
+            card("The Sky's Gift"),
+        ),
+        black_market_deck=(card("Smithy"), card("Catapult/Rocks")),
+        use_colony=True,
+        use_shelters=True,
+    )
+    assert board.to_code(players=4) == (
+        "players=4"
+        "&kingdom=bridge,devils-workshop,young-witch"
+        "&landscapes=cheap,fated,way-of-the-mouse"
+        "&bane=moat"
+        "&ferryman=moneylender"
+        "&way-of-the-mouse=village"
+        "&approaching-army=militia"
+        "&riverboat=cellar"
+        "&traits=cheap:bridge,fated:young-witch"
+        "&obelisk=young-witch"
+        "&ally=architects-guild"
+        "&prophecy=approaching-army"
+        "&boons=the-earths-gift,the-skys-gift,the-suns-gift"
+        "&black-market=catapult-rocks,smithy"
+        "&colony=on"
+        "&shelters=on"
+    )
+
+
+@pytest.mark.parametrize(("players", "code"), [(None, ""), (3, "players=3")])
+def test_empty_board_to_code(players: int | None, code: str) -> None:
+    assert Board().to_code(players=players) == code
+
+
+@pytest.mark.parametrize("use", [None, False])
+def test_board_to_code_leaves_out_colony_and_shelters_unless_on(
+    smithy: Card,
+    use: bool | None,  # noqa: FBT001
+) -> None:
+    board = Board(kingdom_cards=(smithy,), use_colony=use, use_shelters=use)
+    assert board.to_code() == "kingdom=smithy"
+
+
+def test_board_to_code_writes_only_extra_piles(smithy: Card) -> None:
+    """Marks in ``extra_piles`` that are not extra piles are left out.
+
+    ``_check_board`` rejects them, but an unvalidated Board can hold one,
+    and it must not be written: an Obelisk would collide with the
+    ``obelisk`` key, and a Trait is an unknown key.
+    """
+    board = Board(
+        kingdom_cards=(smithy,),
+        extra_piles={
+            PileMarkKind.OBELISK: replace(smithy, name="Cellar"),
+            PileMarkKind.TRAIT: replace(smithy, name="Militia"),
+            PileMarkKind.BANE: replace(smithy, name="Moat"),
+        },
+    )
+    assert board.to_code() == "kingdom=smithy&bane=moat"
 
 
 def test_game_is_empty_by_default() -> None:
@@ -465,8 +599,10 @@ def test_game_to_dict(smithy: Card) -> None:
         materials=[Material.COIN_TOKENS],
         setup_instructions=[SetupInstruction("Starting decks", "…")],
         players=2,
+        board=Board(kingdom_cards=(smithy,), landscapes=(alms,)),
     )
     assert game.to_dict() == {
+        "code": "players=2&kingdom=smithy&landscapes=alms",
         "players": 2,
         "sets": ["Base", "Adventures"],
         "kingdom": [Pile(card=smithy, size=10).to_dict()],

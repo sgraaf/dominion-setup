@@ -49,6 +49,7 @@ def test_public_api_exports() -> None:
         "generate_game",
         "is_selectable",
         "load_card_database",
+        "read_board_code",
     }
     assert expected <= set(dominion_setup.__all__)
 
