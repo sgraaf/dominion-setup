@@ -142,6 +142,28 @@
     "instructions": "Worth 1 VP per Duchy you have."
   },
   {
+    "name": "Farm",
+    "types": [
+      "Treasure",
+      "Victory"
+    ],
+    "purpose": "Kingdom Pile",
+    "cost": {
+      "coins": 6
+    },
+    "set": "Intrigue",
+    "editions": [
+      1,
+      2
+    ],
+    "quantity": 12,
+    "image": "Farm.jpg",
+    "instructions": "$2\n-----\n2 VP",
+    "old_names": [
+      "Harem"
+    ]
+  },
+  {
     "name": "Great Hall",
     "types": [
       "Action",
@@ -158,25 +180,6 @@
     "quantity": 12,
     "image": "Great Hall.jpg",
     "instructions": "+1 Card\n+1 Action\n-----\n1 VP"
-  },
-  {
-    "name": "Harem",
-    "types": [
-      "Treasure",
-      "Victory"
-    ],
-    "purpose": "Kingdom Pile",
-    "cost": {
-      "coins": 6
-    },
-    "set": "Intrigue",
-    "editions": [
-      1,
-      2
-    ],
-    "quantity": 12,
-    "image": "Farm.jpg",
-    "instructions": "$2\n-----\n2 VP"
   },
   {
     "name": "Ironworks",

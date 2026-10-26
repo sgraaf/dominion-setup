@@ -15,6 +15,7 @@ from dominion_setup.models import (
     CardSet,
     CardSetEdition,
     CardType,
+    slugify,
 )
 
 # ── Sets & editions ──────────────────────────────────────────────────────────
@@ -725,8 +726,16 @@ def test_ways_cost_nothing(db: CardDatabase) -> None:
 
 
 def test_card_slugs_are_unique(db: CardDatabase) -> None:
-    """So a Board code can name every card by its slug."""
-    assert len({card.slug for card in db}) == len(db)
+    """So a Board code can name every card by its slug, or by an old name's."""
+    slugs = [slugify(name) for card in db for name in (card.name, *card.old_names)]
+    assert len(set(slugs)) == len(slugs)
+
+
+def test_renamed_cards_keep_their_old_names(db: CardDatabase) -> None:
+    """So codes and links that name a card by an old name still find it."""
+    assert {card.name: card.old_names for card in db if card.old_names} == {
+        "Farm": ("Harem",),
+    }
 
 
 # ── Individual cards ─────────────────────────────────────────────────────────
@@ -754,7 +763,7 @@ CARDS: dict[str, str] = {
     "Witch": "Kingdom Pile | Action, Attack | $5 | Base | 10",
     # Intrigue
     "Minion": "Kingdom Pile | Action, Attack | $5 | Intrigue | 10",
-    "Harem": "Kingdom Pile | Treasure, Victory | $6 | Intrigue | 12",
+    "Farm": "Kingdom Pile | Treasure, Victory | $6 | Intrigue | 12",
     # Seaside
     "Wharf": "Kingdom Pile | Action, Duration | $5 | Seaside | 10",
     "Ghost Ship": "Kingdom Pile | Action, Attack | $5 | Seaside, 1E | 10",

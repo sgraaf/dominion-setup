@@ -20,6 +20,7 @@ from .models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
     SET_EDITION_CHOICES,
     Card,
+    CardDatabase,
     CardSet,
     CardSetEdition,
     CardType,
@@ -107,6 +108,15 @@ def _parse_swaps(
             raise click.BadParameter(msg)
         swaps.append((card, replacement or None))
     return swaps
+
+
+def _card_name(db: CardDatabase, name: str) -> str:
+    """Return the name of the card that *name* finds (see ``CardDatabase.find_card``).
+
+    An unknown *name* is returned as it is, for ``generate_game`` to reject.
+    """
+    card = db.find_card(name)
+    return name if card is None else card.name
 
 
 def _print_pile_table(piles: list[Pile], *, title: str, numbered: bool) -> None:
@@ -410,11 +420,17 @@ def generate(
                 for requirement, is_required in requirement_flags.items()
                 if is_required
             ],
-            include=include,
-            exclude=exclude,
-            promos=promos,
+            include=tuple(_card_name(db, name) for name in include),
+            exclude=tuple(_card_name(db, name) for name in exclude),
+            promos=tuple(_card_name(db, name) for name in promos),
             black_market_size=black_market_size,
-            swaps=swaps,
+            swaps=[
+                (
+                    _card_name(db, card),
+                    None if replacement is None else _card_name(db, replacement),
+                )
+                for card, replacement in swaps
+            ],
             players=players,
             rng=random.Random(seed),
         )

@@ -56,6 +56,7 @@ class Card(TypedDict):
     quantity: int
     image: str
     instructions: str
+    old_names: NotRequired[list[str]]
 
 
 WIKI_INDEX_URL = "https://wiki.dominionstrategy.com/index.php"
@@ -111,6 +112,12 @@ INSTRUCTIONS_PATTERNS_REPLS: list[tuple[str, str]] = [
     (r"\n{2,}", r"\n"),
     (r" {2,}", r" "),
 ]
+
+# the old names of renamed cards, by their new names, so that Board codes and
+# links that name a card by an old name still find it
+OLD_NAMES: dict[str, list[str]] = {
+    "Farm": ["Harem"],
+}
 
 # hand-written cards, each standing for a whole pile (or deck) of different
 # components
@@ -231,7 +238,7 @@ def parse_raw_card(raw_card: dict[str, Any]) -> Card:
     if extra := raw_card["Cost Extra"]:
         cost["extra"] = extra
 
-    name = html.unescape(raw_card["Name"]) if raw_card["Name"] != "Farm" else "Harem"
+    name = html.unescape(raw_card["Name"])
 
     types = [type_.strip() for type_ in raw_card["Types"]]
 
@@ -279,7 +286,7 @@ def parse_raw_card(raw_card: dict[str, Any]) -> Card:
     if quantity == 0 and purpose == "Kingdom Pile":
         instructions = f"Setup: {instructions}"
 
-    return {
+    card: Card = {
         "name": name,
         "types": types,
         "purpose": purpose,
@@ -293,6 +300,9 @@ def parse_raw_card(raw_card: dict[str, Any]) -> Card:
         "image": html.unescape(raw_card["Image"]),
         "instructions": instructions,
     }
+    if name in OLD_NAMES:
+        card["old_names"] = OLD_NAMES[name]
+    return card
 
 
 def scrape_card_table(*, headless: bool = True) -> list[Card]:

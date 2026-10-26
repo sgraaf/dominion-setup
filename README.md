@@ -322,7 +322,7 @@ Require a Kingdom card with +Buy(s) and one that trashes cards:
 dominion-setup generate --set base_2e --set intrigue_2e --require-buys --require-trashing
 ```
 
-Always use Witch (and the Alms Event), never Chapel:
+Always use Witch (and the Alms Event), never Chapel. Cards can be named in any case, as slugs (e.g. `young-witch`), or by an old name (e.g. Harem for Farm):
 
 ```sh
 dominion-setup generate --set base_2e --include Witch --include Alms --exclude Chapel

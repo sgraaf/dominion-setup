@@ -260,6 +260,8 @@ class Card:
     quantity: int
     image: str
     instructions: str
+    # the names the card had before it was renamed (e.g. "Harem" for Farm)
+    old_names: tuple[str, ...] = ()
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Card:
@@ -274,6 +276,7 @@ class Card:
             quantity=data["quantity"],
             image=data["image"],
             instructions=data["instructions"],
+            old_names=tuple(data.get("old_names", ())),
         )
 
     @property
@@ -329,6 +332,8 @@ class CardDatabase:
 
     cards: list[Card]
     card_name_to_card: dict[str, Card] = field(init=False)
+    # by the slugs of their names and old names
+    card_slug_to_card: dict[str, Card] = field(init=False)
     basic_cards: dict[str, Card] = field(init=False)
     kingdom_cards: dict[str, Card] = field(init=False)
     landscape_cards: dict[str, Card] = field(init=False)
@@ -338,6 +343,11 @@ class CardDatabase:
 
     def __post_init__(self) -> None:
         self.card_name_to_card = self._create_index(self.cards)
+        self.card_slug_to_card = {
+            slugify(name): card
+            for card in self.cards
+            for name in (card.name, *card.old_names)
+        }
         self.basic_cards = self._create_index(
             self.get_cards_by_purpose(CardPurpose.BASIC),
         )
@@ -373,6 +383,15 @@ class CardDatabase:
             msg = f"Card {name!r} not found"
             raise ValueError(msg)
         return card
+
+    def find_card(self, name: str) -> Card | None:
+        """Return the card called *name*, or ``None`` if there is none.
+
+        The *name* can be a card's name in any case, its slug (e.g.
+        "devils-workshop"), or an old name (e.g. "Harem" for Farm), so that
+        Board codes and links still find a card after it is renamed.
+        """
+        return self.card_slug_to_card.get(slugify(name))
 
     def get_cards_by_set_edition(
         self,

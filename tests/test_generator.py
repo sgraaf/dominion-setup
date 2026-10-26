@@ -1157,6 +1157,12 @@ def test_read_board_code_reads_full_names_in_any_case(db: CardDatabase) -> None:
     assert board.traits == {db.get_card_by_name("Cheap"): db.get_card_by_name("Smithy")}
 
 
+def test_read_board_code_reads_old_names(db: CardDatabase) -> None:
+    """So a code from before a card was renamed still reads."""
+    board, _ = read_board_code(db, "kingdom=harem,smithy")
+    assert board.kingdom_cards == tuple(get_cards(db, "Farm", "Smithy"))
+
+
 @pytest.mark.parametrize(
     "code",
     [

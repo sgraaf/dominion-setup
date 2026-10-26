@@ -463,8 +463,9 @@ def read_board_code(db: CardDatabase, code: str) -> tuple[Board, int | None]:  #
     """Read a Board code (see ``Board.to_code``), and the number of players in it.
 
     The *code* can also be a whole link, whose query string is read. Its cards
-    can be written as slugs or as full names in any case, and unknown keys are
-    ignored. Colony and Shelters are off unless the code turns them on.
+    can be written as slugs, as full names in any case, or by their old names
+    (see ``CardDatabase.find_card``), and unknown keys are ignored. Colony and
+    Shelters are off unless the code turns them on.
     Whether the Board can be set up is checked by ``generate_game``.
 
     Raises:
@@ -474,10 +475,9 @@ def read_board_code(db: CardDatabase, code: str) -> tuple[Board, int | None]:  #
     # the query string of a link, or the code itself
     query = code.rpartition("?")[2].partition("#")[0]
     params = dict(parse_qsl(query))
-    cards_by_slug = {card.slug: card for card in db}
 
     def card(name: str) -> Card:
-        if (found := cards_by_slug.get(slugify(name))) is None:
+        if (found := db.find_card(name)) is None:
             msg = f"Card {name!r} not found"
             raise SetupGenerationError(msg)
         return found

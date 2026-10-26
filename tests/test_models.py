@@ -184,6 +184,24 @@ def test_card_from_dict() -> None:
     )
 
 
+def test_card_from_dict_reads_old_names() -> None:
+    card = Card.from_dict(
+        {
+            "name": "Farm",
+            "types": ["Treasure", "Victory"],
+            "purpose": "Kingdom Pile",
+            "cost": {"coins": 6},
+            "set": "Intrigue",
+            "editions": [1, 2],
+            "quantity": 12,
+            "image": "Farm.jpg",
+            "instructions": "$2\n-----\n2 VP",
+            "old_names": ["Harem"],
+        },
+    )
+    assert card.old_names == ("Harem",)
+
+
 def test_card_is_frozen(smithy: Card) -> None:
     with pytest.raises(AttributeError):
         smithy.name = "Village"  # type: ignore # noqa: PGH003
@@ -306,6 +324,33 @@ def test_card_database_get_card_by_name(smithy: Card) -> None:
     assert db.get_card_by_name("Smithy") == smithy
     with pytest.raises(ValueError, match="Card 'Witch' not found"):
         db.get_card_by_name("Witch")
+
+
+@pytest.mark.parametrize(
+    ("name", "found"),
+    [
+        ("Devil's Workshop", "Devil's Workshop"),
+        # a name in any case, or a slug
+        ("DEVIL'S WORKSHOP", "Devil's Workshop"),
+        ("devils-workshop", "Devil's Workshop"),
+        # an old name, also in any case, or as a slug
+        ("Harem", "Farm"),
+        ("HAREM", "Farm"),
+        ("harem", "Farm"),
+    ],
+)
+def test_card_database_find_card(smithy: Card, name: str, found: str) -> None:
+    db = CardDatabase(
+        [
+            replace(smithy, name="Devil's Workshop"),
+            replace(smithy, name="Farm", old_names=("Harem",)),
+        ],
+    )
+    assert db.find_card(name) == db.get_card_by_name(found)
+
+
+def test_card_database_find_card_of_an_unknown_name_is_none(smithy: Card) -> None:
+    assert CardDatabase([smithy]).find_card("Witch") is None
 
 
 def test_card_database_get_cards_by_set_edition(smithy: Card) -> None:

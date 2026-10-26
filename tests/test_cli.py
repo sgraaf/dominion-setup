@@ -304,6 +304,28 @@ def test_generate_includes_and_excludes_cards(
     assert generate_game_calls[0]["exclude"] == ("Moat",)
 
 
+def test_generate_finds_cards_by_slug_name_in_any_case_or_old_name(
+    runner: CliRunner,
+    generate_game_calls: list[dict[str, Any]],
+) -> None:
+    args = [
+        *("--include", "young-witch"),
+        *("--exclude", "harem"),
+        *("--promo", "STASH"),
+        *("--swap", "devils-workshop=FARMERS' MARKET"),
+        *("--swap", "smithy"),
+    ]
+    assert runner.invoke(cli, ["generate", *args]).exit_code == 0
+    (kwargs,) = generate_game_calls
+    assert kwargs["include"] == ("Young Witch",)
+    assert kwargs["exclude"] == ("Farm",)
+    assert kwargs["promos"] == ("Stash",)
+    assert kwargs["swaps"] == [
+        ("Devil's Workshop", "Farmers' Market"),
+        ("Smithy", None),
+    ]
+
+
 def test_generate_includes_a_card_from_another_set(runner: CliRunner) -> None:
     result = runner.invoke(
         cli,
