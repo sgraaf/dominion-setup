@@ -5,9 +5,10 @@ The module is organised in four sections:
 - **Sets & editions**: ``CardSet`` and ``CardSetEdition``.
 - **Cards**: ``Card`` and the enums and value objects that describe it.
 - **Card database**: ``CardDatabase``, all cards indexed for lookup.
-- **Game**: ``Game``, the generated setup, the ``Pile``, ``PileMark``,
-  ``Material`` and ``SetupInstruction`` types it is made of, and the
-  ``KingdomSortOrder`` and ``KingdomRequirement`` options for generating it.
+- **Game**: ``Game``, the generated setup, the ``Board`` of choices it is set
+  up from, the ``Pile``, ``PileMark``, ``Material`` and ``SetupInstruction``
+  types it is made of, and the ``KingdomSortOrder`` and ``KingdomRequirement``
+  options for generating it.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from enum import IntEnum, StrEnum
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
 
 # ── Sets & editions ──────────────────────────────────────────────────────────
@@ -521,6 +522,33 @@ class KingdomRequirement(StrEnum):
     TRASHING = "Trashing"
 
 
+@dataclass(frozen=True, slots=True)
+class Board:
+    """The choices that make up a game, from which the rest of its setup follows.
+
+    The Heirlooms, Potion, Ruins, non-Supply piles, materials and setup
+    instructions all follow from these. Given to ``generate_game``, each choice
+    is used if it applies (e.g. the Bane if Young Witch is in use), and drawn if
+    it is left empty (or ``None``).
+    """
+
+    # the 10 Kingdom cards, without the extra piles
+    kingdom_cards: tuple[Card, ...] = ()
+    landscapes: tuple[Card, ...] = ()
+    # the extra Kingdom piles (Bane, Ferryman, …)
+    extra_piles: Mapping[PileMarkKind, Card] = field(default_factory=dict)
+    # the Kingdom pile of each Trait
+    traits: Mapping[Card, Card] = field(default_factory=dict)
+    # the Kingdom pile of Obelisk
+    obelisk: Card | None = None
+    ally: Card | None = None
+    prophecy: Card | None = None
+    druid_boons: tuple[Card, ...] = ()
+    black_market_deck: tuple[Card, ...] = ()
+    use_colony: bool | None = None
+    use_shelters: bool | None = None
+
+
 @dataclass(slots=True)
 class Game:
     """Complete output representing a ready-to-play Dominion setup."""
@@ -536,6 +564,8 @@ class Game:
     materials: list[Material] = field(default_factory=list)
     setup_instructions: list[SetupInstruction] = field(default_factory=list)
     players: int | None = None
+    # the choices the game was set up with
+    board: Board = field(default_factory=Board)
 
     @property
     def basic_cards(self) -> list[Card]:

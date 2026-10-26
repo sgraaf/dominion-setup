@@ -38,6 +38,7 @@ def test_public_api_exports() -> None:
     expected = {
         "CARD_SETS_WITH_SECOND_EDITIONS",
         "SET_EDITION_CHOICES",
+        "Board",
         "CardDatabase",
         "CardSet",
         "Game",

@@ -20,9 +20,8 @@ import pytest
 
 from dominion_setup import generator
 from dominion_setup.generator import (
-    NO_CHOICES,
+    EMPTY_BOARD,
     REQUIREMENT_RULES,
-    Choices,
     SetupGenerationError,
     _basic_cards,
     _cards_of_type,
@@ -42,6 +41,7 @@ from dominion_setup.generator import (
 )
 from dominion_setup.models import (
     SET_EDITION_CHOICES,
+    Board,
     Card,
     CardDatabase,
     CardSet,
@@ -734,6 +734,367 @@ def test_replacement_must_keep_the_requirements_met(db: CardDatabase) -> None:
     assert "Festival" in card_names(game.kingdom_cards)
     with pytest.raises(SetupGenerationError, match="requirement"):
         generate_game(db, swaps=[("Market", "Laboratory")], **options)
+
+
+# options for a game that makes every kind of choice on a Board but Ferryman's,
+# Way of the Mouse's and Riverboat's, with 3 Landscapes and a Black Market deck
+# of 5
+BOARD_OPTIONS: dict[str, Any] = {
+    "sets_editions": {
+        (CardSet.BASE, CardSetEdition.SECOND_EDITION),
+        (CardSet.ADVENTURES, CardSetEdition.FIRST_EDITION),
+    },
+    "include": [
+        "Young Witch",
+        "Black Market",
+        "Druid",
+        "Sycophant",
+        "Kitsune",
+        "Cheap",
+        "Obelisk",
+        "Alms",
+    ],
+    "max_landscapes": 3,
+    "black_market_size": 5,
+}
+
+
+def piles_by_mark(game: Game) -> dict[str, str]:
+    """Map each mark of the game, as displayed (e.g. "Bane"), to its pile."""
+    return {mark: name for name, marks in marked_piles(game).items() for mark in marks}
+
+
+@pytest.mark.parametrize("seed", range(5))
+def test_game_has_the_board_it_was_set_up_with(db: CardDatabase, seed: int) -> None:
+    game = generate_game(db, rng=random.Random(seed), **BOARD_OPTIONS)
+    board = game.board
+
+    in_supply_extra_piles = [
+        card
+        for mark, card in board.extra_piles.items()
+        if mark in {PileMarkKind.BANE, PileMarkKind.APPROACHING_ARMY}
+    ]
+    assert len(board.kingdom_cards) == 10
+    assert sorted(card_names([*board.kingdom_cards, *in_supply_extra_piles])) == sorted(
+        card_names(game.kingdom_cards),
+    )
+    assert set(board.landscapes) == set(game.landscapes)
+    assert board.obelisk is not None
+    assert piles_by_mark(game) == {
+        **{str(mark): card.name for mark, card in board.extra_piles.items()},
+        **{f"{trait.name} (Trait)": pile.name for trait, pile in board.traits.items()},
+        "Obelisk": board.obelisk.name,
+    }
+    assert board.ally is not None
+    assert board.ally == game.ally
+    assert board.prophecy is not None
+    assert board.prophecy == game.prophecy
+    assert len(board.druid_boons) == 3
+    assert list(board.druid_boons) == game.druid_boons
+    assert len(board.black_market_deck) == 5
+    assert set(board.black_market_deck) == set(game.black_market_deck)
+    assert board.use_colony == ("Colony" in card_names(game.basic_cards))
+    assert board.use_shelters == ("Shelters" in card_names(game.basic_cards))
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_complete_board_gives_the_same_game_for_any_seed(
+    db: CardDatabase,
+    seed: int,
+) -> None:
+    """Also from every set, with the default *max_landscapes* of 2 and
+    *black_market_size* of 15: the Board keeps its 3 Landscapes and its Black
+    Market deck of 5.
+    """
+    game = generate_game(db, rng=random.Random(seed), **BOARD_OPTIONS)
+    assert generate_game(db, board=game.board, rng=random.Random(seed + 1)) == game
+
+
+def test_board_fills_up_the_kingdom(db: CardDatabase, rng: random.Random) -> None:
+    board = Board(kingdom_cards=tuple(get_cards(db, *BASE_KINGDOM[:9])))
+    game = generate_game(
+        db,
+        sets_editions={BASE_2E},
+        board=board,
+        max_landscapes=0,
+        rng=rng,
+    )
+    kingdom = card_names(game.board.kingdom_cards)
+    assert len(kingdom) == 10
+    [drawn] = set(kingdom) - set(BASE_KINGDOM[:9])
+    assert drawn in card_names(db.get_cards_by_set_edition(*BASE_2E))
+
+
+def test_board_draws_the_choices_it_leaves_out(
+    db: CardDatabase,
+    rng: random.Random,
+) -> None:
+    board = Board(kingdom_cards=tuple(get_cards(db, *YOUNG_WITCH_KINGDOM)))
+    game = generate_game(db, sets_editions={BASE_2E}, board=board, rng=rng)
+    assert game.board.extra_piles == {
+        PileMarkKind.BANE: db.get_card_by_name(bane(game)),
+    }
+    assert game.board.use_colony is not None
+    assert game.board.use_shelters is not None
+
+
+def test_board_drops_the_choices_that_do_not_apply(
+    db: CardDatabase,
+    rng: random.Random,
+) -> None:
+    kingdom_cards = tuple(get_cards(db, *BASE_KINGDOM))
+    board = Board(
+        kingdom_cards=kingdom_cards,
+        extra_piles={PileMarkKind.BANE: db.get_card_by_name("Vassal")},
+        traits={db.get_card_by_name("Cheap"): db.get_card_by_name("Smithy")},
+        obelisk=db.get_card_by_name("Smithy"),
+        ally=db.get_card_by_name("Band of Nomads"),
+        prophecy=db.get_card_by_name("Bureaucracy"),
+        druid_boons=tuple(
+            get_cards(db, "The Sun's Gift", "The Earth's Gift", "The Moon's Gift"),
+        ),
+        black_market_deck=tuple(get_cards(db, "Festival")),
+        use_colony=False,
+        use_shelters=False,
+    )
+    game = generate_game(db, board=board, rng=rng)
+    assert game.board == Board(
+        kingdom_cards=kingdom_cards,
+        use_colony=False,
+        use_shelters=False,
+    )
+
+
+def black_market_board(db: CardDatabase, deck_size: int) -> Board:
+    """Return a Board with Black Market and a deck of *deck_size* cards."""
+    kingdom = ["Black Market", *BASE_KINGDOM[1:]]
+    deck = [
+        card
+        for card in sorted(
+            db.kingdom_cards.values(),
+            key=KingdomSortOrder.NAME.sort_key,
+        )
+        if card.name not in kingdom
+    ][:deck_size]
+    return Board(
+        kingdom_cards=tuple(get_cards(db, *kingdom)),
+        black_market_deck=tuple(deck),
+    )
+
+
+@pytest.mark.parametrize("deck_size", [3, 20])
+def test_board_keeps_its_black_market_deck(
+    db: CardDatabase,
+    rng: random.Random,
+    deck_size: int,
+) -> None:
+    """Smaller or larger than *black_market_size*."""
+    board = black_market_board(db, deck_size)
+    game = generate_game(db, board=board, black_market_size=15, rng=rng)
+    assert game.board.black_market_deck == board.black_market_deck
+
+
+def test_swapping_in_a_card_of_the_board_black_market_deck_tops_it_up(
+    db: CardDatabase,
+    rng: random.Random,
+) -> None:
+    """To the size of the Board's deck, not *black_market_size*."""
+    board = black_market_board(db, 3)
+    replacement, *rest = board.black_market_deck
+    game = generate_game(db, board=board, swaps=[("Chapel", replacement.name)], rng=rng)
+    assert replacement in game.kingdom_cards
+    assert len(game.black_market_deck) == 3
+    assert replacement not in game.black_market_deck
+    assert set(rest) <= set(game.black_market_deck)
+
+
+@pytest.mark.parametrize(
+    ("on_board", "use", "expected"),
+    [
+        (True, False, True),
+        (False, True, False),
+        (None, True, True),
+        (None, False, False),
+    ],
+)
+def test_board_colony_and_shelters_win_over_use_colony_and_use_shelters(
+    db: CardDatabase,
+    rng: random.Random,
+    on_board: bool | None,  # noqa: FBT001
+    use: bool,  # noqa: FBT001
+    expected: bool,  # noqa: FBT001
+) -> None:
+    board = Board(
+        kingdom_cards=tuple(get_cards(db, *BASE_KINGDOM)),
+        use_colony=on_board,
+        use_shelters=on_board,
+    )
+    game = generate_game(db, board=board, use_colony=use, use_shelters=use, rng=rng)
+    basic_names = card_names(game.basic_cards)
+    assert ("Colony" in basic_names) is expected
+    assert ("Shelters" in basic_names) is expected
+
+
+def test_swaps_swap_cards_of_the_board(db: CardDatabase, rng: random.Random) -> None:
+    board = Board(kingdom_cards=tuple(get_cards(db, *BASE_KINGDOM)))
+    game = generate_game(db, board=board, swaps=[("Cellar", "Festival")], rng=rng)
+    assert sorted(card_names(game.kingdom_cards)) == sorted(
+        [*BASE_KINGDOM[1:], "Festival"],
+    )
+
+    # only Laboratory is left to draw
+    base_cards = card_names(db.get_cards_by_set_edition(*BASE_2E))
+    game = generate_game(
+        db,
+        sets_editions={BASE_2E},
+        board=board,
+        exclude=[
+            name for name in base_cards if name not in {*BASE_KINGDOM, "Laboratory"}
+        ],
+        swaps=[("Cellar", None)],
+        rng=rng,
+    )
+    assert sorted(card_names(game.kingdom_cards)) == sorted(
+        [*BASE_KINGDOM[1:], "Laboratory"],
+    )
+
+
+@pytest.mark.parametrize(
+    ("make_board", "message"),
+    [
+        pytest.param(
+            lambda c: Board(kingdom_cards=tuple(map(c, [*BASE_KINGDOM, "Festival"]))),
+            "11 Kingdom cards on the Board: the Kingdom has 10",
+            id="11 Kingdom cards",
+        ),
+        pytest.param(
+            lambda c: Board(kingdom_cards=(c("Smithy"), c("Smithy"))),
+            "'Smithy' is on the Board twice",
+            id="Kingdom card twice",
+        ),
+        pytest.param(
+            lambda c: Board(
+                kingdom_cards=(c("Young Witch"), c("Moat")),
+                extra_piles={PileMarkKind.BANE: c("Moat")},
+            ),
+            "'Moat' is on the Board twice",
+            id="Bane in the Kingdom",
+        ),
+        pytest.param(
+            lambda c: Board(
+                kingdom_cards=(c("Black Market"), c("Smithy")),
+                black_market_deck=(c("Smithy"),),
+            ),
+            "'Smithy' is on the Board twice",
+            id="Black Market card in the Kingdom",
+        ),
+        pytest.param(
+            lambda c: Board(
+                druid_boons=(
+                    c("The Sun's Gift"),
+                    c("The Sun's Gift"),
+                    c("The Sky's Gift"),
+                ),
+            ),
+            '"The Sun\'s Gift" is on the Board twice',
+            id="Boon twice",
+        ),
+        pytest.param(
+            lambda c: Board(kingdom_cards=(c("Alms"),)),
+            "'Alms' is not a Kingdom card",
+            id="Landscape in the Kingdom",
+        ),
+        pytest.param(
+            lambda c: Board(extra_piles={PileMarkKind.BANE: c("Alms")}),
+            "'Alms' is not a Kingdom card",
+            id="Landscape as the Bane",
+        ),
+        pytest.param(
+            lambda c: Board(black_market_deck=(c("Copper"),)),
+            "'Copper' is not a Kingdom card",
+            id="Basic card in the Black Market deck",
+        ),
+        pytest.param(
+            lambda c: Board(traits={c("Cheap"): c("Copper")}),
+            "'Copper' is not a Kingdom card",
+            id="Trait on a basic pile",
+        ),
+        pytest.param(
+            lambda c: Board(landscapes=(c("Smithy"),)),
+            "'Smithy' is not a Landscape",
+            id="Kingdom card as a Landscape",
+        ),
+        pytest.param(
+            lambda c: Board(landscapes=(c("Band of Nomads"),)),
+            "'Band of Nomads' is not a Landscape",
+            id="Ally as a Landscape",
+        ),
+        pytest.param(
+            lambda c: Board(traits={c("Alms"): c("Smithy")}),
+            "'Alms' is not a Trait",
+            id="Event as a Trait",
+        ),
+        pytest.param(
+            lambda c: Board(ally=c("Alms")),
+            "'Alms' is not an Ally",
+            id="Event as the Ally",
+        ),
+        pytest.param(
+            lambda c: Board(prophecy=c("Alms")),
+            "'Alms' is not a Prophecy",
+            id="Event as the Prophecy",
+        ),
+        pytest.param(
+            lambda c: Board(
+                druid_boons=(c("The Sun's Gift"), c("Alms"), c("The Sky's Gift")),
+            ),
+            "'Alms' is not a Boon",
+            id="Event as a Boon",
+        ),
+        pytest.param(
+            lambda c: Board(extra_piles={PileMarkKind.OBELISK: c("Smithy")}),
+            "Obelisk is not an extra pile",
+            id="Obelisk as an extra pile",
+        ),
+        pytest.param(
+            lambda c: Board(extra_piles={PileMarkKind.BANE: c("Market")}),
+            "'Market' is not eligible for Bane (Kingdom card costing $2-$3)",
+            id="Bane not eligible",
+        ),
+        pytest.param(
+            lambda c: Board(extra_piles={PileMarkKind.RIVERBOAT: c("Wharf")}),
+            "'Wharf' is not eligible for Riverboat",
+            id="Riverboat not eligible",
+        ),
+        pytest.param(
+            lambda c: Board(traits={c("Cheap"): c("Gardens")}),
+            "'Cheap' is on 'Gardens', which is not an Action or Treasure",
+            id="Trait on a Victory pile",
+        ),
+        pytest.param(
+            lambda c: Board(obelisk=c("Copper")),
+            "'Copper' is not a Kingdom card",
+            id="Obelisk on a basic pile",
+        ),
+        pytest.param(
+            lambda c: Board(obelisk=c("Gardens")),
+            "'Obelisk' is on 'Gardens', which is not an Action",
+            id="Obelisk on a Victory pile",
+        ),
+        pytest.param(
+            lambda c: Board(druid_boons=(c("The Sun's Gift"), c("The Sky's Gift"))),
+            "Druid needs 3 Boons, not 2",
+            id="2 Boons",
+        ),
+    ],
+)
+def test_invalid_board_raises(
+    db: CardDatabase,
+    make_board: Callable[[Callable[[str], Card]], Board],
+    message: str,
+) -> None:
+    with pytest.raises(SetupGenerationError, match=re.escape(message)):
+        generate_game(db, board=make_board(db.get_card_by_name))
 
 
 def test_same_seed_generates_the_same_game(db: CardDatabase) -> None:
@@ -1463,7 +1824,7 @@ def choose_extra_piles(
         landscapes: Sequence[str] = (),
         unused: Sequence[str] = (),
         black_market_size: int = 15,
-        given: Choices = NO_CHOICES,
+        given: Board = EMPTY_BOARD,
     ) -> ExtraPiles:
         extra_piles, prophecy, black_market_deck = _choose_extra_piles(
             prophecies,
@@ -1701,7 +2062,7 @@ def test_given_extra_piles_and_prophecy_are_used(
     db: CardDatabase,
     choose_extra_piles: Callable[..., ExtraPiles],
 ) -> None:
-    given = Choices(
+    given = Board(
         extra_piles={PileMarkKind.BANE: db.get_card_by_name("Moat")},
         prophecy=db.get_card_by_name("Bureaucracy"),
     )
@@ -1716,7 +2077,7 @@ def test_given_black_market_deck_is_topped_up(
     db: CardDatabase,
     choose_extra_piles: Callable[..., ExtraPiles],
 ) -> None:
-    given = Choices(black_market=tuple(get_cards(db, "Market")))
+    given = Board(black_market_deck=tuple(get_cards(db, "Market")))
     assert choose_extra_piles(
         ["Black Market"],
         unused=["Smithy", "Hamlet", "Village"],
@@ -1729,9 +2090,9 @@ def test_given_choices_without_their_triggers_are_ignored(
     db: CardDatabase,
     choose_extra_piles: Callable[..., ExtraPiles],
 ) -> None:
-    given = Choices(
+    given = Board(
         extra_piles={PileMarkKind.BANE: db.get_card_by_name("Moat")},
-        black_market=tuple(get_cards(db, "Market")),
+        black_market_deck=tuple(get_cards(db, "Market")),
         prophecy=db.get_card_by_name("Bureaucracy"),
     )
     assert choose_extra_piles(["Village"], unused=["Hamlet"], given=given) == (
@@ -1786,7 +2147,7 @@ def test_given_druid_boons_and_ally_are_dealt(
     rng: random.Random,
 ) -> None:
     boons = get_cards(db, "The Sun's Gift", "The Earth's Gift", "The Moon's Gift")
-    given = Choices(
+    given = Board(
         druid_boons=tuple(boons),
         ally=db.get_card_by_name("Band of Nomads"),
     )
@@ -1801,7 +2162,7 @@ def test_trait_goes_on_its_given_pile_if_it_is_in_the_kingdom(
 ) -> None:
     """A Trait whose given pile is gone goes on another pile, but not on a given one."""
     cheap, cursed = get_cards(db, "Cheap", "Cursed")
-    given = Choices(
+    given = Board(
         traits={
             cheap: db.get_card_by_name("Militia"),
             cursed: db.get_card_by_name("Village"),
@@ -2068,7 +2429,7 @@ def test_obelisk_goes_on_its_given_pile_if_it_is_in_the_kingdom(
     obelisk_marks = _choose_obelisk_pile(
         get_cards(db, *kingdom),
         get_cards(db, "Obelisk"),
-        given=Choices(obelisk=db.get_card_by_name("Smithy")),
+        given=Board(obelisk=db.get_card_by_name("Smithy")),
         rng=rng,
     )
     assert [card.name for card, _mark in obelisk_marks] == [pile]

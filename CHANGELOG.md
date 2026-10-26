@@ -10,6 +10,11 @@ The **third number** is for emergencies when we need to start branches for older
 
 ## [Unreleased](https://github.com/sgraaf/dominion-setup/compare/2026.4.0...HEAD)
 
+### Added
+
+- Boards: the new `Board` (exported from `dominion_setup`) holds the choices that make up a game: the 10 Kingdom cards (without the extra piles), the Landscapes, the extra piles (Bane, Ferryman, …), the pile of each Trait, the Obelisk pile, the Ally, the Prophecy, the Druid Boons, the Black Market deck, and Colony and Shelters. Everything else in the setup follows from these. Every generated `Game` has its `board`.
+- `generate_game(board=...)` sets up the game of a Board. Its Kingdom cards and Landscapes are included like the `include`d cards (also past `max_landscapes`), so fewer than 10 Kingdom cards are filled up. Its other choices are used where they apply, and those it leaves out are drawn. Its Black Market deck is used as it is, and its Colony and Shelters, if set, override `use_colony` and `use_shelters`. A complete Board (e.g. `game.board`) gives the same game for any seed, and `swaps` swap cards of the Board. A Board that can't be set up raises `SetupGenerationError`: one with more than 10 Kingdom cards, a card twice (e.g. a Black Market card that is also in the Kingdom), a card in the wrong place (e.g. a Landscape among the Kingdom cards), an extra pile that isn't eligible (e.g. a Bane that doesn't cost \$2 or \$3), a Trait on a pile that isn't an Action or Treasure, an Obelisk pile that isn't an Action, or Druid Boons that aren't 3.
+
 ## [2026.4.0](https://github.com/sgraaf/dominion-setup/compare/2026.3.0...2026.4.0) - 2026-10-18
 
 This release lets you swap out cards you don't like: `--swap CARD` (or `--swap CARD=REPLACEMENT`) replaces a Kingdom card, extra pile or Landscape and keeps the rest of the game the same. It also makes the library easier to build front ends on. Each card in the JSON output now says what it's for (e.g. Kingdom Pile or Landscape), setup instructions keep their label and text apart, and `generate_game` takes a list of Promos, like `--promo`. Helpers such as `is_selectable` and `SET_EDITION_CHOICES` are now exported from `dominion_setup`.

@@ -40,12 +40,12 @@
 
 The package is structured around four modules:
 
-| Module      | Responsibility                                                                           |
-| ----------- | ---------------------------------------------------------------------------------------- |
-| `models`    | Dataclasses and enums (`Card`, `CardCost`, `CardSet`, `CardDatabase`, `Game`, `Pile`, …) |
-| `loader`    | Reads the bundled JSON data files and populates a `CardDatabase`                         |
-| `generator` | `generate_game()`, which turns a `CardDatabase` into a `Game`, and all setup rules       |
-| `cli`       | Click/Rich-Click command group (`generate`, `list-cards`, `list-sets`)                   |
+| Module      | Responsibility                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------- |
+| `models`    | Dataclasses and enums (`Card`, `CardCost`, `CardSet`, `CardDatabase`, `Game`, `Board`, `Pile`, …) |
+| `loader`    | Reads the bundled JSON data files and populates a `CardDatabase`                                  |
+| `generator` | `generate_game()`, which turns a `CardDatabase` into a `Game`, and all setup rules                |
+| `cli`       | Click/Rich-Click command group (`generate`, `list-cards`, `list-sets`)                            |
 
 ### Card data
 
@@ -79,7 +79,9 @@ Every card in every set is stored in a small JSON file under `dominion_setup/dat
 1. **Setup instructions** — extract `Setup:` sentences from card instructions and describe the starting decks when Shelters or Heirlooms change them.
 1. **Pile sizes** — if `players` is given, how many cards go in each pile (e.g. 8 Provinces for two players, 10 Curses per player after the first).
 
-Finally, the piles are sorted and returned in a `Game` object.
+Finally, the piles are sorted and returned in a `Game` object, along with its `Board`: the choices it was set up with.
+
+If a `board` is given, its Kingdom cards and Landscapes are included like the `include`d cards, and its other choices (extra piles, Black Market deck, Prophecy, Ally, Druid Boons, Traits, Obelisk pile, Colony and Shelters) are used where they apply instead of being drawn. A Board that leaves nothing out gives the same game for any seed.
 
 If `swaps` are given, each one then opens up the place of a Kingdom card, extra pile or Landscape (or puts its replacement there) and sets the game up again. The game's other choices (its Kingdom, Landscapes, extra piles, Black Market deck, Prophecy, Ally, Druid Boons, Traits, Obelisk pile, Colony and Shelters) are kept where they still apply, and the rest is drawn again. The swapped card is not drawn again (nor are the game's extra piles and Black Market cards), and the game keeps its number of Landscapes. A replacement is included like the `include`d cards: it must not be `exclude`d, and the Kingdom must still meet the `requirements`.
 
@@ -169,6 +171,17 @@ game = generate_game(
     swaps=[("Smithy", None), ("Moat", "Village")],  # redraw Smithy, Moat → Village
     rng=random.Random(42),
 )
+```
+
+Every game has its `board`: the choices it was set up with (the Kingdom cards, Landscapes, Bane, Black Market deck, Ally, …). Set up a Board to get its game again, for any seed. Choices a Board leaves out (e.g. a Kingdom of fewer than 10 cards) are drawn:
+
+```python
+from dominion_setup import Board
+
+assert generate_game(db, board=game.board) == game
+
+board = Board(kingdom_cards=(db.get_card_by_name("Witch"),))
+game = generate_game(db, board=board)  # Witch and 9 random Kingdom cards
 ```
 
 #### Exploring the `Game` object
