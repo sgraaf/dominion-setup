@@ -6,6 +6,7 @@ They are designed to catch major breakage and ensure basic operations succeed.
 
 import re
 from importlib import metadata
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
@@ -258,8 +259,9 @@ def test_generate_game_too_few_cards_raises(db: CardDatabase) -> None:
 
 
 @pytest.fixture
-def runner() -> CliRunner:
-    return CliRunner()
+def runner(tmp_path: Path) -> CliRunner:
+    """A CLI runner that doesn't read the developer's own config file."""
+    return CliRunner(env={"XDG_CONFIG_HOME": str(tmp_path)})
 
 
 def test_cli_help(runner: CliRunner) -> None:

@@ -827,6 +827,31 @@ def test_board_fills_up_the_kingdom(db: CardDatabase, rng: random.Random) -> Non
     assert drawn in card_names(db.get_cards_by_set_edition(*BASE_2E))
 
 
+@pytest.mark.parametrize("swaps", [[], [("Village", None)]])
+def test_board_cards_are_in_the_game_even_if_excluded(
+    db: CardDatabase,
+    rng: random.Random,
+    swaps: list[tuple[str, str | None]],
+) -> None:
+    """*exclude* keeps cards from being drawn, not the Board's cards out of the game."""
+    board = Board(
+        kingdom_cards=tuple(get_cards(db, "Smithy", "Village")),
+        landscapes=tuple(get_cards(db, "Alms")),
+    )
+    game = generate_game(
+        db,
+        sets_editions={BASE_2E},
+        board=board,
+        exclude=["Smithy", "Alms", "Moat"],
+        swaps=swaps,
+        rng=rng,
+    )
+    kingdom = card_names(game.board.kingdom_cards)
+    assert "Smithy" in kingdom
+    assert "Moat" not in kingdom
+    assert card_names(game.board.landscapes) == ["Alms"]
+
+
 def test_board_draws_the_choices_it_leaves_out(
     db: CardDatabase,
     rng: random.Random,
@@ -1074,6 +1099,13 @@ def test_swaps_swap_cards_of_the_board(db: CardDatabase, rng: random.Random) -> 
             id="Trait on a Victory pile",
         ),
         pytest.param(
+            lambda c: Board(
+                traits={c("Cheap"): c("Village"), c("Fated"): c("Village")},
+            ),
+            "'Village' has 2 Traits: each Trait goes on a different pile",
+            id="2 Traits on one pile",
+        ),
+        pytest.param(
             lambda c: Board(obelisk=c("Copper")),
             "'Copper' is not a Kingdom card",
             id="Obelisk on a basic pile",
@@ -1217,8 +1249,8 @@ def test_read_invalid_board_code_raises(
 def test_extra_pile_rules_match_the_extra_pile_marks() -> None:
     """Each extra pile rule has an extra-pile mark, and no other kind is one.
 
-    ``Board.to_code`` writes only extra piles from ``extra_piles``, and
-    ``read_board_code`` reads only the rules' keys, so the two must agree.
+    Board codes write and read the extra-pile marks, and ``_check_board``
+    rejects a mark without a rule, so the two must agree.
     """
     assert {rule.mark for rule in EXTRA_PILE_RULES} == {
         mark for mark in PileMarkKind if mark.is_extra_pile

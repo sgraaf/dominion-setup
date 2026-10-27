@@ -159,9 +159,10 @@ $ dominion-setup setup --help
  Usage: dominion-setup setup [OPTIONS] CODE
 
  Set up the game of a Board CODE, or of a whole web app link.
- Anything the code leaves out is drawn. Options default to the values in the
- config file (see --config-file), if any, but the code's number of players
- comes before the config file's.
+ Anything the code leaves out is drawn, except Colony and Shelters, which are
+ off unless the code turns them on. Options default to the values in the config
+ file (see --config-file), if any, but the code's number of players comes
+ before the config file's.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --set          -s  [base_1e|base_2e|intrigue_1  Set(s) to draw what the code │

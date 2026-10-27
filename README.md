@@ -189,7 +189,7 @@ A Board (and the number of players) can be written as a code, the query string o
 ```python
 from dominion_setup import read_board_code
 
-code = game.board.to_code(players=game.players)  # also game.to_dict()["code"]
+code = game.code  # also game.to_dict()["code"]
 # e.g. "players=4&kingdom=bridge,clerk,…&landscapes=baths,way-of-the-mouse&bane=moat&way-of-the-mouse=village&colony=on"
 
 board, players = read_board_code(db, code)  # or a whole link, or full card names
@@ -373,7 +373,7 @@ dominion-setup setup "players=4&kingdom=bridge,clerk,…&landscapes=baths,way-of
 dominion-setup setup "https://…/?players=4&kingdom=bridge,clerk,…"
 ```
 
-Anything the code leaves out is drawn, from the sets given with `--set` and `--promo`, without the `--exclude`d cards (which only keep cards from being drawn, not the code's own cards out of the game). Use Witch, Moat and 8 random cards from Base 2e and Intrigue 2e:
+Anything the code leaves out is drawn, from the sets given with `--set` and `--promo`, without the `--exclude`d cards (which only keep cards from being drawn, not the code's own cards out of the game). Colony and Shelters are not drawn: they are off unless the code turns them on (`colony=on`, `shelters=on`). Use Witch, Moat and 8 random cards from Base 2e and Intrigue 2e:
 
 ```sh
 dominion-setup setup "kingdom=witch,moat" --set base_2e --set intrigue_2e

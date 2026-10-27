@@ -191,11 +191,6 @@ def _print_card_table(cards: list[Card], *, title: str, numbered: bool) -> None:
     _print_pile_table([Pile(card) for card in cards], title=title, numbered=numbered)
 
 
-def _code(game: Game) -> str:
-    """Return the Board code of a Game, which sets it up again (see ``Board.to_code``)."""
-    return game.board.to_code(players=game.players)
-
-
 def _print_game(game: Game, *, seed: int | None) -> None:
     """Print a Game, generated with *seed* (if any), as rich-formatted table output."""
     # header
@@ -204,7 +199,7 @@ def _print_game(game: Game, *, seed: int | None) -> None:
     if seed is not None:
         console.print(f"Seed: {seed}")
     # on one line, however wide, so it copies whole
-    console.print(f"Code: {_code(game)}", soft_wrap=True)
+    console.print(f"Code: {game.code}", soft_wrap=True)
     if game.players is not None:
         console.print(f"Players: {game.players}")
 
@@ -277,7 +272,7 @@ def _print_game_names(game: Game, *, seed: int | None) -> None:
     """
     if seed is not None:
         click.echo(f"Seed: {seed}", err=True)
-    click.echo(f"Code: {_code(game)}", err=True)
+    click.echo(f"Code: {game.code}", err=True)
     cards = [*game.kingdom_cards, *game.landscapes, game.ally, game.prophecy]
     click.echo(", ".join(card.name for card in cards if card is not None))
 
@@ -564,7 +559,8 @@ def setup(
 ) -> None:
     """Set up the game of a Board CODE, or of a whole web app link.
 
-    Anything the code leaves out is drawn. Options default to the values in the
+    Anything the code leaves out is drawn, except Colony and Shelters, which are
+    off unless the code turns them on. Options default to the values in the
     config file (see --config-file), if any, but the code's number of players
     comes before the config file's.
     """
@@ -581,18 +577,11 @@ def setup(
         )
         if code_players is not None and not is_players_given:
             players = code_players
-        # the code's cards are in the game, even if excluded from the draw
-        board_card_names = {
-            card.name for card in (*board.kingdom_cards, *board.landscapes)
-        }
-        excluded_names = [_card_name(db, name) for name in exclude]
         game = generate_game(
             db,
             sets_editions={SET_EDITION_CHOICES[choice] for choice in raw_sets_editions},
             sort_order=KingdomSortOrder(sort_order),
-            exclude=tuple(
-                name for name in excluded_names if name not in board_card_names
-            ),
+            exclude=tuple(_card_name(db, name) for name in exclude),
             promos=tuple(_card_name(db, name) for name in promos),
             board=board,
             swaps=_swap_card_names(db, swaps),

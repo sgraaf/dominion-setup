@@ -697,10 +697,15 @@ class Game:
             key=CARD_SET_ORDER.__getitem__,
         )
 
+    @property
+    def code(self) -> str:
+        """The Board code of the game, which sets it up again (see ``Board.to_code``)."""
+        return self.board.to_code(players=self.players)
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to a JSON-serializable dictionary, as ``dominion-setup generate --format json`` prints it.
 
-        The ``code`` is the Board code of the game (see ``Board.to_code``).
+        The ``code`` is the Board code of the game (see ``Game.code``).
         Cards that are not in a pile (Landscapes, the Ally, …) take the form of
         a pile without marks or size.
         """
@@ -709,7 +714,7 @@ class Game:
             return None if card is None else Pile(card).to_dict()
 
         return {
-            "code": self.board.to_code(players=self.players),
+            "code": self.code,
             "players": self.players,
             "sets": self.sets_used,
             "kingdom": [pile.to_dict() for pile in self.kingdom_piles],

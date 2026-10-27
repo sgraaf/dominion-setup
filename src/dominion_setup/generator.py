@@ -97,7 +97,8 @@ def generate_game(  # noqa: PLR0913
         board: The choices to set the game up with. Its Kingdom cards and
             Landscapes are included like the *include*d cards (also past
             *max_landscapes*), so fewer than 10 Kingdom cards are filled up.
-            Its other choices are used where they apply (e.g. the Bane if Young
+            They are included even if *exclude*d, as *exclude* only keeps cards
+            from being drawn. Its other choices are used where they apply (e.g. the Bane if Young
             Witch is in use), and those it leaves out are drawn. Its Black
             Market deck is used as it is, and its Colony and Shelters, if not
             ``None``, override *use_colony* and *use_shelters*. Defaults to
@@ -225,17 +226,17 @@ def _set_up(  # noqa: PLR0913
     """Set up a game, with the *given* choices where they still apply.
 
     The game's ``board`` holds the choices it was set up with. The given Kingdom
-    cards and Landscapes are included before the *include*d cards, and the given
-    extra piles and Black Market cards are never drawn into the Kingdom.
+    cards and Landscapes are included before the *include*d cards, even if
+    *exclude*d, and the given extra piles and Black Market cards are never drawn
+    into the Kingdom.
     """
     # NOTE: the steps below consume *rng* in a fixed order, so reordering them
     # changes which game a given seed produces.
-    include = [
-        *(card.name for card in (*given.kingdom_cards, *given.landscapes)),
-        *include,
-    ]
+    given_names = [card.name for card in (*given.kingdom_cards, *given.landscapes)]
+    include = [*given_names, *include]
     exclude = [
-        *exclude,
+        # *exclude* keeps cards from being drawn, not the given ones out of the game
+        *(name for name in exclude if name not in given_names),
         *(
             card.name
             for card in (*given.extra_piles.values(), *given.black_market_deck)
@@ -451,6 +452,12 @@ def _check_board(board: Board) -> None:  # noqa: C901, PLR0912
         if not {CardType.ACTION, CardType.TREASURE} & set(pile.types):
             msg = f"{trait.name!r} is on {pile.name!r}, which is not an Action or Treasure"
             raise SetupGenerationError(msg)
+    for pile, count in Counter(board.traits.values()).items():
+        if count > 1:
+            msg = (
+                f"{pile.name!r} has {count} Traits: each Trait goes on a different pile"
+            )
+            raise SetupGenerationError(msg)
     if board.obelisk is not None and CardType.ACTION not in board.obelisk.types:
         msg = f"'Obelisk' is on {board.obelisk.name!r}, which is not an Action"
         raise SetupGenerationError(msg)
@@ -519,9 +526,9 @@ def read_board_code(db: CardDatabase, code: str) -> tuple[Board, int | None]:  #
         kingdom_cards=cards("kingdom"),
         landscapes=cards("landscapes"),
         extra_piles={
-            rule.mark: card(params[key])
-            for rule in EXTRA_PILE_RULES
-            if (key := slugify(rule.mark)) in params
+            mark: card(params[key])
+            for mark in PileMarkKind
+            if mark.is_extra_pile and (key := slugify(mark)) in params
         },
         traits=traits,
         obelisk=optional_card("obelisk"),
@@ -548,13 +555,15 @@ def _swap(board: Board, card: Card, replacement: Card | None) -> Board:
     the pile of *card* is drawn again, as ``_set_up`` only uses given piles that
     are in the Kingdom.)
     """
-    if card not in _swappable_cards(board):
+    swappable_cards = _swappable_cards(board)
+    if card not in swappable_cards:
         msg = (
             f"{card.name!r} is not a Kingdom card, extra pile or Landscape of the game"
         )
         raise SetupGenerationError(msg)
-    if replacement is not None:
-        _check_replacement(board, card, replacement)
+    if replacement in swappable_cards:
+        msg = f"{replacement.name!r} is already in the game"
+        raise SetupGenerationError(msg)
 
     extra_piles = dict(board.extra_piles)
     for mark, pile in board.extra_piles.items():
@@ -562,7 +571,7 @@ def _swap(board: Board, card: Card, replacement: Card | None) -> Board:
             del extra_piles[mark]
             if replacement is not None:
                 extra_piles[mark] = replacement
-    return replace(
+    swapped = replace(
         board,
         kingdom_cards=_replaced(board.kingdom_cards, card, replacement),
         landscapes=_replaced(board.landscapes, card, replacement),
@@ -571,24 +580,9 @@ def _swap(board: Board, card: Card, replacement: Card | None) -> Board:
             bm_card for bm_card in board.black_market_deck if bm_card != replacement
         ),
     )
-
-
-def _check_replacement(board: Board, card: Card, replacement: Card) -> None:
-    """Raise ``SetupGenerationError`` if *replacement* cannot take the place of *card*."""
-    if replacement in _swappable_cards(board):
-        msg = f"{replacement.name!r} is already in the game"
-        raise SetupGenerationError(msg)
-    if card in board.landscapes and replacement.is_kingdom:
-        msg = f"{replacement.name!r} is not a Landscape"
-        raise SetupGenerationError(msg)
-    if card not in board.landscapes and not replacement.is_kingdom:
-        msg = f"{replacement.name!r} is not a Kingdom card"
-        raise SetupGenerationError(msg)
-    for rule in EXTRA_PILE_RULES:
-        is_pile_of_rule = board.extra_piles.get(rule.mark) == card
-        if is_pile_of_rule and not rule.is_eligible(replacement):
-            msg = f"{replacement.name!r} is not eligible for {rule.mark} ({rule.requirement})"
-            raise SetupGenerationError(msg)
+    # e.g. a Kingdom card in the place of a Landscape, or a Bane that isn't eligible
+    _check_board(swapped)
+    return swapped
 
 
 def _replaced(

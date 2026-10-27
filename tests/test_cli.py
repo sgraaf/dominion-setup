@@ -916,7 +916,6 @@ seed = 42
     assert kwargs["promos"] == ("Stash",)
     assert kwargs["exclude"] == ("Masquerade",)
     assert kwargs["sort_order"] == KingdomSortOrder.NAME
-    assert "requirements" not in kwargs
 
 
 def test_setup_unknown_config_option_is_an_error(
