@@ -288,7 +288,7 @@ ______________________________________________________________________
 
 ### As a CLI Tool
 
-The `dominion-setup` command groups three sub-commands. Running it with no arguments is equivalent to `dominion-setup generate`.
+The `dominion-setup` command groups four sub-commands. Running it with no arguments is equivalent to `dominion-setup generate`.
 
 #### `dominion-setup generate` — generate a random setup
 
@@ -328,7 +328,7 @@ Always use Witch (and the Alms Event), never Chapel. Cards can be named in any c
 dominion-setup generate --set base_2e --include Witch --include Alms --exclude Chapel
 ```
 
-Replay a game with its seed (printed with every setup), and swap Smithy for a random card and Moat for Village:
+Replay a game with its seed (printed with every setup, next to its Board code), and swap Smithy for a random card and Moat for Village:
 
 ```sh
 dominion-setup generate --seed 42
@@ -363,6 +363,29 @@ exclude = ["Masquerade"]
 require-buys = true
 players = 4
 ```
+
+#### `dominion-setup setup` — set up the game of a code
+
+Set up the game of a Board code, as printed with every setup (quoted, as it holds `&`s), or of a whole web app link:
+
+```sh
+dominion-setup setup "players=4&kingdom=bridge,clerk,…&landscapes=baths,way-of-the-mouse&bane=moat&way-of-the-mouse=village&colony=on"
+dominion-setup setup "https://…/?players=4&kingdom=bridge,clerk,…"
+```
+
+Anything the code leaves out is drawn, from the sets given with `--set` and `--promo`, without the `--exclude`d cards (which only keep cards from being drawn, not the code's own cards out of the game). Use Witch, Moat and 8 random cards from Base 2e and Intrigue 2e:
+
+```sh
+dominion-setup setup "kingdom=witch,moat" --set base_2e --set intrigue_2e
+```
+
+Set up a code for 3 players instead of the code's number, and swap Smithy for a random card:
+
+```sh
+dominion-setup setup "players=4&kingdom=…" --players 3 --swap Smithy
+```
+
+It also takes `--sort` and `--format`, and reads the same config file as `generate` (ignoring the options only `generate` has, such as `require-buys`). The code's number of players comes before the config file's.
 
 #### `dominion-setup list-cards` — browse the card database
 

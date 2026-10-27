@@ -40,9 +40,10 @@ $ dominion-setup --help
 │ --help     -h  Show this message and exit.                                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────╮
-│ generate       Generate a random Dominion game setup.                        │
-│ list-cards     List available kingdom cards with optional filters.           │
-│ list-sets      List available sets and their kingdom card counts.            │
+│ generate     Generate a random Dominion game setup.                          │
+│ list-cards   List available kingdom cards with optional filters.             │
+│ list-sets    List available sets and their kingdom card counts.              │
+│ setup        Set up the game of a Board CODE, or of a whole web app link.    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -139,6 +140,64 @@ $ dominion-setup generate --help
 │                                                      else in ~/.config]      │
 │ --help                   -h                          Show this message and   │
 │                                                      exit.                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
+<!-- [[[end]]] -->
+
+## dominion-setup setup
+
+<!-- [[[cog
+help_output(["setup", "--help"])
+]]] -->
+
+Running `dominion-setup setup --help` or `python -m dominion-setup setup --help` shows a list of all of the available options and arguments:
+
+```sh
+$ dominion-setup setup --help
+
+ Usage: dominion-setup setup [OPTIONS] CODE
+
+ Set up the game of a Board CODE, or of a whole web app link.
+ Anything the code leaves out is drawn. Options default to the values in the
+ config file (see --config-file), if any, but the code's number of players
+ comes before the config file's.
+
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --set          -s  [base_1e|base_2e|intrigue_1  Set(s) to draw what the code │
+│                    e|intrigue_2e|seaside_1e|se  leaves out from              │
+│                    aside_2e|alchemy|prosperity  (repeatable). [default:      │
+│                    _1e|prosperity_2e|cornucopi  base_2e]                     │
+│                    a_guilds_1e|cornucopia_guil                               │
+│                    ds_2e|hinterlands_1e|hinter                               │
+│                    lands_2e|dark_ages|adventur                               │
+│                    es|empires|nocturne|renaiss                               │
+│                    ance|menagerie|allies|plund                               │
+│                    er|rising_sun|promo]                                      │
+│ --sort             [name|cost|set]              Sort order for kingdom       │
+│                                                 cards. [default: cost]       │
+│ --exclude          CARD                         Kingdom card or Landscape    │
+│                                                 not to draw (repeatable).    │
+│ --promo            CARD                         Promo card to draw from,     │
+│                                                 without the rest of the      │
+│                                                 Promo set (repeatable).      │
+│ --players          INTEGER RANGE [2<=x<=6]      Number of players, over the  │
+│                                                 code's.                      │
+│ --swap             CARD[=REPLACEMENT]           Kingdom card, extra pile     │
+│                                                 (e.g. the Bane) or Landscape │
+│                                                 of the game to swap for a    │
+│                                                 random one, or for           │
+│                                                 REPLACEMENT (repeatable, in  │
+│                                                 order).                      │
+│ --format           [table|json|names]           Output format: tables, JSON, │
+│                                                 or a one-line list of card   │
+│                                                 names. [default: table]      │
+│ --config-file      FILE                         Config file with defaults    │
+│                                                 for these options. [default: │
+│                                                 dominion-setup/config.toml   │
+│                                                 in $XDG_CONFIG_HOME, or else │
+│                                                 in ~/.config]                │
+│ --help         -h                               Show this message and exit.  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 

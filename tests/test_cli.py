@@ -16,10 +16,11 @@ import pytest
 from click.testing import CliRunner
 
 from dominion_setup.cli import cli
-from dominion_setup.generator import SetupGenerationError
+from dominion_setup.generator import SetupGenerationError, read_board_code
 from dominion_setup.models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
     SET_EDITION_CHOICES,
+    Board,
     Card,
     CardDatabase,
     CardSet,
@@ -131,7 +132,7 @@ def test_version(runner: CliRunner) -> None:
 def test_help_lists_the_commands(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["--help"])
     assert result.exit_code == 0
-    for command in ("generate", "list-cards", "list-sets"):
+    for command in ("generate", "setup", "list-cards", "list-sets"):
         assert command in result.output
 
 
@@ -147,6 +148,7 @@ def test_no_command_runs_generate(runner: CliRunner) -> None:
         ["generate", "--set", "nonexistent"],
         ["generate", "--sort", "nonexistent"],
         ["generate", "--format", "nonexistent"],
+        ["setup", "--format", "nonexistent", "kingdom=smithy"],
         ["list-cards", "--set", "nonexistent"],
         ["list-cards", "--type", "nonexistent"],
     ],
@@ -192,6 +194,15 @@ def test_generate_without_a_seed_prints_one_that_replays_the_game(
         if line.startswith("Seed: ")
     )
     assert runner.invoke(cli, [*args, "--seed", seed]).output == result.output
+
+
+def test_generate_prints_the_code_on_one_line(runner: CliRunner) -> None:
+    args = ["generate", "--seed", "42", "--include", "Black Market", "--players", "4"]
+    code = json.loads(runner.invoke(cli, [*args, "--format", "json"]).output)["code"]
+    assert len(code) > 200  # wider than the terminal
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 0
+    assert f"Code: {code}" in result.output.splitlines()
 
 
 @pytest.mark.parametrize(
@@ -571,6 +582,13 @@ def test_generate_formats_the_game_as_names(
         landscapes=[db.get_card_by_name("Alms")],
         ally=db.get_card_by_name("Architects' Guild"),
         prophecy=db.get_card_by_name("Approaching Army"),
+        board=Board(
+            kingdom_cards=(db.get_card_by_name("Young Witch"),),
+            landscapes=(db.get_card_by_name("Alms"),),
+            extra_piles={PileMarkKind.BANE: db.get_card_by_name("Hamlet")},
+            ally=db.get_card_by_name("Architects' Guild"),
+            prophecy=db.get_card_by_name("Approaching Army"),
+        ),
     )
     monkeypatch.setattr(
         "dominion_setup.cli.generate_game",
@@ -581,7 +599,10 @@ def test_generate_formats_the_game_as_names(
     assert result.stdout == (
         "Hamlet, Young Witch, Alms, Architects' Guild, Approaching Army\n"
     )
-    assert result.stderr == "Seed: 7\n"
+    assert result.stderr == (
+        "Seed: 7\n"
+        "Code: kingdom=young-witch&landscapes=alms&bane=hamlet&ally=architects-guild&prophecy=approaching-army\n"
+    )
 
 
 def test_generate_same_seed_formats_the_same_names(runner: CliRunner) -> None:
@@ -747,6 +768,195 @@ def test_generate_invalid_config_file_is_an_error(
     result = runner.invoke(cli, ["generate"])
     assert result.exit_code == 1
     assert "config.toml" in result.output
+    assert message in result.output
+
+
+# ── setup ────────────────────────────────────────────────────────────────────
+
+# options of a game with every kind of choice: extra piles, a Black Market deck,
+# Druid Boons, an Ally, a Prophecy, a Trait and an Obelisk pile
+BOARD_ARGS = [
+    *("--set", "base_2e", "--set", "adventures"),
+    *("--include", "Young Witch", "--include", "Black Market", "--include", "Druid"),
+    *("--include", "Sycophant", "--include", "Kitsune", "--include", "Cheap"),
+    *("--include", "Obelisk", "--include", "Alms"),
+    *("--max-landscapes", "3", "--black-market-size", "5", "--players", "4"),
+]
+
+
+@pytest.mark.parametrize("seed", range(3))
+def test_setup_sets_up_the_game_of_a_generated_code(
+    runner: CliRunner,
+    seed: int,
+) -> None:
+    args = ["generate", *BOARD_ARGS, "--seed", str(seed), "--format", "json"]
+    game = json.loads(runner.invoke(cli, args).output)
+    del game["seed"]
+    result = runner.invoke(cli, ["setup", game["code"], "--format", "json"])
+    assert result.exit_code == 0
+    game_of_code = json.loads(result.output)
+    # the Druid Boons are in the order of the code
+    for game_dict in (game, game_of_code):
+        game_dict["druid_boons"].sort(key=lambda boon: boon["name"])
+    assert game_of_code == game
+
+
+def test_setup_prints_the_code_that_replays_the_game(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["setup", "kingdom=smithy"])
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    assert not any(line.startswith("Seed: ") for line in lines)
+    (code,) = (
+        line.removeprefix("Code: ") for line in lines if line.startswith("Code: ")
+    )
+    assert runner.invoke(cli, ["setup", code]).output == result.output
+
+
+def test_setup_formats_the_game_as_names(runner: CliRunner) -> None:
+    args = ["generate", "--seed", "1"]
+    code = json.loads(runner.invoke(cli, [*args, "--format", "json"]).output)["code"]
+    names = runner.invoke(cli, [*args, "--format", "names"]).stdout
+    result = runner.invoke(cli, ["setup", code, "--format", "names"])
+    assert result.exit_code == 0
+    assert result.stdout == names
+    assert result.stderr == f"Code: {code}\n"
+
+
+def test_setup_reads_a_whole_link(
+    runner: CliRunner,
+    db: CardDatabase,
+    generate_game_calls: list[dict[str, Any]],
+) -> None:
+    link = "https://example.com/?players=2&kingdom=smithy#top"
+    assert runner.invoke(cli, ["setup", link]).exit_code == 0
+    (kwargs,) = generate_game_calls
+    assert kwargs["board"] == read_board_code(db, link)[0]
+    assert kwargs["players"] == 2
+
+
+def test_setup_passes_the_collection_options(
+    runner: CliRunner,
+    generate_game_calls: list[dict[str, Any]],
+) -> None:
+    args = [
+        *("--set", "intrigue_2e"),
+        *("--promo", "stash"),
+        *("--exclude", "moat"),
+        *("--swap", "smithy=village"),
+        *("--sort", "name"),
+    ]
+    assert runner.invoke(cli, ["setup", "kingdom=smithy", *args]).exit_code == 0
+    (kwargs,) = generate_game_calls
+    assert kwargs["sets_editions"] == {
+        (CardSet.INTRIGUE, CardSetEdition.SECOND_EDITION),
+    }
+    assert kwargs["promos"] == ("Stash",)
+    assert kwargs["exclude"] == ("Moat",)
+    assert kwargs["swaps"] == [("Smithy", "Village")]
+    assert kwargs["sort_order"] == KingdomSortOrder.NAME
+
+
+@pytest.mark.parametrize(
+    ("args", "players"),
+    [
+        (["players=2&kingdom=smithy"], 2),
+        (["players=2"], 2),
+        (["players=2&kingdom=smithy", "--players", "3"], 3),
+        (["kingdom=smithy"], None),
+    ],
+)
+def test_setup_players_option_comes_before_the_codes(
+    runner: CliRunner,
+    generate_game_calls: list[dict[str, Any]],
+    args: list[str],
+    players: int | None,
+) -> None:
+    assert runner.invoke(cli, ["setup", *args]).exit_code == 0
+    assert generate_game_calls[0]["players"] == players
+
+
+@pytest.mark.parametrize(
+    ("code", "players"),
+    [("players=2&kingdom=smithy", 2), ("kingdom=smithy", 5)],
+)
+def test_setup_codes_players_come_before_the_config_files(
+    runner: CliRunner,
+    config_dir: Path,
+    generate_game_calls: list[dict[str, Any]],
+    code: str,
+    players: int,
+) -> None:
+    write_config(config_dir, "players = 5\n")
+    assert runner.invoke(cli, ["setup", code]).exit_code == 0
+    assert generate_game_calls[0]["players"] == players
+
+
+def test_setup_reads_its_defaults_from_the_config_file(
+    runner: CliRunner,
+    config_dir: Path,
+    generate_game_calls: list[dict[str, Any]],
+) -> None:
+    """The config file's options of generate only (e.g. require-buys) are ignored."""
+    write_config(
+        config_dir,
+        """
+set = ["intrigue_2e"]
+promo = ["Stash"]
+exclude = ["Masquerade"]
+sort = "name"
+require-buys = true
+seed = 42
+""",
+    )
+    assert runner.invoke(cli, ["setup", "kingdom=smithy"]).exit_code == 0
+    (kwargs,) = generate_game_calls
+    assert kwargs["sets_editions"] == {
+        (CardSet.INTRIGUE, CardSetEdition.SECOND_EDITION),
+    }
+    assert kwargs["promos"] == ("Stash",)
+    assert kwargs["exclude"] == ("Masquerade",)
+    assert kwargs["sort_order"] == KingdomSortOrder.NAME
+    assert "requirements" not in kwargs
+
+
+def test_setup_unknown_config_option_is_an_error(
+    runner: CliRunner,
+    config_dir: Path,
+) -> None:
+    """Such as an option of list-cards, which does not read the config file."""
+    write_config(config_dir, 'type = ["action"]\n')
+    result = runner.invoke(cli, ["setup", "kingdom=smithy"])
+    assert result.exit_code == 1
+    assert "unknown option 'type'" in result.output
+
+
+def test_setup_uses_the_codes_cards_even_if_excluded(runner: CliRunner) -> None:
+    """``--exclude`` keeps cards from being drawn, not the code's cards out of the game."""
+    args = ["--exclude", "Smithy", "--exclude", "Alms"]
+    result = runner.invoke(cli, ["setup", "kingdom=smithy&landscapes=alms", *args])
+    assert result.exit_code == 0
+    tables = parse_tables(result.output)
+    assert "Smithy" in [row[1] for row in tables["Kingdom"]]
+    assert [row[0] for row in tables["Landscapes"]] == ["Alms"]
+
+
+@pytest.mark.parametrize(
+    ("code", "message"),
+    [
+        ("kingdom=smithee", "Card 'smithee' not found"),
+        ("kingdom=smithy,smithy", "'Smithy' is on the Board twice"),
+        ("Smithy", "Nothing to set up in 'Smithy'"),
+        ("kingdon=smithy", "Nothing to set up in 'kingdon=smithy'"),
+        ("", "Nothing to set up in ''"),
+    ],
+)
+def test_setup_code_that_cannot_be_set_up_is_a_usage_error(
+    runner: CliRunner,
+    code: str,
+    message: str,
+) -> None:
+    result = runner.invoke(cli, ["setup", code])
+    assert result.exit_code == 2
     assert message in result.output
 
 

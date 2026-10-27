@@ -10,11 +10,18 @@ from importlib import metadata
 from pathlib import Path
 
 import rich_click as click
+from click.core import ParameterSource
 from click_default_group import DefaultGroup
 from rich.console import Console
 from rich.table import Table
 
-from .generator import MAX_PLAYERS, MIN_PLAYERS, SetupGenerationError, generate_game
+from .generator import (
+    MAX_PLAYERS,
+    MIN_PLAYERS,
+    SetupGenerationError,
+    generate_game,
+    read_board_code,
+)
 from .loader import load_card_database
 from .models import (
     CARD_SETS_WITH_SECOND_EDITIONS,
@@ -79,19 +86,33 @@ def _read_config(
         msg = f"Invalid config file {path}: {exc}"
         raise click.ClickException(msg) from exc
 
-    param_names = {
-        opt.removeprefix("--"): param.name
-        for param in ctx.command.params
-        for opt in param.opts
-        if opt.startswith("--") and param.expose_value
-    }
+    param_names = _long_options(ctx.command)
+    # one config file serves every command that reads it, so the keys of the
+    # others' options (e.g. generate's require-buys) are known, but not used
+    config_commands = [
+        command
+        for command in cli.commands.values()
+        if any(param.name == "config_file" for param in command.params)
+    ]
+    known_keys = {key for command in config_commands for key in _long_options(command)}
     defaults = {}
     for key, value in config.items():
-        if key not in param_names:
+        if key not in known_keys:
             msg = f"Invalid config file {path}: unknown option {key!r}"
             raise click.ClickException(msg)
-        defaults[param_names[key]] = value
+        if key in param_names:
+            defaults[param_names[key]] = value
     ctx.default_map = defaults
+
+
+def _long_options(command: click.Command) -> dict[str, str]:
+    """Return the parameter name of each of *command*'s long options, by its name without "--"."""
+    return {
+        opt.removeprefix("--"): param.name
+        for param in command.params
+        for opt in param.opts
+        if opt.startswith("--") and param.expose_value and param.name is not None
+    }
 
 
 def _parse_swaps(
@@ -117,6 +138,20 @@ def _card_name(db: CardDatabase, name: str) -> str:
     """
     card = db.find_card(name)
     return name if card is None else card.name
+
+
+def _swap_card_names(
+    db: CardDatabase,
+    swaps: list[tuple[str, str | None]],
+) -> list[tuple[str, str | None]]:
+    """Return the *swaps* with the names of the cards they find (see ``_card_name``)."""
+    return [
+        (
+            _card_name(db, card),
+            None if replacement is None else _card_name(db, replacement),
+        )
+        for card, replacement in swaps
+    ]
 
 
 def _print_pile_table(piles: list[Pile], *, title: str, numbered: bool) -> None:
@@ -156,12 +191,20 @@ def _print_card_table(cards: list[Card], *, title: str, numbered: bool) -> None:
     _print_pile_table([Pile(card) for card in cards], title=title, numbered=numbered)
 
 
-def _print_game(game: Game, *, seed: int) -> None:
-    """Print a Game, generated with *seed*, as rich-formatted table output."""
+def _code(game: Game) -> str:
+    """Return the Board code of a Game, which sets it up again (see ``Board.to_code``)."""
+    return game.board.to_code(players=game.players)
+
+
+def _print_game(game: Game, *, seed: int | None) -> None:
+    """Print a Game, generated with *seed* (if any), as rich-formatted table output."""
     # header
     console.print("[bold]Dominion Setup:[/bold]")
     console.print(f"Sets: {', '.join(game.sets_used)}")
-    console.print(f"Seed: {seed}")
+    if seed is not None:
+        console.print(f"Seed: {seed}")
+    # on one line, however wide, so it copies whole
+    console.print(f"Code: {_code(game)}", soft_wrap=True)
     if game.players is not None:
         console.print(f"Players: {game.players}")
 
@@ -220,19 +263,33 @@ def _print_game(game: Game, *, seed: int) -> None:
             console.print(f"  • {instruction}")
 
 
-def _print_game_json(game: Game, *, seed: int) -> None:
-    """Print a Game, generated with *seed*, as JSON."""
-    click.echo(json.dumps({"seed": seed, **game.to_dict()}, indent=2))
+def _print_game_json(game: Game, *, seed: int | None) -> None:
+    """Print a Game, generated with *seed* (if any), as JSON."""
+    game_dict = game.to_dict() if seed is None else {"seed": seed, **game.to_dict()}
+    click.echo(json.dumps(game_dict, indent=2))
 
 
-def _print_game_names(game: Game, *, seed: int) -> None:
+def _print_game_names(game: Game, *, seed: int | None) -> None:
     """Print the names of a Game's Kingdom cards, Landscapes, Ally and Prophecy on one line.
 
-    The *seed* goes to stderr, so the line of names can be piped on its own.
+    The *seed* (if any) and the Board code go to stderr, so the line of names
+    can be piped on its own.
     """
-    click.echo(f"Seed: {seed}", err=True)
+    if seed is not None:
+        click.echo(f"Seed: {seed}", err=True)
+    click.echo(f"Code: {_code(game)}", err=True)
     cards = [*game.kingdom_cards, *game.landscapes, game.ally, game.prophecy]
     click.echo(", ".join(card.name for card in cards if card is not None))
+
+
+def _print_game_in(output_format: str, game: Game, *, seed: int | None = None) -> None:
+    """Print a Game, generated with *seed* (if any), in the ``--format`` *output_format*."""
+    if output_format == "json":
+        _print_game_json(game, seed=seed)
+    elif output_format == "names":
+        _print_game_names(game, seed=seed)
+    else:
+        _print_game(game, seed=seed)
 
 
 @cli.command()
@@ -424,24 +481,126 @@ def generate(
             exclude=tuple(_card_name(db, name) for name in exclude),
             promos=tuple(_card_name(db, name) for name in promos),
             black_market_size=black_market_size,
-            swaps=[
-                (
-                    _card_name(db, card),
-                    None if replacement is None else _card_name(db, replacement),
-                )
-                for card, replacement in swaps
-            ],
+            swaps=_swap_card_names(db, swaps),
             players=players,
             rng=random.Random(seed),
         )
     except SetupGenerationError as exc:
         raise click.UsageError(str(exc)) from exc
-    if output_format == "json":
-        _print_game_json(game, seed=seed)
-    elif output_format == "names":
-        _print_game_names(game, seed=seed)
-    else:
-        _print_game(game, seed=seed)
+    _print_game_in(output_format, game, seed=seed)
+
+
+@cli.command()
+@click.argument("code")
+@click.option(
+    "raw_sets_editions",
+    "-s",
+    "--set",
+    multiple=True,
+    type=click.Choice(list(SET_EDITION_CHOICES)),
+    default=(f"{CardSet.BASE.name.lower()}_2e",),
+    help="Set(s) to draw what the code leaves out from (repeatable).",
+)
+@click.option(
+    "sort_order",
+    "--sort",
+    type=click.Choice([s.name.lower() for s in KingdomSortOrder]),
+    default=KingdomSortOrder.COST.name.lower(),
+    help="Sort order for kingdom cards.",
+)
+@click.option(
+    "--exclude",
+    metavar="CARD",
+    multiple=True,
+    help="Kingdom card or Landscape not to draw (repeatable).",
+)
+@click.option(
+    "promos",
+    "--promo",
+    metavar="CARD",
+    multiple=True,
+    help="Promo card to draw from, without the rest of the Promo set (repeatable).",
+)
+@click.option(
+    "--players",
+    type=click.IntRange(MIN_PLAYERS, MAX_PLAYERS),
+    default=None,
+    help="Number of players, over the code's.",
+)
+@click.option(
+    "swaps",
+    "--swap",
+    metavar="CARD[=REPLACEMENT]",
+    multiple=True,
+    callback=_parse_swaps,
+    help="Kingdom card, extra pile (e.g. the Bane) or Landscape of the game to swap for a random one, or for REPLACEMENT (repeatable, in order).",
+)
+@click.option(
+    "output_format",
+    "--format",
+    type=click.Choice(["table", "json", "names"]),
+    default="table",
+    help="Output format: tables, JSON, or a one-line list of card names.",
+)
+@click.option(
+    "--config-file",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    is_eager=True,  # read before the options it sets the defaults of
+    expose_value=False,
+    callback=_read_config,
+    help="Config file with defaults for these options. [default: dominion-setup/config.toml in $XDG_CONFIG_HOME, or else in ~/.config]",
+)
+@click.pass_context
+def setup(
+    ctx: click.Context,
+    code: str,
+    raw_sets_editions: tuple[str, ...],
+    sort_order: str,
+    exclude: tuple[str, ...],
+    promos: tuple[str, ...],
+    players: int | None,
+    swaps: list[tuple[str, str | None]],
+    output_format: str,
+) -> None:
+    """Set up the game of a Board CODE, or of a whole web app link.
+
+    Anything the code leaves out is drawn. Options default to the values in the
+    config file (see --config-file), if any, but the code's number of players
+    comes before the config file's.
+    """
+    db = load_card_database()
+    try:
+        board, code_players = read_board_code(db, code)
+        # unknown keys are ignored, so something that is not a code at all
+        # (e.g. a card name) would set up a random game
+        if not board.to_code(players=code_players):
+            msg = f"Nothing to set up in {code!r}: a Board code is like 'players=4&kingdom=smithy,village'"
+            raise click.UsageError(msg)
+        is_players_given = (
+            ctx.get_parameter_source("players") is ParameterSource.COMMANDLINE
+        )
+        if code_players is not None and not is_players_given:
+            players = code_players
+        # the code's cards are in the game, even if excluded from the draw
+        board_card_names = {
+            card.name for card in (*board.kingdom_cards, *board.landscapes)
+        }
+        excluded_names = [_card_name(db, name) for name in exclude]
+        game = generate_game(
+            db,
+            sets_editions={SET_EDITION_CHOICES[choice] for choice in raw_sets_editions},
+            sort_order=KingdomSortOrder(sort_order),
+            exclude=tuple(
+                name for name in excluded_names if name not in board_card_names
+            ),
+            promos=tuple(_card_name(db, name) for name in promos),
+            board=board,
+            swaps=_swap_card_names(db, swaps),
+            players=players,
+        )
+    except SetupGenerationError as exc:
+        raise click.UsageError(str(exc)) from exc
+    _print_game_in(output_format, game)
 
 
 @cli.command("list-cards")

@@ -267,6 +267,7 @@ def test_cli_help(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["--help"])
     assert result.exit_code == 0
     assert "generate" in result.output
+    assert "setup" in result.output
     assert "list-cards" in result.output
     assert "list-sets" in result.output
 
@@ -356,6 +357,13 @@ def test_cli_generate_no_args_runs_generate(runner: CliRunner) -> None:
     result = runner.invoke(cli, [])
     assert result.exit_code == 0
     assert "Kingdom" in result.output
+
+
+def test_cli_setup(runner: CliRunner) -> None:
+    """setup sets up the game of a Board code, with the cards it names."""
+    result = runner.invoke(cli, ["setup", "kingdom=smithy"])
+    assert result.exit_code == 0
+    assert "Smithy" in result.output
 
 
 def test_cli_list_cards_default(runner: CliRunner) -> None:
