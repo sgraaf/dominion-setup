@@ -8,6 +8,8 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is for emergencies when we need to start branches for older releases.
 
+## [Unreleased](https://github.com/sgraaf/dominion-setup/compare/2026.5.0...HEAD)
+
 ## [2026.5.0](https://github.com/sgraaf/dominion-setup/compare/2026.4.0...2026.5.0) - 2026-10-27
 
 This release lets you share a game with others. Every game now comes with a *Board code*: a short line of text, such as `players=4&kingdom=bridge,clerk,…&bane=moat`, that lists its Kingdom cards, Landscapes, extra piles and other choices. The CLI prints the code next to the seed, and `dominion-setup setup CODE` sets up the game of a code or a whole web app link. In the library, the new `Board` holds those choices, `generate_game(board=...)` sets one up, and `read_board_code` reads a code. Cards can now be looked up by their slug or by their old name, so Farm is still found under its old name, Harem. Finally, sorting by cost no longer depends on the order in which cards were drawn.
