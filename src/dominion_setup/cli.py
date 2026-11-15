@@ -401,7 +401,7 @@ def _print_game_in(output_format: str, game: Game, *, seed: int | None = None) -
     metavar="CARD[=REPLACEMENT]",
     multiple=True,
     callback=_parse_swaps,
-    help="Kingdom card, extra pile (e.g. the Bane) or Landscape of the game to swap for a random one, or for REPLACEMENT (repeatable, in order).",
+    help="Kingdom card, extra pile (e.g. the Bane), Landscape, Ally or Prophecy of the game to swap for a random one, or for REPLACEMENT (repeatable, in order).",
 )
 @click.option(
     "output_format",
@@ -528,7 +528,7 @@ def generate(
     metavar="CARD[=REPLACEMENT]",
     multiple=True,
     callback=_parse_swaps,
-    help="Kingdom card, extra pile (e.g. the Bane) or Landscape of the game to swap for a random one, or for REPLACEMENT (repeatable, in order).",
+    help="Kingdom card, extra pile (e.g. the Bane), Landscape, Ally or Prophecy of the game to swap for a random one, or for REPLACEMENT (repeatable, in order).",
 )
 @click.option(
     "output_format",

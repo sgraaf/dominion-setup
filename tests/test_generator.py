@@ -614,6 +614,113 @@ def test_swapped_out_card_is_not_drawn_again_but_can_be_picked_back(
     assert sorted(card_names(game.kingdom_cards)) == sorted(BASE_KINGDOM)
 
 
+# Underling is a Liaison, so the game has an Ally
+ALLY_OPTIONS: dict[str, Any] = {
+    "sets_editions": {
+        (CardSet.BASE, CardSetEdition.SECOND_EDITION),
+        (CardSet.ALLIES, CardSetEdition.FIRST_EDITION),
+    },
+    "include": [*BASE_KINGDOM[:9], "Underling"],
+}
+
+
+def names_of_type(db: CardDatabase, card_type: CardType) -> list[str]:
+    return [
+        card.name for card in db.landscape_cards.values() if card_type in card.types
+    ]
+
+
+def test_swap_redraws_or_replaces_the_ally(db: CardDatabase) -> None:
+    game = generate_game(db, rng=random.Random(0), **ALLY_OPTIONS)
+    assert game.ally is not None
+    old_ally = game.ally.name
+
+    redrawn = generate_game(
+        db,
+        swaps=[(old_ally, None)],
+        rng=random.Random(0),
+        **ALLY_OPTIONS,
+    )
+    assert redrawn.ally is not None
+    assert redrawn.ally.name != old_ally
+    assert redrawn.kingdom_cards == game.kingdom_cards
+
+    new_ally = next(
+        name for name in names_of_type(db, CardType.ALLY) if name != old_ally
+    )
+    picked = generate_game(
+        db,
+        swaps=[(old_ally, new_ally)],
+        rng=random.Random(0),
+        **ALLY_OPTIONS,
+    )
+    assert picked.ally is not None
+    assert picked.ally.name == new_ally
+
+
+def test_swap_redraws_or_replaces_the_prophecy(db: CardDatabase) -> None:
+    omens = [
+        card.name for card in db.kingdom_cards.values() if CardType.OMEN in card.types
+    ]
+    options: dict[str, Any] = {
+        "include": [*BASE_KINGDOM[:9], omens[0]],
+        "exclude": omens[1:],
+    }
+    prophecies = names_of_type(db, CardType.PROPHECY)
+    game = generate_game(db, rng=random.Random(0), **options)
+    assert game.prophecy is not None
+    old = game.prophecy.name
+
+    redrawn = generate_game(db, swaps=[(old, None)], rng=random.Random(0), **options)
+    assert redrawn.prophecy is not None
+    assert redrawn.prophecy.name != old
+
+    new = next(name for name in prophecies if name != old)
+    picked = generate_game(db, swaps=[(old, new)], rng=random.Random(0), **options)
+    assert picked.prophecy is not None
+    assert picked.prophecy.name == new
+
+
+@pytest.mark.parametrize("seed", range(20))
+def test_swapped_out_ally_is_not_drawn_again(db: CardDatabase, seed: int) -> None:
+    game = generate_game(db, rng=random.Random(seed), **ALLY_OPTIONS)
+    assert game.ally is not None
+    swapped = generate_game(
+        db,
+        swaps=[(game.ally.name, None)],
+        rng=random.Random(seed),
+        **ALLY_OPTIONS,
+    )
+    assert swapped.ally is not None
+    assert swapped.ally.name != game.ally.name
+
+
+@pytest.mark.parametrize("replacement", ["Festival", "Alms", "Approaching Army"])
+def test_swapping_the_ally_for_the_wrong_kind_raises(
+    db: CardDatabase,
+    replacement: str,
+) -> None:
+    game = generate_game(db, rng=random.Random(0), **ALLY_OPTIONS)
+    assert game.ally is not None
+    with pytest.raises(SetupGenerationError, match="is not an Ally"):
+        generate_game(
+            db,
+            swaps=[(game.ally.name, replacement)],
+            rng=random.Random(0),
+            **ALLY_OPTIONS,
+        )
+
+
+def test_swapping_an_ally_that_is_not_in_the_game_raises(db: CardDatabase) -> None:
+    with pytest.raises(SetupGenerationError, match="of the game"):
+        generate_game(
+            db,
+            swaps=[("Architects' Guild", None)],
+            sets_editions={BASE_2E},
+            include=BASE_KINGDOM,
+        )
+
+
 def test_same_seed_and_swaps_generate_the_same_game(db: CardDatabase) -> None:
     swaps = [("Cellar", None), ("Moat", "Festival")]
     options: dict[str, Any] = {"include": BASE_KINGDOM, "swaps": swaps}
@@ -627,7 +734,7 @@ def test_same_seed_and_swaps_generate_the_same_game(db: CardDatabase) -> None:
         (("Copper", None), "'Copper' is not a Kingdom card or Landscape"),
         (
             ("Festival", None),
-            "'Festival' is not a Kingdom card, extra pile or Landscape of the game",
+            "'Festival' is not a Kingdom card, extra pile, Landscape, Ally or Prophecy of the game",
         ),
         (("Cellar", "Smithee"), "Card 'Smithee' not found"),
         (("Cellar", "Moat"), "'Moat' is already in the game"),
@@ -2948,3 +3055,16 @@ def test_every_pile_has_a_size(db: CardDatabase) -> None:
         if card.name != "Shelters" and CardType.HEIRLOOM not in card.types
     }
     assert {name: size for name, size in sizes.items() if not size} == {}
+
+
+def test_excluding_every_prophecy_raises(db: CardDatabase) -> None:
+    omen = next(
+        card.name for card in db.kingdom_cards.values() if CardType.OMEN in card.types
+    )
+    with pytest.raises(SetupGenerationError, match="No Prophecy is left to draw"):
+        generate_game(
+            db,
+            include=[*BASE_KINGDOM[:9], omen],
+            exclude=names_of_type(db, CardType.PROPHECY),
+            rng=random.Random(0),
+        )

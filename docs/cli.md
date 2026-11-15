@@ -122,10 +122,11 @@ $ dominion-setup generate --help
 │                                                      game. Defaults to a     │
 │                                                      random one.             │
 │ --swap                       CARD[=REPLACEMENT]      Kingdom card, extra     │
-│                                                      pile (e.g. the Bane) or │
-│                                                      Landscape of the game   │
-│                                                      to swap for a random    │
-│                                                      one, or for REPLACEMENT │
+│                                                      pile (e.g. the Bane),   │
+│                                                      Landscape, Ally or      │
+│                                                      Prophecy of the game to │
+│                                                      swap for a random one,  │
+│                                                      or for REPLACEMENT      │
 │                                                      (repeatable, in order). │
 │ --format                     [table|json|names]      Output format: tables,  │
 │                                                      JSON, or a one-line     │
@@ -185,11 +186,11 @@ $ dominion-setup setup --help
 │ --players          INTEGER RANGE [2<=x<=6]      Number of players, over the  │
 │                                                 code's.                      │
 │ --swap             CARD[=REPLACEMENT]           Kingdom card, extra pile     │
-│                                                 (e.g. the Bane) or Landscape │
-│                                                 of the game to swap for a    │
-│                                                 random one, or for           │
-│                                                 REPLACEMENT (repeatable, in  │
-│                                                 order).                      │
+│                                                 (e.g. the Bane), Landscape,  │
+│                                                 Ally or Prophecy of the game │
+│                                                 to swap for a random one, or │
+│                                                 for REPLACEMENT (repeatable, │
+│                                                 in order).                   │
 │ --format           [table|json|names]           Output format: tables, JSON, │
 │                                                 or a one-line list of card   │
 │                                                 names. [default: table]      │

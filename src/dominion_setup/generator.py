@@ -35,7 +35,7 @@ from .models import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Collection, Iterable
 
 
 class SetupGenerationError(ValueError):
@@ -104,9 +104,9 @@ def generate_game(  # noqa: PLR0913
             ``None``, override *use_colony* and *use_shelters*. Defaults to
             ``None``, which draws every choice.
         swaps: ``(card, replacement)`` pairs, each swapping a Kingdom card,
-            extra pile (e.g. the Bane) or Landscape of the game, in order. The
-            replacement (from any set) takes the card's place, or if it is
-            ``None``, a card is drawn in its place. Everything that does not
+            extra pile (e.g. the Bane), Landscape, Ally or Prophecy of the
+            game, in order. The replacement (from any set) takes the card's
+            place, or if it is ``None``, a card is drawn in its place. Everything that does not
             depend on the swapped card stays the same, and the swapped card is
             not drawn again. Nor are the extra piles and Black Market cards of
             the game before the swap, even if they are no longer in use. A
@@ -186,10 +186,10 @@ def generate_game(  # noqa: PLR0913
     # depend on it. The swapped-out cards are not drawn again, unless picked.
     swapped_out: list[str] = []
     for card_name, replacement_name in swaps:
-        card = _selectable_card_by_name(db, card_name)
+        card = _swappable_card_by_name(db, card_name)
         replacement = None
         if replacement_name is not None:
-            replacement = _selectable_card_by_name(db, replacement_name)
+            replacement = _swappable_card_by_name(db, replacement_name)
             if replacement_name in exclude:
                 msg = f"{replacement_name!r} is excluded"
                 raise SetupGenerationError(msg)
@@ -234,9 +234,17 @@ def _set_up(  # noqa: PLR0913
     # changes which game a given seed produces.
     given_names = [card.name for card in (*given.kingdom_cards, *given.landscapes)]
     include = [*given_names, *include]
+    # an excluded Ally or Prophecy is only kept from being drawn
+    excluded_landscape_names = {
+        name for name in exclude if _is_ally_or_prophecy(db.card_name_to_card.get(name))
+    }
     exclude = [
         # *exclude* keeps cards from being drawn, not the given ones out of the game
-        *(name for name in exclude if name not in given_names),
+        *(
+            name
+            for name in exclude
+            if name not in given_names and name not in excluded_landscape_names
+        ),
         *(
             card.name
             for card in (*given.extra_piles.values(), *given.black_market_deck)
@@ -272,6 +280,7 @@ def _set_up(  # noqa: PLR0913
         landscapes,
         unused_kingdom_cards,
         black_market_size=black_market_size,
+        excluded_names=excluded_landscape_names,
         given=given,
         rng=rng,
     )
@@ -289,7 +298,13 @@ def _set_up(  # noqa: PLR0913
 
     # 3. Cards dealt out for specific cards in use
     dealt_boons = _choose_druid_boons(db, cards_in_use, given=given, rng=rng)
-    dealt_ally = _choose_ally(db, cards_in_use, given=given, rng=rng)
+    dealt_ally = _choose_ally(
+        db,
+        cards_in_use,
+        excluded_names=excluded_landscape_names,
+        given=given,
+        rng=rng,
+    )
     trait_marks = _choose_trait_piles(kingdom_cards, landscapes, given=given, rng=rng)
 
     # 4. Non-Supply piles
@@ -543,22 +558,28 @@ def read_board_code(db: CardDatabase, code: str) -> tuple[Board, int | None]:  #
 
 
 def _swappable_cards(board: Board) -> tuple[Card, ...]:
-    """Return the Kingdom cards, extra piles and Landscapes, which a swap can swap."""
-    return (*board.kingdom_cards, *board.extra_piles.values(), *board.landscapes)
+    """Return the Kingdom cards, extra piles, Landscapes, Ally and Prophecy, which a swap can swap."""
+    return (
+        *board.kingdom_cards,
+        *board.extra_piles.values(),
+        *board.landscapes,
+        *(card for card in (board.ally, board.prophecy) if card is not None),
+    )
 
 
 def _swap(board: Board, card: Card, replacement: Card | None) -> Board:
     """Return the *board* with *card* swapped for *replacement*, or left to draw.
 
-    *card* is a Kingdom card, extra pile or Landscape of the *board*, and a
-    *replacement* from the Black Market deck leaves it. (A Trait or Obelisk on
-    the pile of *card* is drawn again, as ``_set_up`` only uses given piles that
-    are in the Kingdom.)
+    *card* is a Kingdom card, extra pile, Landscape, Ally or Prophecy of the
+    *board*, and a *replacement* from the Black Market deck leaves it. (A Trait
+    or Obelisk on the pile of *card* is drawn again, as ``_set_up`` only uses
+    given piles that are in the Kingdom.)
     """
     swappable_cards = _swappable_cards(board)
     if card not in swappable_cards:
         msg = (
-            f"{card.name!r} is not a Kingdom card, extra pile or Landscape of the game"
+            f"{card.name!r} is not a Kingdom card, extra pile, Landscape, Ally or"
+            " Prophecy of the game"
         )
         raise SetupGenerationError(msg)
     if replacement in swappable_cards:
@@ -575,6 +596,8 @@ def _swap(board: Board, card: Card, replacement: Card | None) -> Board:
         board,
         kingdom_cards=_replaced(board.kingdom_cards, card, replacement),
         landscapes=_replaced(board.landscapes, card, replacement),
+        ally=replacement if board.ally == card else board.ally,
+        prophecy=replacement if board.prophecy == card else board.prophecy,
         extra_piles=extra_piles,
         black_market_deck=tuple(
             bm_card for bm_card in board.black_market_deck if bm_card != replacement
@@ -683,6 +706,21 @@ def _selectable_card_by_name(db: CardDatabase, name: str) -> Card:
         msg = f"{name!r} is not a Kingdom card or Landscape"
         raise SetupGenerationError(msg)
     return card
+
+
+def _swappable_card_by_name(db: CardDatabase, name: str) -> Card:
+    """Look up the Kingdom card, selectable Landscape, Ally or Prophecy called *name*."""
+    card = db.card_name_to_card.get(name)
+    if card is not None and _is_ally_or_prophecy(card):
+        return card
+    return _selectable_card_by_name(db, name)
+
+
+def _is_ally_or_prophecy(card: Card | None) -> bool:
+    """Return whether *card* is an Ally or a Prophecy."""
+    return card is not None and bool(
+        {CardType.ALLY, CardType.PROPHECY} & set(card.types),
+    )
 
 
 def _selectable_cards_by_name(db: CardDatabase, names: Iterable[str]) -> list[Card]:
@@ -929,6 +967,7 @@ def _choose_extra_piles(  # noqa: PLR0913
     unused_kingdom_cards: list[Card],
     *,
     black_market_size: int,
+    excluded_names: Collection[str] = (),
     given: Board = EMPTY_BOARD,
     rng: random.Random,
 ) -> tuple[list[tuple[ExtraPileRule, Card]], Card | None, list[Card]]:
@@ -965,8 +1004,11 @@ def _choose_extra_piles(  # noqa: PLR0913
         if prophecy is None and any(
             CardType.OMEN in card.types for card in cards_in_use
         ):
-            prophecy = given.prophecy or rng.choice(
-                _cards_of_type(db.landscape_cards.values(), CardType.PROPHECY),
+            prophecy = given.prophecy or _draw_landscape(
+                db,
+                CardType.PROPHECY,
+                excluded_names=excluded_names,
+                rng=rng,
             )
 
         triggers = {card.name for card in (*cards_in_use, *landscapes)}
@@ -1028,10 +1070,33 @@ def _choose_druid_boons(
     )
 
 
+def _draw_landscape(
+    db: CardDatabase,
+    card_type: CardType,
+    *,
+    excluded_names: Collection[str],
+    rng: random.Random,
+) -> Card:
+    """Draw a Landscape of *card_type* that is not in *excluded_names*."""
+    candidates = _cards_of_type(
+        (
+            card
+            for card in db.landscape_cards.values()
+            if card.name not in excluded_names
+        ),
+        card_type,
+    )
+    if not candidates:
+        msg = f"No {card_type.value} is left to draw"
+        raise SetupGenerationError(msg)
+    return rng.choice(candidates)
+
+
 def _choose_ally(
     db: CardDatabase,
     cards_in_use: list[Card],
     *,
+    excluded_names: Collection[str] = (),
     given: Board = EMPTY_BOARD,
     rng: random.Random,
 ) -> Card | None:
@@ -1040,8 +1105,11 @@ def _choose_ally(
     # what effect Favor tokens have in that game.
     if not any(CardType.LIAISON in card.types for card in cards_in_use):
         return None
-    return given.ally or rng.choice(
-        _cards_of_type(db.landscape_cards.values(), CardType.ALLY),
+    return given.ally or _draw_landscape(
+        db,
+        CardType.ALLY,
+        excluded_names=excluded_names,
+        rng=rng,
     )
 
 

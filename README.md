@@ -29,7 +29,7 @@
   - Deriving the correct Potion, Ruins, and Heirloom basic piles.
   - Collecting all required materials (mats, tokens, cubes) and per-card setup instructions.
   - Working out how many cards go in each pile for 2 to 6 players.
-- **Swaps** — swap any Kingdom card, extra pile or Landscape of a game for a random one or one you pick, keeping everything that doesn't depend on it.
+- **Swaps** — swap any Kingdom card, extra pile, Landscape, Ally or Prophecy of a game for a random one or one you pick, keeping everything that doesn't depend on it.
 - **Flexible sorting** — kingdom piles can be sorted by cost, name, or set.
 - **Rich terminal output** — the CLI renders colour-coded tables with [Rich](https://github.com/Textualize/rich).
 - **Fully typed** — ships with a `py.typed` marker and complete type annotations.
@@ -83,7 +83,7 @@ Finally, the piles are sorted and returned in a `Game` object, along with its `B
 
 If a `board` is given, its Kingdom cards and Landscapes are included like the `include`d cards, and its other choices (extra piles, Black Market deck, Prophecy, Ally, Druid Boons, Traits, Obelisk pile, Colony and Shelters) are used where they apply instead of being drawn. A Board that leaves nothing out gives the same game for any seed.
 
-If `swaps` are given, each one then opens up the place of a Kingdom card, extra pile or Landscape (or puts its replacement there) and sets the game up again. The game's other choices (its Kingdom, Landscapes, extra piles, Black Market deck, Prophecy, Ally, Druid Boons, Traits, Obelisk pile, Colony and Shelters) are kept where they still apply, and the rest is drawn again. The swapped card is not drawn again (nor are the game's extra piles and Black Market cards), and the game keeps its number of Landscapes. A replacement is included like the `include`d cards: it must not be `exclude`d, and the Kingdom must still meet the `requirements`.
+If `swaps` are given, each one then opens up the place of a Kingdom card, extra pile, Landscape, Ally or Prophecy (or puts its replacement there) and sets the game up again. The game's other choices (its Kingdom, Landscapes, extra piles, Black Market deck, Prophecy, Ally, Druid Boons, Traits, Obelisk pile, Colony and Shelters) are kept where they still apply, and the rest is drawn again. The swapped card is not drawn again (nor are the game's extra piles and Black Market cards), and the game keeps its number of Landscapes. A replacement is included like the `include`d cards: it must not be `exclude`d, and the Kingdom must still meet the `requirements`.
 
 ## Installation
 

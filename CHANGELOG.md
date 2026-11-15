@@ -10,6 +10,10 @@ The **third number** is for emergencies when we need to start branches for older
 
 ## [Unreleased](https://github.com/sgraaf/dominion-setup/compare/2026.5.0...HEAD)
 
+### Added
+
+- Swaps can now swap the Ally and the Prophecy of a game (`--swap "Architects' Guild"`, or `generate_game(swaps=...)`), for a random one or a replacement of the same kind. A swapped-out Ally or Prophecy is not drawn again, and naming an Ally or Prophecy in `--exclude` keeps it from being drawn. Board codes already hold both, so a swapped game's code needs no change.
+
 ## [2026.5.0](https://github.com/sgraaf/dominion-setup/compare/2026.4.0...2026.5.0) - 2026-10-27
 
 This release lets you share a game with others. Every game now comes with a *Board code*: a short line of text, such as `players=4&kingdom=bridge,clerk,…&bane=moat`, that lists its Kingdom cards, Landscapes, extra piles and other choices. The CLI prints the code next to the seed, and `dominion-setup setup CODE` sets up the game of a code or a whole web app link. In the library, the new `Board` holds those choices, `generate_game(board=...)` sets one up, and `read_board_code` reads a code. Cards can now be looked up by their slug or by their old name, so Farm is still found under its old name, Harem. Finally, sorting by cost no longer depends on the order in which cards were drawn.
