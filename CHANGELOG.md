@@ -8,7 +8,9 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is for emergencies when we need to start branches for older releases.
 
-## [Unreleased](https://github.com/sgraaf/dominion-setup/compare/2026.5.0...HEAD)
+## [2026.6.0](https://github.com/sgraaf/dominion-setup/compare/2026.5.0...2026.6.0) - 2026-11-15
+
+This release lets swaps work on the Ally and the Prophecy of a game, so that `--swap "Architects' Guild"` replaces the Ally with a random one or a given one of the same kind. A swapped-out Ally or Prophecy is not drawn again, and `--exclude` now keeps Allies and Prophecies from being drawn.
 
 ### Added
 

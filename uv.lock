@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11, <4"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -454,7 +454,7 @@ wheels = [
 
 [[package]]
 name = "dominion-setup"
-version = "2026.5.0"
+version = "2026.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
